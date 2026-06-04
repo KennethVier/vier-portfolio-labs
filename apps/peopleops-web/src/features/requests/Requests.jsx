@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import PageHeader from '../../components/ui/PageHeader.jsx';
 import Panel from '../../components/ui/Panel.jsx';
 import RoleNotice from '../../components/ui/RoleNotice.jsx';
@@ -10,6 +10,7 @@ import { useDemoRole } from '../demoAuth/useDemoRole.js';
 import { useEmployees, useLeaveRequestComments, useLeaveRequests } from '../../hooks/usePeopleOps.js';
 import { formatDate, prettyEnum } from '../../utils/formatters.js';
 import { downloadCsv } from '../../utils/csv.js';
+import { BACKEND_DISABLED_MESSAGE } from '../../utils/demoData.js';
 
 const emptyRequest = { employeeId: '', type: 'VACATION', startDate: '', endDate: '', reason: '' };
 const requestCopy = {
@@ -25,6 +26,10 @@ const RequestComments = ({ request, role }) => {
 
   const submitComment = async (event) => {
     event.preventDefault();
+    if (comments.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     await createLeaveRequestComment(request.id, {
       authorName: role === 'Employee' ? request.employeeName : `PeopleOps ${role}`,
       authorRole: role,
@@ -73,6 +78,10 @@ const Requests = () => {
 
   const submitRequest = async (event) => {
     event.preventDefault();
+    if (requests.isDemoFallback || employees.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     await createLeaveRequest({ ...form, employeeId: Number(form.employeeId) });
     setForm(emptyRequest);
     setMessage('Leave request submitted.');
@@ -80,6 +89,10 @@ const Requests = () => {
   };
 
   const reviewRequest = async (request, status) => {
+    if (requests.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     await reviewLeaveRequest(request.id, { status, reviewerNote: notes[request.id] ?? '' });
     setMessage(`Request ${prettyEnum(status).toLowerCase()}.`);
     requests.refetch();
@@ -169,3 +182,4 @@ const Requests = () => {
 };
 
 export default Requests;
+

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import Button from './Button';
 import { formatPrice, titleCase } from '../../utils/formatters.js';
 
@@ -20,6 +20,7 @@ const ProductGrid = ({
   const navigate = useNavigate();
   const isLoading = status === 'loading';
   const hasError = status === 'error';
+  const isDemoFallback = status === 'demo';
 
   return (
     <main className="catalog-page">
@@ -28,6 +29,13 @@ const ProductGrid = ({
         <h1>{title}</h1>
         <p>{products.length} curated picks ready for your next rotation.</p>
       </section>
+
+      {isDemoFallback && (
+        <section className="demo-fallback-banner">
+          <strong>Demo catalog</strong>
+          <span>Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.</span>
+        </section>
+      )}
 
       {children}
 

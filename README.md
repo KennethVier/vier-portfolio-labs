@@ -1,4 +1,4 @@
-﻿# Vier Portfolio Labs
+# Vier Portfolio Labs
 
 A full-stack portfolio monorepo for Kenneth Cerrado's branded project suite. This repository contains the public portfolio, polished frontend demos, Spring Boot microservices, shared local infrastructure, and documentation for running the system locally.
 
@@ -84,6 +84,22 @@ Use local env files or deployment platform secrets for values like:
 
 Frontend apps should only receive public configuration, such as API base URLs. AI keys and backend credentials must stay in backend service environments.
 
+
+## Backend-Optional Demo Mode
+
+The public frontends are designed to stay polished even when backend services are offline, disabled, or not deployed on a free tier. Read-heavy screens can fall back to labeled demo data, while backend-powered write actions show this message instead of pretending success:
+
+```text
+Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.
+```
+
+Fallback mode is enabled by default for deployed frontends unless an app is explicitly configured otherwise:
+
+```text
+VITE_DEMO_FALLBACK_ENABLED=true
+```
+
+This keeps the portfolio browseable without committing secrets or requiring every service to run all the time. Local development can still point each frontend to `localhost:8080/api` or a deployed API gateway when the backend is available.
 ## Deployment Notes
 
 This repo can be used as a monorepo on Vercel. Create one Vercel project per frontend and set the root directory:
@@ -114,3 +130,4 @@ The project suite uses the Vier brand system: a personal, consistent visual iden
 ## Status
 
 This is a portfolio prototype platform, not a production SaaS system. The apps are built to demonstrate architecture, UI design, backend integration, workflow thinking, and practical full-stack engineering.
+

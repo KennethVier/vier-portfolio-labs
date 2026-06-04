@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import PageHeader from '../../components/ui/PageHeader.jsx';
 import Panel from '../../components/ui/Panel.jsx';
 import RoleNotice from '../../components/ui/RoleNotice.jsx';
@@ -7,6 +7,7 @@ import { createDepartment, updateDepartment } from '../../api/peopleOpsApi.js';
 import { getRoleProfile, roleCan } from '../demoAuth/demoRole.js';
 import { useDemoRole } from '../demoAuth/useDemoRole.js';
 import { useDepartments, useEmployees } from '../../hooks/usePeopleOps.js';
+import { BACKEND_DISABLED_MESSAGE } from '../../utils/demoData.js';
 
 const emptyForm = { name: '', description: '', leadEmployeeId: '', location: 'Manila, PH' };
 
@@ -35,6 +36,10 @@ const Departments = () => {
 
   const saveDepartment = async (event) => {
     event.preventDefault();
+    if (departments.isDemoFallback || employees.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     const payload = { ...form, leadEmployeeId: form.leadEmployeeId ? Number(form.leadEmployeeId) : null };
     if (editing) {
       await updateDepartment(editing, payload);
@@ -97,3 +102,4 @@ const Departments = () => {
 };
 
 export default Departments;
+

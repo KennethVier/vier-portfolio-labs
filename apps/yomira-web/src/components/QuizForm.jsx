@@ -22,7 +22,7 @@ const quizTypeOptions = [
   }
 ];
 
-export default function QuizForm({ documentId, OnGenerated }) {
+export default function QuizForm({ documentId, OnGenerated, demoQuiz }) {
   const [quizType, setQuizType] = useState("MULTIPLE_CHOICE");
   const [count, setCount] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -34,6 +34,12 @@ export default function QuizForm({ documentId, OnGenerated }) {
       return;
     }
 
+    if (demoQuiz) {
+      setError("Live backend is currently disabled for this portfolio demo. Showing a sample reflected quiz instead.");
+      OnGenerated(demoQuiz);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -41,7 +47,7 @@ export default function QuizForm({ documentId, OnGenerated }) {
       const result = await generateQuiz({ documentId, quizType, questionsCount: count });
       OnGenerated(result);
     } catch (err) {
-      setError("Failed to generate quiz. Please make sure the quiz service is running.");
+      setError("Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
       console.error("Quiz generation error:", err);
     } finally {
       setLoading(false);
@@ -93,3 +99,5 @@ export default function QuizForm({ documentId, OnGenerated }) {
     </div>
   );
 }
+
+

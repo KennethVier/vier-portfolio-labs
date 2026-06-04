@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+﻿import { useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CartContext } from '../cart/cartContextValue.js';
 import { formatPrice } from '../../utils/formatters.js';
@@ -8,7 +8,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, addToFavorites } = useContext(CartContext);
-  const { product, status, errorMessage } = useProductDetail(id);
+  const { product, status, errorMessage, isDemoFallback } = useProductDetail(id);
   const [message, setMessage] = useState('');
 
   const addProductToCart = () => {
@@ -47,6 +47,7 @@ const ProductDetail = () => {
         <img src={product.imageUrl} alt={product.productName} />
       </section>
       <section className="product-detail-info">
+        {isDemoFallback && <div className="demo-fallback-banner compact"><strong>Demo product</strong><span>Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.</span></div>}
         <span className="eyebrow">{product.section} / {product.category}</span>
         <h1>{product.productName}</h1>
         <strong>{formatPrice(product.productPrice)}</strong>

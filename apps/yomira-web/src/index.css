@@ -124,3 +124,16 @@ p { color: var(--muted); line-height: 1.65; }
   .quiz-container { grid-template-columns: 1fr; }
   .upload-area { min-height: 230px; }
 }
+
+.demo-fallback-banner {
+  display: grid;
+  gap: .25rem;
+  margin: 0 0 1rem;
+  padding: .9rem 1rem;
+  border: 1px solid rgba(172, 132, 42, .28);
+  border-radius: 14px;
+  background: #fff7df;
+  color: #3d321a;
+}
+.demo-fallback-banner strong { text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; }
+.demo-fallback-banner span { color: #6d5c33; }

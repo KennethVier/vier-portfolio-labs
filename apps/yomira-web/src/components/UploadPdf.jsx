@@ -2,7 +2,7 @@
 import { uploadPdf } from "../api/documentApi";
 import PdfPreview from "./PdfPreview";
 
-export default function UploadPdf({ onUploaded }) {
+export default function UploadPdf({ onUploaded, onDemo }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,7 +38,7 @@ export default function UploadPdf({ onUploaded }) {
       const response = await uploadPdf(file);
       onUploaded(response.id, file.name);
     } catch (err) {
-      setError("Failed to upload PDF. Please make sure the document service is running.");
+      setError("Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
       console.error("Upload error:", err);
     } finally {
       setLoading(false);
@@ -79,9 +79,12 @@ export default function UploadPdf({ onUploaded }) {
         )}
       </div>
 
+      {onDemo && <button className="quiet-button" type="button" onClick={onDemo}>Use demo reading sample</button>}
       <button className="primary-button" onClick={handleUpload} disabled={!file || loading}>
         {loading ? "Reading document..." : "Read this document"}
       </button>
     </div>
   );
 }
+
+

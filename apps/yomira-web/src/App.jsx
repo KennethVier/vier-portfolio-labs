@@ -2,6 +2,7 @@
 import UploadPdf from "./components/UploadPdf";
 import QuizForm from "./components/QuizForm";
 import QuizResult from "./components/QuizResult";
+import { BACKEND_DISABLED_MESSAGE, demoQuiz } from "./demoData";
 
 const steps = [
   { key: "read", label: "Read", detail: "Upload source material" },
@@ -13,6 +14,7 @@ export default function App() {
   const [documentId, setDocumentId] = useState(null);
   const [documentName, setDocumentName] = useState(null);
   const [quiz, setQuiz] = useState(null);
+  const [isDemoFallback, setIsDemoFallback] = useState(false);
 
   const currentStep = useMemo(() => {
     if (quiz) return "remember";
@@ -24,6 +26,7 @@ export default function App() {
     setDocumentId(null);
     setDocumentName(null);
     setQuiz(null);
+    setIsDemoFallback(false);
   };
 
   return (
@@ -74,6 +77,7 @@ export default function App() {
                 onUploaded={(id, name) => {
                   setDocumentId(id);
                   setDocumentName(name);
+                  setIsDemoFallback(false);
                 }}
               />
             </div>
@@ -99,7 +103,8 @@ export default function App() {
               <span className="eyebrow">Step 02 / Reflect</span>
               <h2>Shape the study mirror</h2>
               <p>Pick the quiz format and question count that match the way you want to remember this material.</p>
-              <QuizForm documentId={documentId} OnGenerated={setQuiz} />
+              {isDemoFallback && <div className="demo-fallback-banner"><strong>Sample quiz</strong><span>Real AI generation is disabled until the backend is enabled.</span></div>}
+              <QuizForm documentId={documentId} OnGenerated={(nextQuiz) => { setQuiz(nextQuiz); }} demoQuiz={isDemoFallback ? demoQuiz : null} />
             </div>
           </section>
         ) : (
@@ -119,3 +124,5 @@ export default function App() {
     </div>
   );
 }
+
+

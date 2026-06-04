@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { generatePlan, getDashboard, getProfileByEmail, logWorkout, saveProfile } from './api/runningApi.js';
 import Dashboard from './components/Dashboard.jsx';
 import Insights from './components/Insights.jsx';
@@ -6,6 +6,7 @@ import ProfileForm from './components/ProfileForm.jsx';
 import TrainingPlan from './components/TrainingPlan.jsx';
 import WorkoutLogForm from './components/WorkoutLogForm.jsx';
 import { useAsyncAction } from './hooks/useAsyncAction.js';
+import { BACKEND_DISABLED_MESSAGE, demoDashboard, shouldUseDemoFallback } from './utils/demoData.js';
 
 export default function App() {
   const [email, setEmail] = useState(localStorage.getItem('stridemateEmail') || '');
@@ -13,6 +14,7 @@ export default function App() {
   const [dashboard, setDashboard] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
   const [bootError, setBootError] = useState('');
+  const [isDemoFallback, setIsDemoFallback] = useState(false);
   const profileAction = useAsyncAction();
   const planAction = useAsyncAction();
   const logAction = useAsyncAction();
@@ -31,6 +33,14 @@ export default function App() {
       const next = data.nextSession || data.currentPlan?.weeks?.flatMap((week) => week.sessions)?.find((session) => session.status === 'PLANNED');
       setSelectedSession((current) => current || next || null);
     } catch (error) {
+      if (shouldUseDemoFallback(error)) {
+        setDashboard(demoDashboard);
+        setProfile(demoDashboard.profile);
+        setSelectedSession(demoDashboard.nextSession);
+        setIsDemoFallback(true);
+        setBootError(BACKEND_DISABLED_MESSAGE);
+        return;
+      }
       setBootError(error?.response?.status === 404 ? '' : 'StrideMate service is unavailable. Start the running coach backend and gateway, then refresh.');
     }
   }
@@ -49,6 +59,7 @@ export default function App() {
   }, []);
 
   async function handleProfileSubmit(payload) {
+    if (isDemoFallback) { setBootError(BACKEND_DISABLED_MESSAGE); return; }
     const saved = await profileAction.run(() => saveProfile(payload));
     if (!saved) return;
     setProfile(saved);
@@ -105,7 +116,8 @@ export default function App() {
           </form>
         </header>
 
-        {bootError && <div className="alert danger">{bootError}</div>}
+        {isDemoFallback && <div className="alert demo"><strong>Demo mode</strong> {BACKEND_DISABLED_MESSAGE}</div>}
+        {bootError && !isDemoFallback && <div className="alert danger">{bootError}</div>}
         {(profileAction.error || planAction.error || logAction.error) && <div className="alert danger">{profileAction.error || planAction.error || logAction.error}</div>}
 
         {!profile ? (
@@ -130,3 +142,5 @@ export default function App() {
     </main>
   );
 }
+
+

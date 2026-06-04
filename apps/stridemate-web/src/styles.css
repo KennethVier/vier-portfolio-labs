@@ -136,3 +136,7 @@ textarea { resize: vertical; }
 }
 
 
+
+.alert.demo { background: #fff7df; border-color: #f3d58a; color: #3b321d; }
+.alert.demo strong { margin-right: 8px; }
+

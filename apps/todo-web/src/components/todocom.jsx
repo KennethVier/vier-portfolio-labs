@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Container, Form, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -14,6 +14,7 @@ import {
   TASK_STATUSES,
   withComputedStatus,
 } from '../utils/taskUtils';
+import { BACKEND_DISABLED_MESSAGE, demoTasks } from '../utils/demoData';
 
 const sortTasks = (tasks, sortMode) => {
   const sorted = [...tasks];
@@ -43,6 +44,7 @@ const Todo = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [isDemoFallback, setIsDemoFallback] = useState(false);
 
   const showMessage = (variant, text) => setMessage({ variant, text });
 
@@ -51,9 +53,12 @@ const Todo = () => {
     try {
       const fetchedTasks = await getTasksByUserEmail(userEmail);
       setTasks(Array.isArray(fetchedTasks) ? fetchedTasks : []);
+      setIsDemoFallback(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      showMessage('danger', 'Unable to load tasks from the backend. Please confirm the server is running.');
+      setTasks(demoTasks);
+      setIsDemoFallback(true);
+      showMessage('warning', BACKEND_DISABLED_MESSAGE);
     } finally {
       setLoading(false);
     }
@@ -120,6 +125,7 @@ const Todo = () => {
   };
 
   const handleCompleteTask = async (task) => {
+    if (isDemoFallback) { showMessage('warning', BACKEND_DISABLED_MESSAGE); setConfirm(null); return; }
     const completedDate = formatDateForBackend();
     const payload = {
       ...task,
@@ -161,6 +167,7 @@ const Todo = () => {
   };
 
   const handleBulkComplete = async () => {
+    if (isDemoFallback) { showMessage('warning', BACKEND_DISABLED_MESSAGE); setConfirm(null); return; }
     const selectedTasks = computedTasks.filter((task) => activeSelection.includes(getTaskId(task)) && !isTaskDone(task));
     const completedDate = formatDateForBackend();
 
@@ -192,6 +199,7 @@ const Todo = () => {
   };
 
   const handleBulkDelete = async () => {
+    if (isDemoFallback) { showMessage('warning', BACKEND_DISABLED_MESSAGE); setConfirm(null); return; }
     const selectedTasks = computedTasks.filter((task) => activeSelection.includes(getTaskId(task)));
 
     setSaving(true);
@@ -244,6 +252,12 @@ const Todo = () => {
             </Button>
           </div>
         </header>
+
+        {isDemoFallback && (
+          <Alert variant="warning" className="dashboard-alert">
+            <strong>Demo tasks:</strong> {BACKEND_DISABLED_MESSAGE}
+          </Alert>
+        )}
 
         {message && (
           <Alert variant={message.variant} dismissible onClose={() => setMessage(null)} className="dashboard-alert">
@@ -364,3 +378,6 @@ const Todo = () => {
 };
 
 export default Todo;
+
+
+

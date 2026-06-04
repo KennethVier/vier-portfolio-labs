@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import authApiService from "../../api/AuthApiService";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 export default function RegisterForm() {
     const {register, handleSubmit, formState: { errors }} = useForm();
     const navigate = useNavigate();
+    const [message, setMessage] = useState("");
 
     const onSubmit = async (data) => {
         console.log("Register data submitted:", data);
@@ -16,12 +17,13 @@ export default function RegisterForm() {
             navigate("/dashboard");
         } catch (error) {
             console.error("Register error:", error);
-            alert(error.response?.data?.message || "Registration failed");
+            setMessage(error.response?.data?.message || "Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
         }
     };
 
     return(
         <form onSubmit={handleSubmit(onSubmit)}>
+            {message && <div className="alert alert-warning py-2 small">{message}</div>}
             <div className="form-floating mb-3">
                 <input type="text" className={`form-control ${errors.username ? "is-invalid" : ""}`} 
                     placeholder="Username" name="username" id="username"
@@ -67,3 +69,4 @@ export default function RegisterForm() {
         </form>
     );
 }
+

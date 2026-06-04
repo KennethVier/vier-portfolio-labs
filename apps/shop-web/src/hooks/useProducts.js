@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getProductById,
   getProductsByCategory,
@@ -7,6 +7,8 @@ import {
   listProducts
 } from '../api/productApi';
 import { getApiErrorMessage } from '../utils/apiErrors.js';
+import { BACKEND_DISABLED_MESSAGE, shouldUseDemoFallback } from '../utils/demoMode.js';
+import { getDemoProductById, getDemoProducts } from '../utils/demoProducts.js';
 
 const normalizeProducts = (data) => {
   if (!data) return [];
@@ -55,6 +57,13 @@ export const useProducts = ({ scope = 'all', section, category } = {}) => {
       return nextProducts;
     } catch (requestError) {
       console.error('Error fetching products:', requestError);
+      if (shouldUseDemoFallback(requestError)) {
+        const fallbackProducts = getDemoProducts({ scope, section, category });
+        setProducts(fallbackProducts);
+        setError(BACKEND_DISABLED_MESSAGE);
+        setStatus('demo');
+        return fallbackProducts;
+      }
       setError(requestError);
       setStatus('error');
       return [];
@@ -70,7 +79,8 @@ export const useProducts = ({ scope = 'all', section, category } = {}) => {
     products,
     status,
     error,
-    errorMessage: getApiErrorMessage(error),
+    isDemoFallback: status === 'demo',
+    errorMessage: status === 'demo' ? BACKEND_DISABLED_MESSAGE : getApiErrorMessage(error),
     refetch: loadProducts
   };
 };
@@ -101,6 +111,12 @@ export const useProductDetail = (id) => {
       } catch (requestError) {
         console.error(requestError);
         if (!isActive) return;
+        if (shouldUseDemoFallback(requestError)) {
+          setProduct(getDemoProductById(id));
+          setError(BACKEND_DISABLED_MESSAGE);
+          setStatus('demo');
+          return;
+        }
         setError(requestError);
         setStatus('error');
       }
@@ -118,7 +134,8 @@ export const useProductDetail = (id) => {
     product,
     status,
     error,
-    errorMessage: getApiErrorMessage(error, 'Unable to load this product. Check the shop service and try again.')
+    isDemoFallback: status === 'demo',
+    errorMessage: status === 'demo' ? BACKEND_DISABLED_MESSAGE : getApiErrorMessage(error, 'Unable to load this product. Check the shop service and try again.')
   };
 };
 

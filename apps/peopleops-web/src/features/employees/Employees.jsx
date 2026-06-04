@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import Avatar from '../../components/ui/Avatar.jsx';
 import PageHeader from '../../components/ui/PageHeader.jsx';
@@ -12,6 +12,7 @@ import { useDepartments, useEmployees } from '../../hooks/usePeopleOps.js';
 import { createEmployee, updateEmployee } from '../../api/peopleOpsApi.js';
 import { formatDate, prettyEnum } from '../../utils/formatters.js';
 import { downloadCsv } from '../../utils/csv.js';
+import { BACKEND_DISABLED_MESSAGE } from '../../utils/demoData.js';
 
 const emptyForm = {
   firstName: '', lastName: '', email: '', phone: '', jobTitle: '', departmentId: '', managerId: '',
@@ -74,6 +75,10 @@ const Employees = () => {
 
   const saveEmployee = async (event) => {
     event.preventDefault();
+    if (employees.isDemoFallback || departments.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     const payload = { ...form, departmentId: Number(form.departmentId), managerId: form.managerId ? Number(form.managerId) : null };
     if (editing) {
       await updateEmployee(editing, payload);
@@ -172,3 +177,4 @@ const Employees = () => {
 };
 
 export default Employees;
+

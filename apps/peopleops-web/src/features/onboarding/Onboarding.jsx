@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import PageHeader from '../../components/ui/PageHeader.jsx';
 import Panel from '../../components/ui/Panel.jsx';
 import RoleNotice from '../../components/ui/RoleNotice.jsx';
@@ -9,6 +9,7 @@ import { getRoleProfile, roleCan } from '../demoAuth/demoRole.js';
 import { useDemoRole } from '../demoAuth/useDemoRole.js';
 import { useEmployees, useOnboardingTasks } from '../../hooks/usePeopleOps.js';
 import { formatDate, prettyEnum } from '../../utils/formatters.js';
+import { BACKEND_DISABLED_MESSAGE } from '../../utils/demoData.js';
 
 const Onboarding = () => {
   const [filters, setFilters] = useState({ employeeId: '', status: '' });
@@ -20,6 +21,10 @@ const Onboarding = () => {
   const employees = useEmployees({ status: 'ONBOARDING' });
 
   const updateTask = async (task, status) => {
+    if (tasks.isDemoFallback) {
+      setMessage(BACKEND_DISABLED_MESSAGE);
+      return;
+    }
     await updateOnboardingTask(task.id, { status });
     setMessage(`Updated ${task.title}.`);
     tasks.refetch();
@@ -66,3 +71,4 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
+
