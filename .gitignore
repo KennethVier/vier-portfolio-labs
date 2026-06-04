@@ -63,3 +63,7 @@ generated/
 # Tool-generated modernization scratch files
 .github/modernize/
 
+
+# Legacy bundled runtime binaries
+services/legacy-portfolio-monolith/node/
+
