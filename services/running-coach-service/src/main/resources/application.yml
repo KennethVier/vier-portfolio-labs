@@ -2,9 +2,9 @@ spring:
   application:
     name: running-coach-service
   datasource:
-    url: ${RUNNING_DB_URL:jdbc:postgresql://localhost:5432/running_coach_db}
-    username: ${RUNNING_DB_USER:portfolio_admin}
-    password: ${RUNNING_DB_PASSWORD:portfolio_admin_password}
+    url: ${RUNNING_DB_URL}
+    username: ${RUNNING_DB_USER}
+    password: ${RUNNING_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -17,10 +17,10 @@ server:
 
 stride:
   ai:
-    ollama-base-url: ${OLLAMA_BASE_URL:https://ollama.com/api}
-    ollama-api-key: ${OLLAMA_API_KEY:}
-    plan-model: ${OLLAMA_PLAN_MODEL:gpt-oss:20b-cloud}
-    feedback-model: ${OLLAMA_FEEDBACK_MODEL:gpt-oss:20b-cloud}
+    ollama-base-url: ${OLLAMA_BASE_URL}
+    ollama-api-key: ${OLLAMA_API_KEY}
+    plan-model: ${OLLAMA_PLAN_MODEL}
+    feedback-model: ${OLLAMA_FEEDBACK_MODEL}
 
 management:
   endpoints:
