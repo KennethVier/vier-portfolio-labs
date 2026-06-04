@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" th:href="@{css/index.css}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kQtW33rZJAHjgefvhyyzcGF3C5TFyBQBA13V1RKPf4uH+bwyzQxZ6CmMZHmNBEfJ"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div class="container-fluid p-0 m-0 wrapper">
+        <div class="home-bg">
+            <nav class="navbar fixed-top navbar-expand-sm  mynav">
+                <div class="container-fluid">
+                    <a class="navbar-brand text-light fs-2" href="#">
+                        <div class="penguin ">
+                            <span class="fw-bold vier px-5 py-2">VIER.</span>
+                            <div class="penguin-head">
+                                <div class="face left"></div>
+                                <div class="face right"></div>
+                                <div class="chin"></div>
+                                <div class="eye left">
+                                    <div class="eye-lid"></div>
+                                </div>
+                                <div class="eye right">
+                                    <div class="eye-lid"></div>
+                                </div>
+                                <div class="blush left"></div>
+                                <div class="blush right"></div>
+                                <div class="beak top"></div>
+                                <div class="beak bottom"></div>
+                            </div>
+                            <div class="penguin-body">
+                                <div class="arm left"></div>
+                                <div class="arm right"></div>
+                                <div class="foot left"></div>
+                                <div class="foot right"></div>
+                            </div>
+                        </div>
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse justify-content-sm-end" id="navbarNavAltMarkup">
+                        <div class="navbar-nav">
+                            <a class="nav-link linkcolor fs-5">Home</a>
+                            <a class="nav-link linkcolor fs-5">About</a>
+                            <a class="nav-link linkcolor fs-5">Skills</a>
+                            <li class="nav-item dropdown mydropdown">
+                                <a class="nav-link linkcolor fs-5 dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">Projects</a>
+                                <ul class="dropdown-menu text-center">
+                                  <li><a class="dropdown-item linkcolor" href="/login">Employee Management <br> System</a></li>
+                                  <li><a class="dropdown-item linkcolor" href="/ToDoList">TODO Application</a></li>
+                                  <li><a class="dropdown-item linkcolor" href="/projects/blogs">Blogs</a></li>
+                                </ul>
+                            </li>
+                            <a class="nav-link linkcolor fs-5">Contacts</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <section id="home">
+                <div class="container-fluid" style="height: 190px;">
+                    <div class="d-flex align-items-center justify-content-center pt-3">
+                        <img class="rounded-circle " width="150" height="150" th:src="@{images/img.jpg}" />
+                        <div class="ms-3 grid gap-0">
+                            <h3 class="">Kenneth Vier Cerrado </h3>
+                            <p class="mb-0 ">IT Engineer <i class="fa-light fa-at"></i>
+                                <a class=" " href="https://beunique.com.ph/"> <strong>Be Unique
+                                        Inc</strong></a>
+                            </p>
+                            <span>
+                                <a class="" target="_blank"
+                                    href="https://www.facebook.com/skt.kikwoks">
+                                    <i class="fa-brands fa-facebook-f"></i></a>
+                                <a class="" target="_blank" href="https://github.com/KennethVier">
+                                    <i class="fa-brands fa-github"></i></a>
+                                <a class="" target="_blank"
+                                    href="https://www.linkedin.com/in/kenneth-vier-cerrado-39a863261">
+                                    <i class="fa-brands fa-linkedin"></i></a>
+                                <a class="" target="_blank"
+                                    href="https://kennethvier.github.io/MyPortfolio/">
+                                    <i class="fas fa-link"></i></a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+    </div>
+
+        <div class="">
+            <section id="about">
+                <div class="d-grid justify-content-center align-items-center">
+                    <h1 class="about text-center my-3">ABOUT</h1>
+                    <p class="text-center mx-auto about-info fs-5">Hello! A recent graduate from Polytechnic University
+                        of the Philippines with
+                        the degree of Bachelor of Science in Information Technology. Currently, I'm working at Be Unique
+                        Inc as an IT Engineer. My aim is to become a Full-stack developer which I believe is getting
+                        closer when I landed a job. Specifically ReactJS on front-end and Java Spring on backend. I
+                        believe that my passion, dedication and my continuous learning will be help me achieve my goals.
+                        I believe that learning to program will teach us how to think.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <div class="my-5">
+            <section id="skills">
+                <h1 class="text-center my-3">SKILLS</h1>
+                <div class="d-grid gap-4">
+                    <div class="d-grid justify-content-center text-center">
+                        <h3 class="text-center">Programming Language</h3>
+                        <div class="d-flex align-items-center">
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat fa-brands fa-js"><span class="language">Javascript</span></i>
+                                <i class="col-12 fa-beat fa-brands fa-java fs-6"><span class="language">Java</span></i>
+                            </div>
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat fa-solid fa-database"><span class="language">SQL</span></i>
+                                <i class="col-12 fa-beat fw-bolder"><img height="30px"
+                                        th:src="@{images/csharp.png}"><span class="language">C#</span></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid justify-content-center text-center">
+                        <h3 class="text-center">Frameworks/Libraries</h3>
+                        <div class="d-flex align-items-center ">
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat fa-brands fa-bootstrap"><span class="language">Bootstrap</span></i>
+                                <i class="col-12 fa-beat fa-brands fa-react"><span class="language">React JS</span></i>
+                            </div>
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat"><img height="25px" th:src="@{images/spring.png}"><span class="language">Spring</span></i>
+                                <i class="col-12 fa-beat"><img height="25px" th:src="@{images/dotnet.png}"><span class="language">.NET Core</span></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid justify-content-center text-center">
+                        <h3 class="text-center">Tools</h3>
+                        <div class="d-flex align-items-center text-center">
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat fa-brands fa-github"><span class="language">Github</span></i>
+                                <i class="col-12 fa-beat fa-brands fa-gitlab"><span class="language">Gitlab</span></i>
+                                <i class="col-12 fa-beat fa-brands fa-sass"><span class="language">Sass</span></i>
+                            </div>
+                            <div class="row text-center gap-3">
+                                <i class="col-12 fa-beat"><img height="25px" th:src="@{images/vscode.png}"><span class="language">VS Code</span></i>
+                                <i class="col-12 fa-beat"><img height="25px" th:src="@{images/postman.png}"><span class="language">Postman</span></i>
+                                <i class="col-12 fa-beat"><img height="25px" th:src="@{images/eclipse.png}"><span class="language">Eclipse</span></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="my-5">
+            <section id="projects">
+                <h1 class="text-center my-3">PROJECTS</h1>
+                <div class="d-grid gap-4 mx-2">
+                    <div class="row row-cols-1 row-cols-md-3 g-4 text-center">
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/gamecredz.png}" class="card-img-top" alt="...">
+                                <div class="overlay   ">
+                                    <h5 class="card-title">GameCredz</h5>
+                                    <p class="card-text">Static web application created for my school project. No APIs
+                                        included.</p>
+                                    <a target="_blank"
+                                        href="https://kennethvier.github.io/KennethVier.GameCredz.github.io/"
+                                        class="btn ">Visit now!</a>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/1stweb.png}" class="card-img-top" alt="...">
+                                <div class="overlay">
+                                    <h5 class="card-title">1st Static Web Application</h5>
+                                    <p class="card-text">First static web application created when studying web
+                                        development.</p>
+                                    <a target="_blank"
+                                        href="https://kennethvier.github.io/KennethVier.firstwebsite.github.io/"
+                                        class="btn btn-info">Visit now!</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/portfolio.png}" class="card-img-top" alt="...">
+                                <div class="overlay">
+                                    <h5 class="card-title">1st Responsive Portfolio Website</h5>
+                                    <p class="card-text">My first full responsive portfolio website with Bootstrap and
+                                        Javascript.</p>
+                                    <a target="_blank" href="https://kennethvier.github.io/MyPortfolio/"
+                                        class="btn btn-info">Visit now!</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row row-cols-1 row-cols-md-3 g-4 text-center">
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/empsystem.png}" class="card-img-top" alt="...">
+                                <div class="overlay">
+                                    <h5 class="card-title">Employee Management Web Application on React and Spring </h5>
+                                    <p class="card-text">Mini employee management system with React on frontend and
+                                        Spring on backend.</p>
+                                    <a href="/employee" target="_blank" class="btn btn-info">Visit now!</a>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/todospring.png}" class="card-img-top" alt="...">
+                                <div class="overlay">
+                                    <h5 class="card-title">My first Spring web application with MySQL database</h5>
+                                    <p class="card-text">TODO web application with MySQL database.</p>
+                                    <a href="" class="btn btn-info">Visit now!</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="card card-proj h-100">
+                                <img th:src="@{images/reacttodo.png}" class="card-img-top" alt="...">
+                                <div class="overlay ">
+                                    <h5 class="card-title">TODO Web Application with React and Spring</h5>
+                                    <p class="card-text">Enhanced TODO Spring web application with React on frontend.
+                                        Uses local storage in saving tasks.</p>
+                                    <a href="/ToDoList" target="_blank" class="btn btn-info">Visit now!</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="mt-5 curve">
+            <section id="contacts">
+                <div class="">
+                    <h1 class="text-center my-3">CONTACTS</h1>
+                    <div class="row gap-3 mb-5 gap-md-0 d-flex justify-content-center text-center align-items-center">
+                        <div class="col-sm-4 col-12">
+                            <a class="text-dark-emphasis" target="_blank" href="https://www.facebook.com/skt.kikwoks">
+                                <i class="fa-3x fa-brands fa-facebook-f contacts"></i></a>
+                        </div>
+                        <div class="col-sm-4 col-12">
+                            <a class="text-dark-emphasis" target="_blank" href="https://github.com/KennethVier">
+                                <i class="fa-3x fa-brands fa-github contacts"></i></a>
+                        </div>
+                        <div class="col-sm-4 col-12">
+                            <a class="text-dark-emphasis" target="_blank"
+                                href="https://www.linkedin.com/in/kenneth-vier-cerrado-39a863261">
+                                <i class="fa-3x fa-brands fa-linkedin contacts"></i></a>
+                        </div>
+                    
+                
+                        <div class="col-sm-4 col-12">
+                            <a class="text-dark-emphasis" target="_blank" href="mailto:kennethcerrado23@gmail.com">
+                                <i class="fa-3x fa-envelope fa contacts"></i></a>
+                        </div>
+                        <div class="col-sm-4 col-12">
+                            <a class="text-dark-emphasis" target="_blank" href="tel:8672045">
+                                <i class="fa-3x fa-phone fa contacts"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</body>
+
+</html>
