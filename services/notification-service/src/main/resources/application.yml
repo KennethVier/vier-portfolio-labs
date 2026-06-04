@@ -1,0 +1,46 @@
+﻿spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:postgresql://localhost:5432/notification_db}
+    username: ${NOTIFICATION_DB_USER:portfolio_admin}
+    password: ${NOTIFICATION_DB_PASSWORD:portfolio_admin_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${NOTIFICATION_JPA_DDL_AUTO:update}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS_ENABLE:false}
+
+server:
+  port: ${SERVER_PORT:8085}
+
+platform:
+  todo-service:
+    base-url: ${TODO_SERVICE_URL:http://localhost:8084}
+  notifications:
+    email-enabled: ${NOTIFICATION_EMAIL_ENABLED:false}
+    fixed-rate-ms: ${NOTIFICATION_FIXED_RATE_MS:3600000}
+    deadline-window-minutes: ${NOTIFICATION_DEADLINE_WINDOW_MINUTES:5}
+    from-address: ${NOTIFICATION_FROM:no-reply@portfolio.local}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

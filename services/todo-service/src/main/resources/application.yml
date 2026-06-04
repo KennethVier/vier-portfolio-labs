@@ -1,0 +1,26 @@
+﻿spring:
+  application:
+    name: todo-service
+  datasource:
+    url: ${TODO_DB_URL:jdbc:postgresql://localhost:5432/todo_db}
+    username: ${TODO_DB_USER:portfolio_admin}
+    password: ${TODO_DB_PASSWORD:portfolio_admin_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${TODO_JPA_DDL_AUTO:update}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
