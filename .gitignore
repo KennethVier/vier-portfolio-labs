@@ -67,3 +67,5 @@ generated/
 # Legacy bundled runtime binaries
 services/legacy-portfolio-monolith/node/
 
+services/legacy-portfolio-monolith/sr/node/
+
