@@ -1,0 +1,21 @@
+﻿import { peopleOpsClient } from './client.js';
+
+export const getDashboard = () => peopleOpsClient.get('/dashboard');
+export const getEmployees = (params = {}) => peopleOpsClient.get('/employees', { params });
+export const getEmployee = (id) => peopleOpsClient.get(`/employees/${id}`);
+export const createEmployee = (payload) => peopleOpsClient.post('/employees', payload);
+export const updateEmployee = (id, payload) => peopleOpsClient.put(`/employees/${id}`, payload);
+export const getEmployeeOnboarding = (id) => peopleOpsClient.get(`/employees/${id}/onboarding`);
+export const getEmployeeActivity = (id) => peopleOpsClient.get(`/employees/${id}/activity`);
+export const getDepartments = () => peopleOpsClient.get('/departments');
+export const createDepartment = (payload) => peopleOpsClient.post('/departments', payload);
+export const updateDepartment = (id, payload) => peopleOpsClient.put(`/departments/${id}`, payload);
+export const getOnboardingTasks = (params = {}) => peopleOpsClient.get('/onboarding', { params });
+export const updateOnboardingTask = (id, payload) => peopleOpsClient.put(`/onboarding/${id}`, payload);
+export const getLeaveRequests = (params = {}) => peopleOpsClient.get('/leave-requests', { params });
+export const createLeaveRequest = (payload) => peopleOpsClient.post('/leave-requests', payload);
+export const reviewLeaveRequest = (id, payload) => peopleOpsClient.put(`/leave-requests/${id}/review`, payload);
+export const getLeaveRequestComments = (id) => peopleOpsClient.get(`/leave-requests/${id}/comments`);
+export const createLeaveRequestComment = (id, payload) => peopleOpsClient.post(`/leave-requests/${id}/comments`, payload);
+export const getActivity = (params = {}) => peopleOpsClient.get('/activity', { params });
+export const getTeamOverview = () => peopleOpsClient.get('/team');
