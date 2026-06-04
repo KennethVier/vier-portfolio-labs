@@ -13,9 +13,11 @@ spring:
     open-in-view: false
 
 server:
-  port: ${SERVER_PORT:8088}
+  port: ${PORT:${SERVER_PORT:8088}}
 
 stride:
+  cors:
+    allowed-origin-patterns: ${STRIDE_CORS_ALLOWED_ORIGIN_PATTERNS:https://stridemate-wine.vercel.app,http://localhost:*}
   ai:
     ollama-base-url: ${OLLAMA_BASE_URL}
     ollama-api-key: ${OLLAMA_API_KEY}
@@ -31,3 +33,4 @@ management:
     health:
       probes:
         enabled: true
+
