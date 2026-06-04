@@ -44,7 +44,7 @@ const Email = () => {
   };
 
   const goToHome = () => {
-    window.location.href = import.meta.env.VITE_PORTFOLIO_URL || '/';
+    window.location.href = import.meta.env.VITE_PORTFOLIO_URL || 'https://vier-main-portfolio.vercel.app/';
   };
 
   return (
@@ -106,3 +106,4 @@ const Email = () => {
 };
 
 export default Email;
+
