@@ -21,54 +21,68 @@ jobs:
           node-version: 20
 
       - name: Install main portfolio dependencies
-        run: npm ci --prefix apps/main-portfolio
+        working-directory: apps/main-portfolio
+        run: npm ci
 
       - name: Build main portfolio
-        run: npm --prefix apps/main-portfolio run build
+        working-directory: apps/main-portfolio
+        run: npm run build
 
       - name: Install shop dependencies
-        run: npm ci --prefix apps/shop-web
+        working-directory: apps/shop-web
+        run: npm ci
 
       - name: Check shop
+        working-directory: apps/shop-web
         run: |
-          npm --prefix apps/shop-web run lint
-          npm --prefix apps/shop-web run build
+          npm run lint
+          npm run build
 
       - name: Install PeopleOps dependencies
-        run: npm ci --prefix apps/peopleops-web
+        working-directory: apps/peopleops-web
+        run: npm ci
 
       - name: Check PeopleOps
+        working-directory: apps/peopleops-web
         run: |
-          npm --prefix apps/peopleops-web run lint
-          npm --prefix apps/peopleops-web run build
+          npm run lint
+          npm run build
 
       - name: Install StrideMate dependencies
-        run: npm ci --prefix apps/stridemate-web
+        working-directory: apps/stridemate-web
+        run: npm ci
 
       - name: Check StrideMate
+        working-directory: apps/stridemate-web
         run: |
-          npm --prefix apps/stridemate-web run test
-          npm --prefix apps/stridemate-web run lint
-          npm --prefix apps/stridemate-web run build
+          npm run test
+          npm run lint
+          npm run build
 
       - name: Install Yomira dependencies
-        run: npm ci --prefix apps/yomira-web
+        working-directory: apps/yomira-web
+        run: npm ci
 
       - name: Check Yomira
+        working-directory: apps/yomira-web
         run: |
-          npm --prefix apps/yomira-web run lint
-          npm --prefix apps/yomira-web run build
+          npm run lint
+          npm run build
 
       - name: Install TodoFlow dependencies
-        run: npm ci --prefix apps/todo-web
+        working-directory: apps/todo-web
+        run: npm ci
 
       - name: Build TodoFlow
-        run: npm --prefix apps/todo-web run build
+        working-directory: apps/todo-web
+        run: npm run build
 
       - name: Install Authly dependencies
-        run: npm ci --prefix apps/auth-web
+        working-directory: apps/auth-web
+        run: npm ci
 
       - name: Check Authly
+        working-directory: apps/auth-web
         run: |
-          npm --prefix apps/auth-web run lint
-          npm --prefix apps/auth-web run build
+          npm run lint
+          npm run build
