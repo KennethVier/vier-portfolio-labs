@@ -20,7 +20,7 @@ export const PROJECTS = [
       "Vercel"
     ],
     links: {
-      live: "https://yomira-microservices.vercel.app/"
+      live: "https://yomira-livid.vercel.app/"
     }
   },
 
@@ -40,7 +40,9 @@ export const PROJECTS = [
       "Admin Dashboard",
       "REST API"
     ],
-    links: {}
+    links: {
+      live: "https://vier-shop.vercel.app/"
+    }
   },
   {
     id: 3,
@@ -58,7 +60,9 @@ export const PROJECTS = [
       "Dashboard UI",
       "REST API"
     ],
-    links: {}
+    links: {
+      live: "https://peopleops-dashboard.vercel.app/"
+    }
   },
   {
     id: 4,
@@ -76,25 +80,30 @@ export const PROJECTS = [
       "OCR Workflow",
       "Dashboard UI"
     ],
-    links: {}
+    links: {
+      live: "https://stridemate-wine.vercel.app/"
+    }
   },
 
   {
     id: 5,
-    title: "Developer Portfolio Website",
+    title: "Authly Authentication Demo",
     description:
-      "Responsive portfolio application built with React and Tailwind CSS, presenting software engineering projects, technical skills, and professional experience through a component-driven structure.",
-    image: "/images/portfolio.png",
-    alt: "Modern software engineer portfolio website",
-    icon: "web",
+      "Authentication-focused portfolio demo with email registration, sign-in flow, OAuth-oriented UI, protected dashboard routing, and backend-optional deployment messaging.",
+    image: "/images/authly.png",
+    alt: "Authly authentication interface with branded sign-in and registration screens",
+    icon: "verified_user",
     tags: [
       "Java Spring Boot",
       "React",
-      "Tailwind CSS",
-      "Responsive Design",
-      "Component Architecture"
+      "Authentication",
+      "OAuth UI",
+      "Protected Routes",
+      "REST API"
     ],
-    links: {}
+    links: {
+      live: "https://authly-nine.vercel.app/"
+    }
   },
 
   {
@@ -112,6 +121,8 @@ export const PROJECTS = [
       "Email Integration",
       "REST API"
     ],
-    links: {}
+    links: {
+      live: "https://todoflow-two.vercel.app/"
+    }
   }
 ];
