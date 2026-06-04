@@ -1,4 +1,4 @@
-﻿package com.portfolio.running.integration;
+package com.portfolio.running.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
