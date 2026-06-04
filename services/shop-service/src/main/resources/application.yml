@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: shop-service
+  datasource:
+    url: ${SHOP_DB_URL:jdbc:postgresql://localhost:5432/shop_db}
+    username: ${SHOP_DB_USER:portfolio_admin}
+    password: ${SHOP_DB_PASSWORD:portfolio_admin_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${SHOP_JPA_DDL_AUTO:update}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8086}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
