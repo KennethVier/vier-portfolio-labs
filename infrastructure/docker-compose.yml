@@ -1,0 +1,131 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: portfolio-postgres
+    restart: unless-stopped
+    env_file:
+      - ./env/postgres.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - portfolio_postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ../services/auth-service
+    container_name: portfolio-auth-service
+    restart: unless-stopped
+    env_file:
+      - ./env/auth-service.env
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  todo-service:
+    build:
+      context: ../services/todo-service
+    container_name: portfolio-todo-service
+    restart: unless-stopped
+    env_file:
+      - ./env/todo-service.env
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ../services/notification-service
+    container_name: portfolio-notification-service
+    restart: unless-stopped
+    env_file:
+      - ./env/notification-service.env
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      todo-service:
+        condition: service_started
+
+
+  shop-service:
+    build:
+      context: ../services/shop-service
+    container_name: portfolio-shop-service
+    restart: unless-stopped
+    env_file:
+      - ./env/shop-service.env
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  employee-service:
+    build:
+      context: ../services/employee-service
+    container_name: portfolio-employee-service
+    restart: unless-stopped
+    env_file:
+      - ./env/employee-service.env
+    ports:
+      - "8087:8087"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  yomira-document-service:
+    build:
+      context: ../services/yomira-document-service
+    container_name: portfolio-yomira-document-service
+    restart: unless-stopped
+    env_file:
+      - ./env/yomira-document-service.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  yomira-quiz-service:
+    build:
+      context: ../services/yomira-quiz-service
+    container_name: portfolio-yomira-quiz-service
+    restart: unless-stopped
+    env_file:
+      - ./env/yomira-quiz-service.env
+    ports:
+      - "8082:8082"
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: portfolio-pgadmin
+    restart: unless-stopped
+    env_file:
+      - ./env/pgadmin.env
+    ports:
+      - "5050:80"
+    volumes:
+      - portfolio_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  portfolio_postgres_data:
+  portfolio_pgadmin_data:
+
+
+
+
+
+
