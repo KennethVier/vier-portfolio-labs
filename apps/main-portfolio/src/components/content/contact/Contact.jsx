@@ -20,6 +20,7 @@ export default function Contact() {
                             href={method.href}
                             icon={method.icon}
                             hoverColor={method.hoverColor}
+                            isExternal={method.isExternal}
                         />
                     ))}
                 </div>
@@ -27,3 +28,4 @@ export default function Contact() {
         </section>
     )
 }
+

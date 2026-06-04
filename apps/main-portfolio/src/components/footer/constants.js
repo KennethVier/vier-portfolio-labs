@@ -5,22 +5,19 @@
 export const SOCIAL_LINKS = [
   {
     label: "GitHub",
-    href: "#",
-    icon: "data_object"
+    href: "https://github.com/KennethVier",
+    icon: "data_object",
+    isExternal: true
   },
   {
     label: "LinkedIn",
-    href: "#",
-    icon: "person_add"
-  },
-  {
-    label: "Twitter",
-    href: "#",
-    icon: "mail"
+    href: "https://www.linkedin.com/in/kenneth-vier-cerrado-39a863261",
+    icon: "person_add",
+    isExternal: true
   },
   {
     label: "Email",
-    href: "#",
+    href: "mailto:kennethcerrado23@gmail.com",
     icon: "mail"
   }
 ];

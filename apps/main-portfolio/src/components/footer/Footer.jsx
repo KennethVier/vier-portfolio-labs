@@ -8,9 +8,10 @@ export default function Footer() {
             <p className="font-body-md text-body-md text-on-surface-variant">© 2026 VIER.OS. Engineered for performance.</p>
             <div className="flex gap-6">
                 {SOCIAL_LINKS.map((link) => (
-                    <SocialLink key={link.label} label={link.label} href={link.href} />
+                    <SocialLink key={link.label} label={link.label} href={link.href} isExternal={link.isExternal} />
                 ))}
             </div>
         </footer>
     )
 }
+
