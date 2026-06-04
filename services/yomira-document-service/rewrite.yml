@@ -1,0 +1,3 @@
+rewrite:
+  activeRecipes:
+    - org.openrewrite.java.migrate.UpgradeToJava21
