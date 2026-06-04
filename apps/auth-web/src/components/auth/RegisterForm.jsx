@@ -1,0 +1,69 @@
+import { useState } from "react";
+import authApiService from "../../api/AuthApiService";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+
+export default function RegisterForm() {
+    const {register, handleSubmit, formState: { errors }} = useForm();
+    const navigate = useNavigate();
+
+    const onSubmit = async (data) => {
+        console.log("Register data submitted:", data);
+        try {
+            const response = await authApiService.register(data);
+            authApiService.saveAuth(response);
+            console.log("Register response:", response);
+            navigate("/dashboard");
+        } catch (error) {
+            console.error("Register error:", error);
+            alert(error.response?.data?.message || "Registration failed");
+        }
+    };
+
+    return(
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="form-floating mb-3">
+                <input type="text" className={`form-control ${errors.username ? "is-invalid" : ""}`} 
+                    placeholder="Username" name="username" id="username"
+                    {...register("username", { required: "Username is required" })}
+                />
+                {errors.username && <span className="text-danger small">{errors.username.message}</span>}
+                <label htmlFor="username">Username</label>
+            </div>
+
+            <div className="form-floating mb-3">
+                <input type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`} id="email"
+                    placeholder="Email" name="email"
+                    {...register("email", { 
+                        required: "Email is required", 
+                        pattern: {
+                            value: /^\S+@\S+$/i,
+                            message: "Invalid email address"
+                        } 
+                    })}
+                />
+                {errors.email && <span className="text-danger small">{errors.email.message}</span>}
+                <label htmlFor="email">Email</label>
+            </div>
+
+            <div className="form-floating mb-4">
+                <input type="password" className={`form-control ${errors.password ? "is-invalid" : ""}`} 
+                    placeholder="Password" name="password" id="password"
+                    {...register("password", { 
+                        required: "Password is required", 
+                        minLength: { 
+                            value: 8, 
+                            message: "Password must be at least 8 characters" 
+                        } 
+                    })}
+                />
+                {errors.password && <span className="text-danger small">{errors.password.message}</span>}
+                <label htmlFor="password">Password</label>
+            </div>
+
+            <button className="btn btn-primary w-100 py-2 fw-semibold">
+                Register
+            </button>
+        </form>
+    );
+}
