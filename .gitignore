@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 .pnpm-store/
 .yarn/
@@ -25,6 +25,10 @@ target/
 *.env
 *.env.*
 infrastructure/env/
+
+# Public templates are safe and useful for deployments.
+!.env.example
+!apps/**/.env.example
 
 # Logs
 *.log
@@ -68,4 +72,5 @@ generated/
 services/legacy-portfolio-monolith/node/
 
 services/legacy-portfolio-monolith/sr/node/
+
 
