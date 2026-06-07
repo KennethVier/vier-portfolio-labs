@@ -33,7 +33,10 @@ public class TrainingSession {
     private Integer targetMinutes;
     private String intensity;
 
-    @Column(length = 1000)
+    @Column(length = 700)
+    private String mainWorkout;
+
+    @Column(length = 1200)
     private String coachNotes;
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -25,6 +25,9 @@ public class RunnerProfile {
     @Column(nullable = false)
     private TrainingGoal goal;
 
+    @Column(length = 280)
+    private String goalText;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RunnerLevel level;

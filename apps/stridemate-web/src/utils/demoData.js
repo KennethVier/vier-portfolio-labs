@@ -1,4 +1,4 @@
-﻿export const BACKEND_DISABLED_MESSAGE = 'Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.';
+export const BACKEND_DISABLED_MESSAGE = 'Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.';
 export const DEMO_FALLBACK_ENABLED = import.meta.env.VITE_DEMO_FALLBACK_ENABLED !== 'false';
 export const shouldUseDemoFallback = (error) => DEMO_FALLBACK_ENABLED && (!error?.response || error?.code === 'ERR_NETWORK' || error?.message === 'Network Error');
 
@@ -7,6 +7,7 @@ const profile = {
   email: 'runner@vierlabs.dev',
   name: 'Mira Santos',
   goal: 'FIRST_10K',
+  goalText: 'I want to rebuild safely toward my first 10K.',
   level: 'RETURNING',
   weeklyAvailability: 3,
   recentWeeklyDistanceKm: 12.5,
@@ -16,9 +17,9 @@ const profile = {
 };
 
 const sessions = [
-  { id: 101, scheduledDate: '2026-06-09', type: 'EASY_RUN', status: 'PLANNED', title: 'Easy aerobic run', targetDistanceKm: 3.8, targetMinutes: 32, intensity: 'easy', coachNotes: 'Warmup: 5 minutes brisk walk. Purpose: rebuild aerobic rhythm. Effort: conversational. Cooldown: 5 minutes easy walk. Caution: keep the knee comfortable.' },
-  { id: 102, scheduledDate: '2026-06-11', type: 'RECOVERY', status: 'PLANNED', title: 'Recovery run', targetDistanceKm: 3.8, targetMinutes: 34, intensity: 'easy', coachNotes: 'Warmup: start gently. Purpose: practice consistency without chasing pace. Effort: relaxed. Cooldown: walk until breathing settles.' },
-  { id: 103, scheduledDate: '2026-06-13', type: 'LONG_RUN', status: 'PLANNED', title: 'Long easy run', targetDistanceKm: 4.9, targetMinutes: 42, intensity: 'easy', coachNotes: 'Warmup: keep the first kilometer gentle. Purpose: extend endurance. Effort: easy enough to talk. Cooldown: short walk and mobility.' }
+  { id: 101, scheduledDate: '2026-06-09', type: 'EASY_RUN', status: 'PLANNED', title: 'Easy aerobic run', targetDistanceKm: 3.8, targetMinutes: 32, intensity: 'easy', mainWorkout: 'Run 3.8 km at conversational effort. Finish feeling steady, not drained.', coachNotes: 'Warmup: 5 minutes brisk walk. Purpose: rebuild aerobic rhythm. Effort: conversational. Cooldown: 5 minutes easy walk. Caution: keep the knee comfortable.' },
+  { id: 102, scheduledDate: '2026-06-11', type: 'RECOVERY', status: 'PLANNED', title: 'Recovery run', targetDistanceKm: 3.8, targetMinutes: 34, intensity: 'easy', mainWorkout: 'Run or walk-run 3.8 km very gently. This is about freshness and rhythm.', coachNotes: 'Warmup: start gently. Purpose: practice consistency without chasing pace. Effort: relaxed. Cooldown: walk until breathing settles.' },
+  { id: 103, scheduledDate: '2026-06-13', type: 'LONG_RUN', status: 'PLANNED', title: 'Long easy run', targetDistanceKm: 4.9, targetMinutes: 42, intensity: 'easy', mainWorkout: 'Run 4.9 km at easy effort. Keep the first half extra relaxed.', coachNotes: 'Warmup: keep the first kilometer gentle. Purpose: extend endurance. Effort: easy enough to talk. Cooldown: short walk and mobility.' }
 ];
 
 export const demoDashboard = {
@@ -32,6 +33,10 @@ export const demoDashboard = {
     id: 1,
     title: 'Demo 4-week first 10K plan',
     coachSummary: 'Demo mode is showing a conservative schedule while the live running coach backend is disabled. The plan starts near the runner current weekly distance and progresses gradually.',
+    startDate: '2026-06-09',
+    endDate: '2026-07-06',
+    raceDate: null,
+    planType: 'STANDARD_4_WEEK',
     aiGenerated: false,
     weeks: [
       { id: 1, weekNumber: 1, focus: 'Foundation', targetDistanceKm: 12.5, sessions },
@@ -45,3 +50,4 @@ export const demoDashboard = {
     { id: 1, createdAt: '2026-06-04T09:00:00', feedback: 'Demo coach insight: consistency beats intensity this week.', safetyNote: 'Watch fatigue and pain signals.', aiGenerated: false }
   ]
 };
+

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const runningClient = axios.create({
-  baseURL: import.meta.env.VITE_RUNNING_API_BASE_URL || 'http://localhost:8080/api/running',
+  baseURL: import.meta.env.VITE_RUNNING_API_BASE_URL || 'http://localhost:8088/api/running',
 });
 
 export function getApiErrorMessage(error) {

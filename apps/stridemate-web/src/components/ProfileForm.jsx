@@ -3,7 +3,7 @@ import { useState } from 'react';
 const initialProfile = {
   email: '',
   name: '',
-  goal: 'FIRST_5K',
+  goalText: 'I want to run my first 5K safely.',
   level: 'BEGINNER',
   weeklyAvailability: 3,
   recentWeeklyDistanceKm: 8,
@@ -38,7 +38,7 @@ export default function ProfileForm({ onSubmit, isLoading }) {
       <div className="form-grid">
         <label>Email<input type="email" required value={profile.email} onChange={(e) => update('email', e.target.value)} /></label>
         <label>Name<input required value={profile.name} onChange={(e) => update('name', e.target.value)} /></label>
-        <label>Goal<select value={profile.goal} onChange={(e) => update('goal', e.target.value)}><option value="FIRST_5K">First 5K</option><option value="FASTER_5K">Faster 5K</option><option value="FIRST_10K">First 10K</option><option value="CONSISTENCY">Consistency</option><option value="ENDURANCE_BASE">Endurance base</option></select></label>
+        <label className="wide-field">Goal<input required minLength="8" placeholder="Example: Sub-45 10K, finish first 5K, build base for 8 weeks, or return safely from knee discomfort." value={profile.goalText} onChange={(e) => update('goalText', e.target.value)} /><small className="field-hint">Examples: Sub-45 10K, finish first 5K, build base for 8 weeks, return safely from knee discomfort.</small></label>
         <label>Current level<select value={profile.level} onChange={(e) => update('level', e.target.value)}><option value="BEGINNER">Beginner</option><option value="RETURNING">Returning</option><option value="INTERMEDIATE">Intermediate</option><option value="ADVANCED">Advanced</option></select></label>
         <label>Runs per week<input type="number" min="1" max="7" value={profile.weeklyAvailability} onChange={(e) => update('weeklyAvailability', e.target.value)} /></label>
         <label>Recent weekly km<input type="number" min="0" step="0.5" value={profile.recentWeeklyDistanceKm} onChange={(e) => update('recentWeeklyDistanceKm', e.target.value)} /></label>
@@ -51,3 +51,4 @@ export default function ProfileForm({ onSubmit, isLoading }) {
     </form>
   );
 }
+

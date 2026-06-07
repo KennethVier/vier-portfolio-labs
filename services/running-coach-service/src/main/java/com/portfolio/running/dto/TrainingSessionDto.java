@@ -14,4 +14,5 @@ public record TrainingSessionDto(
         Double targetDistanceKm,
         Integer targetMinutes,
         String intensity,
+        String mainWorkout,
         String coachNotes) {}

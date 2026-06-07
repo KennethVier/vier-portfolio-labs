@@ -8,6 +8,7 @@ public record RunnerProfileDto(
         String email,
         String name,
         TrainingGoal goal,
+        String goalText,
         RunnerLevel level,
         Integer weeklyAvailability,
         Double recentWeeklyDistanceKm,

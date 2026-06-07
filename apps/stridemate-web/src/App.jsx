@@ -1,12 +1,14 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { generatePlan, getDashboard, getProfileByEmail, logWorkout, saveProfile } from './api/runningApi.js';
 import Dashboard from './components/Dashboard.jsx';
 import Insights from './components/Insights.jsx';
 import ProfileForm from './components/ProfileForm.jsx';
+import RunningTerms from './components/RunningTerms.jsx';
 import TrainingPlan from './components/TrainingPlan.jsx';
 import WorkoutLogForm from './components/WorkoutLogForm.jsx';
 import { useAsyncAction } from './hooks/useAsyncAction.js';
 import { BACKEND_DISABLED_MESSAGE, demoDashboard, shouldUseDemoFallback } from './utils/demoData.js';
+import { todayInputValue } from './utils/formatters.js';
 
 export default function App() {
   const [email, setEmail] = useState(localStorage.getItem('stridemateEmail') || '');
@@ -15,6 +17,7 @@ export default function App() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [bootError, setBootError] = useState('');
   const [isDemoFallback, setIsDemoFallback] = useState(false);
+  const [planTiming, setPlanTiming] = useState({ startDate: todayInputValue(), raceDate: '' });
   const profileAction = useAsyncAction();
   const planAction = useAsyncAction();
   const logAction = useAsyncAction();
@@ -22,16 +25,35 @@ export default function App() {
   const activeEmail = profile?.email || email;
   const insights = useMemo(() => dashboard?.recentInsights || [], [dashboard]);
 
+  function activePlanSessions(data) {
+    return data?.currentPlan?.weeks?.flatMap((week) => week.sessions || []) || [];
+  }
+
+  function resolveNextSession(data) {
+    const sessions = activePlanSessions(data);
+    const plannedSessions = sessions.filter((session) => session.status === 'PLANNED');
+    if (!plannedSessions.length) return null;
+    const backendNext = data?.nextSession;
+    if (backendNext && plannedSessions.some((session) => session.id === backendNext.id)) {
+      return backendNext;
+    }
+    return plannedSessions.sort((a, b) => String(a.scheduledDate).localeCompare(String(b.scheduledDate)))[0];
+  }
+
+  function normalizeDashboard(data) {
+    return { ...data, nextSession: resolveNextSession(data) };
+  }
+
   async function loadDashboard(nextEmail = activeEmail) {
     if (!nextEmail) return;
     setBootError('');
     try {
-      const data = await getDashboard(nextEmail);
+      const data = normalizeDashboard(await getDashboard(nextEmail));
       setDashboard(data);
       setProfile(data.profile);
       localStorage.setItem('stridemateEmail', data.profile.email);
-      const next = data.nextSession || data.currentPlan?.weeks?.flatMap((week) => week.sessions)?.find((session) => session.status === 'PLANNED');
-      setSelectedSession((current) => current || next || null);
+      const next = data.nextSession;
+      setSelectedSession(next || null);
     } catch (error) {
       if (shouldUseDemoFallback(error)) {
         setDashboard(demoDashboard);
@@ -70,7 +92,12 @@ export default function App() {
 
   async function handleGeneratePlan() {
     if (!activeEmail) return;
-    const plan = await planAction.run(() => generatePlan({ email: activeEmail, startDate: new Date().toISOString().slice(0, 10) }));
+    const payload = {
+      email: activeEmail,
+      startDate: planTiming.startDate || todayInputValue(),
+      raceDate: planTiming.raceDate || null,
+    };
+    const plan = await planAction.run(() => generatePlan(payload));
     if (plan) {
       await loadDashboard(activeEmail);
       setSelectedSession(plan.weeks?.[0]?.sessions?.[0] || null);
@@ -97,6 +124,7 @@ export default function App() {
           <a href="#plan">Training Plan</a>
           <a href="#log">Workout Log</a>
           <a href="#insights">Insights</a>
+          <a href="#terms">Running Terms</a>
         </nav>
         <div className="safety-card">
           <strong>Coach boundary</strong>
@@ -121,11 +149,16 @@ export default function App() {
         {(profileAction.error || planAction.error || logAction.error) && <div className="alert danger">{profileAction.error || planAction.error || logAction.error}</div>}
 
         {!profile ? (
-          <ProfileForm onSubmit={handleProfileSubmit} isLoading={profileAction.isLoading} />
+          <>
+            <ProfileForm onSubmit={handleProfileSubmit} isLoading={profileAction.isLoading} />
+            <section id="terms" className="pre-profile-terms">
+              <RunningTerms />
+            </section>
+          </>
         ) : (
           <div className="workspace">
             <section id="dashboard">
-              <Dashboard dashboard={dashboard} onGeneratePlan={handleGeneratePlan} isGenerating={planAction.isLoading} onRefresh={() => loadDashboard(activeEmail)} />
+              <Dashboard dashboard={dashboard} planTiming={planTiming} onPlanTimingChange={setPlanTiming} onGeneratePlan={handleGeneratePlan} isGenerating={planAction.isLoading} onRefresh={() => loadDashboard(activeEmail)} />
             </section>
             <section id="plan">
               <TrainingPlan plan={dashboard?.currentPlan} selectedSessionId={selectedSession?.id} onSelectSession={setSelectedSession} />
@@ -136,11 +169,15 @@ export default function App() {
             <section id="insights">
               <Insights insights={insights} />
             </section>
+            <section id="terms">
+              <RunningTerms />
+            </section>
           </div>
         )}
       </section>
     </main>
   );
 }
+
 
 

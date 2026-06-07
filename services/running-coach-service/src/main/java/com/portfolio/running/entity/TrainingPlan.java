@@ -27,8 +27,15 @@ public class TrainingPlan {
     @Column(length = 1600)
     private String coachSummary;
 
+    @Column(length = 1600)
+    private String raceStrategy;
+
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate raceDate;
+
+    @Enumerated(EnumType.STRING)
+    private PlanType planType = PlanType.STANDARD_4_WEEK;
     private boolean activePlan = true;
     private boolean aiGenerated;
     private LocalDateTime createdAt;
@@ -42,3 +49,5 @@ public class TrainingPlan {
         createdAt = LocalDateTime.now();
     }
 }
+
+

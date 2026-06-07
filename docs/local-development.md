@@ -1,4 +1,4 @@
-﻿# Local Development
+# Local Development
 
 This document describes the Phase 2 PostgreSQL local infrastructure standard.
 
@@ -402,3 +402,13 @@ apps/stridemate-web/.env.example
 ```
 
 Set `OLLAMA_API_KEY` only in a local env file or deployment secret. If it is blank, the service uses deterministic fallback coaching so the prototype remains demoable.
+StrideMate database permission repair, if Hibernate cannot create tables:
+
+```sql
+GRANT CONNECT ON DATABASE running_coach_db TO portfolio_admin;
+GRANT USAGE, CREATE ON SCHEMA public TO portfolio_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO portfolio_admin;
+```
+
+Run those commands while connected to `running_coach_db` as a PostgreSQL admin user. This is only needed when the database was created manually or the init script did not grant schema permissions.
+

@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.portfolio.running.dto.*;
+import com.portfolio.running.entity.PlanType;
 import com.portfolio.running.entity.RunnerLevel;
 import com.portfolio.running.entity.SessionStatus;
 import com.portfolio.running.entity.SessionType;
@@ -46,7 +47,8 @@ class RunningCoachApiIntegrationTest {
         RunnerProfileRequest request = new RunnerProfileRequest(
                 "mira@example.com",
                 "Mira Santos",
-                TrainingGoal.FIRST_10K,
+                null,
+                "I want to rebuild safely toward my first 10K.",
                 RunnerLevel.RETURNING,
                 3,
                 12.5,
@@ -61,13 +63,14 @@ class RunningCoachApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("mira@example.com"))
                 .andExpect(jsonPath("$.goal").value("FIRST_10K"))
+                .andExpect(jsonPath("$.goalText").value("I want to rebuild safely toward my first 10K."))
                 .andExpect(jsonPath("$.level").value("RETURNING"))
                 .andExpect(jsonPath("$.healthNotes").value("mild knee discomfort"));
     }
 
     @Test
     void postGeneratePlanReturnsFourWeekPlanSummary() throws Exception {
-        GeneratePlanRequest request = new GeneratePlanRequest("mira@example.com", LocalDate.of(2026, 6, 4));
+        GeneratePlanRequest request = new GeneratePlanRequest("mira@example.com", LocalDate.of(2026, 6, 4), null);
         when(runningCoachService.generatePlan(any(GeneratePlanRequest.class))).thenReturn(planDto());
 
         mockMvc.perform(post("/api/running/plans/generate")
@@ -77,7 +80,8 @@ class RunningCoachApiIntegrationTest {
                 .andExpect(jsonPath("$.title").value("4-week first 10k plan"))
                 .andExpect(jsonPath("$.aiGenerated").value(true))
                 .andExpect(jsonPath("$.weeks[0].weekNumber").value(1))
-                .andExpect(jsonPath("$.weeks[0].sessions[0].title").value("Easy aerobic run"));
+                .andExpect(jsonPath("$.weeks[0].sessions[0].title").value("Easy aerobic run"))
+                .andExpect(jsonPath("$.weeks[0].sessions[0].mainWorkout").value("Run 4.0 km easy."));
     }
 
     @Test
@@ -97,6 +101,7 @@ class RunningCoachApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.email").value("mira@example.com"))
                 .andExpect(jsonPath("$.nextSession.title").value("Easy aerobic run"))
+                .andExpect(jsonPath("$.nextSession.mainWorkout").value("Run 4.0 km easy."))
                 .andExpect(jsonPath("$.completedDistanceKm").value(3.7))
                 .andExpect(jsonPath("$.latestInsight.feedback").value("Keep the next run easy and monitor the knee."));
     }
@@ -154,6 +159,7 @@ class RunningCoachApiIntegrationTest {
                 "mira@example.com",
                 "Mira Santos",
                 TrainingGoal.FIRST_10K,
+                "I want to rebuild safely toward my first 10K.",
                 RunnerLevel.RETURNING,
                 3,
                 12.5,
@@ -167,8 +173,11 @@ class RunningCoachApiIntegrationTest {
                 5L,
                 "4-week first 10k plan",
                 "This plan is calibrated conservatively around returning fitness and mild knee discomfort.",
+                null,
                 LocalDate.of(2026, 6, 4),
                 LocalDate.of(2026, 7, 1),
+                null,
+                PlanType.STANDARD_4_WEEK,
                 true,
                 true,
                 List.of(new TrainingWeekDto(7L, 1, "Foundation", 12.5, List.of(sessionDto()))));
@@ -184,6 +193,7 @@ class RunningCoachApiIntegrationTest {
                 4.0,
                 32,
                 "easy",
+                "Run 4.0 km easy.",
                 "Keep this conversational.");
     }
 
@@ -200,3 +210,8 @@ class RunningCoachApiIntegrationTest {
                 LocalDateTime.of(2026, 6, 4, 8, 31));
     }
 }
+
+
+
+
+

@@ -5,5 +5,6 @@ public enum TrainingGoal {
     FASTER_5K,
     FIRST_10K,
     CONSISTENCY,
-    ENDURANCE_BASE
+    ENDURANCE_BASE,
+    GENERAL_RUNNING
 }

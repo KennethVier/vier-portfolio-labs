@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #12231c;
   background: #07130f;
@@ -140,3 +140,276 @@ textarea { resize: vertical; }
 .alert.demo { background: #fff7df; border-color: #f3d58a; color: #3b321d; }
 .alert.demo strong { margin-right: 8px; }
 
+
+/* StrideMate plan readability polish */
+.plan-panel {
+  padding: 24px;
+}
+
+.plan-summary {
+  max-width: 1180px;
+  margin: 0 0 22px;
+  font-size: 1rem;
+}
+
+.weeks-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.week-card {
+  padding: 18px;
+  border-radius: 16px;
+}
+
+.week-head {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.week-head strong {
+  font-size: 1.02rem;
+}
+
+.week-head span {
+  max-width: 190px;
+  line-height: 1.25;
+}
+
+.week-focus {
+  margin: 0 0 18px;
+  color: #5e7168;
+  line-height: 1.5;
+}
+
+.session-list {
+  gap: 12px;
+}
+
+.session-row {
+  gap: 9px;
+  padding: 15px;
+  border-radius: 14px;
+  line-height: 1.35;
+}
+
+.session-row strong {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.session-row em {
+  line-height: 1.35;
+}
+
+.session-date {
+  color: #5e7168;
+}
+
+.session-guidance {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #edf2ea;
+}
+
+.session-guidance p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  color: #52665b;
+  font-size: .86rem;
+  line-height: 1.55;
+}
+
+.session-guidance strong {
+  color: #284033;
+  font-size: .74rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.next-card p {
+  color: #52665b;
+}
+
+.next-card small strong {
+  color: #284033;
+}
+
+@media (max-width: 700px) {
+  .plan-panel {
+    padding: 18px;
+  }
+
+  .week-card {
+    padding: 15px;
+  }
+
+  .week-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .week-head span {
+    max-width: none;
+    text-align: left;
+  }
+}
+
+
+/* StrideMate guarded coach upgrade */
+.wide-field { grid-column: span 2; }
+.main-workout-box {
+  display: grid;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #effbe6;
+  border: 1px solid #d8efc8;
+}
+.main-workout-box span {
+  color: #315725;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.main-workout-box p {
+  margin: 0;
+  color: #20382a;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.main-workout-box.compact { margin: 10px 0; }
+.terms-panel { scroll-margin-top: 20px; }
+.terms-search { max-width: 260px; background: #fff; }
+.terms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.term-card {
+  border: 1px solid #dfe8df;
+  border-radius: 14px;
+  padding: 15px;
+  background: #fbfdf9;
+}
+.term-card h3 {
+  margin: 0 0 8px;
+  color: #12231c;
+}
+.term-card strong {
+  display: block;
+  color: #315725;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.term-card p {
+  margin: 0;
+  color: #5f6f67;
+  line-height: 1.55;
+}
+.pre-profile-terms { margin-top: 22px; }
+
+@media (max-width: 700px) {
+  .wide-field { grid-column: span 1; }
+  .terms-search { max-width: none; }
+}
+
+/* Race-date aware plan timing */
+.plan-timing-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(170px, 220px) minmax(170px, 220px);
+  gap: 12px;
+  align-items: end;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #dce8d7;
+  border-radius: 16px;
+  background: rgba(255,255,255,.72);
+}
+.plan-timing-copy {
+  display: grid;
+  gap: 4px;
+}
+.plan-timing-copy strong {
+  color: #12231c;
+}
+.plan-timing-copy span,
+.date-stat small,
+.next-date-label {
+  color: #66766e;
+  line-height: 1.4;
+}
+.date-stat strong {
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+.next-date-label {
+  display: inline-flex;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.week-head > div {
+  display: grid;
+  gap: 5px;
+}
+.week-head small {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #eef5ea;
+  color: #496357;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .plan-timing-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+.race-strategy-card,
+.race-strategy-banner {
+  border-color: rgba(167, 255, 58, 0.36);
+  background: linear-gradient(135deg, rgba(167, 255, 58, 0.14), rgba(255, 255, 255, 0.92));
+}
+
+.race-strategy-card p:last-child,
+.race-strategy-banner p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.race-strategy-banner {
+  border: 1px solid rgba(17, 35, 26, 0.12);
+  border-radius: 18px;
+  padding: 18px;
+  margin: 18px 0 24px;
+}
+
+.race-strategy-banner span,
+.field-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.race-strategy-banner span {
+  color: var(--accent-strong);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.field-hint {
+  margin-top: 7px;
+}
