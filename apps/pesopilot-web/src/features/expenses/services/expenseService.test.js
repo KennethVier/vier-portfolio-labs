@@ -1,0 +1,202 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { clearDatabase } from '@/lib/db/devTools.js'
+import { db } from '@/lib/db/dexie.js'
+import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
+import { seedDatabase } from '@/lib/db/seed.js'
+
+import { expenseService } from './expenseService.js'
+
+const validExpense = {
+  amount: 500,
+  merchant: 'Jollibee',
+  categoryId: 'food',
+  paymentMethod: 'Cash',
+  date: '2026-06-11',
+  emotionTag: 'Normal',
+  note: 'Lunch',
+  source: 'manual',
+}
+
+beforeEach(async () => {
+  await db.open()
+  await clearDatabase()
+  await seedDatabase()
+})
+
+afterEach(async () => {
+  await clearDatabase()
+  db.close()
+})
+
+describe('expenseService', () => {
+  it('loads expense categories from seeded categories', async () => {
+    const categories = await expenseService.loadCategories()
+
+    expect(categories.map((category) => category.id)).toEqual(
+      expect.arrayContaining(['food', 'transport', 'bills', 'groceries']),
+    )
+    expect(categories.every((category) => category.type === 'expense')).toBe(true)
+  })
+
+  it('creates, updates, and deletes expenses through the repository layer', async () => {
+    const createdExpense = await expenseService.createExpense(validExpense)
+
+    expect(createdExpense).toMatchObject({
+      amount: 500,
+      merchant: 'Jollibee',
+      categoryId: 'food',
+      paymentMethod: 'Cash',
+      source: 'manual',
+    })
+
+    const updatedExpense = await expenseService.updateExpense(createdExpense.id, {
+      ...validExpense,
+      amount: 625,
+      paymentMethod: 'GCash',
+    })
+
+    expect(updatedExpense).toMatchObject({
+      id: createdExpense.id,
+      amount: 625,
+      paymentMethod: 'GCash',
+      createdAt: createdExpense.createdAt,
+    })
+
+    await expenseService.deleteExpense(createdExpense.id)
+
+    expect(await expenseRepository.findById(createdExpense.id)).toBeUndefined()
+  })
+
+  it('filters expenses by category, payment method, and date range', async () => {
+    await expenseService.createExpense(validExpense)
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Meralco',
+      categoryId: 'bills',
+      paymentMethod: 'Bank Transfer',
+      date: '2026-06-20',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Shopee',
+      categoryId: 'shopping',
+      paymentMethod: 'Maya',
+      date: '2026-05-01',
+    })
+
+    await expect(
+      expenseService.loadExpenses({ categoryId: 'bills' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ paymentMethod: 'Cash' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({
+        startDate: '2026-06-01',
+        endDate: '2026-06-30',
+      }),
+    ).resolves.toHaveLength(2)
+  })
+
+  it('searches expenses by merchant, note, payment method, and category name', async () => {
+    await expenseService.createExpense(validExpense)
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Meralco',
+      categoryId: 'bills',
+      paymentMethod: 'Bank Transfer',
+      date: '2026-06-20',
+      note: 'Monthly utilities',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Shopee',
+      categoryId: 'shopping',
+      paymentMethod: 'Maya',
+      date: '2026-06-21',
+      note: 'Office supplies',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Tricycle',
+      categoryId: 'transport',
+      paymentMethod: 'GCash',
+      date: '2026-06-22',
+      note: 'Commute',
+    })
+
+    await expect(
+      expenseService.loadExpenses({ search: 'jollibee' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ search: 'utilities' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ search: 'gcash' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ search: 'bank transfer' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ search: 'shopping' }),
+    ).resolves.toHaveLength(1)
+  })
+
+  it('keeps search case-insensitive and combined with category filters', async () => {
+    await expenseService.createExpense(validExpense)
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Jollibee',
+      categoryId: 'bills',
+      paymentMethod: 'GCash',
+      date: '2026-06-20',
+      note: 'Reimbursement',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'McDo',
+      categoryId: 'food',
+      paymentMethod: 'Cash',
+      date: '2026-06-21',
+      note: 'Dinner',
+    })
+
+    await expect(
+      expenseService.loadExpenses({ search: 'JOLLIBEE' }),
+    ).resolves.toHaveLength(2)
+    await expect(
+      expenseService.loadExpenses({ categoryId: 'food', search: 'jollibee' }),
+    ).resolves.toHaveLength(1)
+  })
+
+  it('returns normal filtered results when search is empty', async () => {
+    await expenseService.createExpense(validExpense)
+    await expenseService.createExpense({
+      ...validExpense,
+      merchant: 'Meralco',
+      categoryId: 'bills',
+      paymentMethod: 'Bank Transfer',
+      date: '2026-06-20',
+    })
+
+    await expect(
+      expenseService.loadExpenses({ categoryId: 'food', search: '' }),
+    ).resolves.toHaveLength(1)
+    await expect(
+      expenseService.loadExpenses({ categoryId: 'food', search: '   ' }),
+    ).resolves.toHaveLength(1)
+  })
+
+  it('rejects invalid expenses before persistence', async () => {
+    await expect(
+      expenseService.createExpense({
+        ...validExpense,
+        amount: 0,
+        categoryId: '',
+      }),
+    ).rejects.toThrow()
+
+    await expect(expenseRepository.findAll()).resolves.toHaveLength(0)
+  })
+})
