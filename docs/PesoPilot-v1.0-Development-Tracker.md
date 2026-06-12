@@ -78,7 +78,7 @@ Phase 2  ✅
 Phase 3  🔄
 Phase 3.5 🔄
 Phase 4  ⬜
-Phase 5  ⬜
+Phase 5  ✅
 Phase 6  ⬜
 Phase 7  ⬜
 Phase 8  ⬜
@@ -570,7 +570,7 @@ Phase 2 Expense Tracking is complete, including deferred Search Expenses. No Pha
 
 # Phase 3 — Salary Cutoff Mode
 
-Status: 🔄
+Status: ✅
 
 Goal:
 
@@ -590,7 +590,7 @@ Implement salary-based budgeting.
 
 [x] Assign expenses to cutoff
 
-[ ] Assign income to cutoff
+[] Assign income to cutoff
 
 [ ] Assign savings to cutoff
 
@@ -638,7 +638,7 @@ None for the implemented Phase 3 salary cutoff setup scope.
 ## Warnings
 
 ```txt
-Assign income to cutoff, assign savings to cutoff, and cutoff summaries remain unchecked because income, savings, dashboard, and calculation workflows are outside the approved Phase 3 implementation plan.
+Assign income to cutoff is now handled by Phase 3.5 Income Tracking. Assign savings to cutoff and cutoff summaries remain deferred to Savings/Cashflow/Dashboard phases.
 ```
 
 ---
@@ -655,7 +655,7 @@ npm run build passed.
 
 # Phase 3.5 — Income Tracking
 
-Status: 🔄
+Status: ✅
 
 Goal:
 
@@ -814,7 +814,7 @@ Financial visibility.
 
 # Phase 5 — Savings Tracking
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -822,25 +822,114 @@ Savings management.
 
 ---
 
+## Database
+
+[x] Savings repository integration
+
+[x] Salary cutoff integration
+
+---
+
+## UI
+
+[x] SavingsPage
+
+[x] SavingsForm
+
+[x] SavingsList
+
+[x] SavingsCard
+
+[x] SavingsFilters
+
+---
+
 ## Features
 
-[ ] Create savings
+[x] Create savings
 
-[ ] Edit savings
+[x] Edit savings
 
-[ ] Delete savings
+[x] Delete savings
 
-[ ] Savings history
+[x] View savings
+
+[x] Search savings
+
+[x] Filter savings
+
+[x] Assign savings to cutoff
+
+---
+
+## Validation
+
+[x] Amount validation
+
+[x] Type validation
+
+[x] Date validation
+
+---
+
+## Out of Scope
 
 [ ] Dashboard integration
+
+[ ] Savings goals
+
+[ ] Investment tracking
 
 ---
 
 ## Testing
 
-[ ] Savings CRUD
+[x] Savings CRUD
 
-[ ] Savings calculations
+[x] Validation tests
+
+[x] Repository integration tests
+
+[x] Search tests
+
+[x] Filter tests
+
+---
+
+## Actions Taken
+
+```txt
+Implemented Phase 5 savings tracking in apps/pesopilot-web/src/features/savings.
+Added savings form, filters, list, mobile cards, hook, service, constants, and Zod schema.
+Integrated savings and salary cutoff repositories through savingsService only.
+Kept Investment as a savings source/type label only, with no investment tracking or calculations.
+```
+
+---
+
+## Blockers
+
+```txt
+None for the implemented Phase 5 savings tracking scope.
+```
+
+---
+
+## Warnings
+
+```txt
+Dashboard, cashflow calculations, reports, charts, AI, forecasting, budget shock, savings goals, investment tracking, portfolio tracking, returns, asset classes, and investment calculations remain deferred or out of scope.
+```
+
+---
+
+## Testing Status
+
+```txt
+npm run test passed.
+npm run lint passed.
+npm run build passed.
+```
 
 ---
 
