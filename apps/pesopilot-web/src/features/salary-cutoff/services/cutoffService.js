@@ -38,7 +38,6 @@ function normalizeCutoffPayload(payload, existingCutoff = null) {
     startDate: parsedCutoff.startDate,
     endDate: parsedCutoff.endDate,
     expectedIncome: parsedCutoff.expectedIncome,
-    actualIncome: parsedCutoff.actualIncome,
     status: parsedCutoff.status,
     createdAt: existingCutoff?.createdAt ?? timestamp,
     updatedAt: timestamp,

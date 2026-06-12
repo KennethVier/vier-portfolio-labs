@@ -312,6 +312,25 @@ The original documentation references Spring Boot 3 in some places and must be u
 
 ---
 
+# ADR-012
+
+Title:
+Actual Income Must Come From Income Records
+
+Status:
+Accepted
+
+Decision:
+Salary cutoffs will store expectedIncome only. Actual income will be derived from Income Tracking records linked by cutoffId.
+
+Reason:
+Storing actualIncome on salary_cutoffs while also storing income.amount creates duplicate sources of truth and can lead to inconsistent financial calculations.
+
+Consequences:
+Cashflow and Dashboard phases must calculate actual income by summing income records for a cutoff. Existing legacy actualIncome properties in local IndexedDB records are ignored.
+
+---
+
 # Future Decision Template
 
 Copy for future decisions:

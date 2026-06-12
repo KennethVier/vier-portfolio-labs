@@ -20,7 +20,6 @@ function mapCutoffToFormValues(cutoff) {
     startDate: cutoff.startDate ?? cutoffFormDefaults.startDate,
     endDate: cutoff.endDate ?? cutoffFormDefaults.endDate,
     expectedIncome: cutoff.expectedIncome ?? '',
-    actualIncome: cutoff.actualIncome ?? '',
     status: cutoff.status ?? cutoffFormDefaults.status,
   }
 }
@@ -106,15 +105,6 @@ export function CutoffForm({ editingCutoff, isSaving, onCancel, onSubmit }) {
             type="number"
             error={errors.expectedIncome?.message}
             {...register('expectedIncome')}
-          />
-          <Input
-            id="cutoff-actual-income"
-            label="Actual income"
-            min="0"
-            step="0.01"
-            type="number"
-            error={errors.actualIncome?.message}
-            {...register('actualIncome')}
           />
           <label className="block md:col-span-2">
             <span className="mb-1 block text-xs font-semibold text-content">

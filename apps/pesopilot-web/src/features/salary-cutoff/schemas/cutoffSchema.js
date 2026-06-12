@@ -17,11 +17,6 @@ const money = (message) =>
     })
     .min(0, message)
 
-const optionalMoney = z.preprocess(
-  (value) => (value === '' || value === undefined ? null : value),
-  z.coerce.number().min(0, 'Actual income must be zero or greater').nullable(),
-)
-
 export const cutoffSchema = z
   .object({
     name: requiredString('Name is required'),
@@ -31,7 +26,6 @@ export const cutoffSchema = z
     startDate: requiredString('Start date is required'),
     endDate: requiredString('End date is required'),
     expectedIncome: money('Expected income must be zero or greater'),
-    actualIncome: optionalMoney,
     status: z.enum(CUTOFF_STATUS_VALUES, {
       errorMap: () => ({ message: 'Status is required' }),
     }),
@@ -47,6 +41,5 @@ export const cutoffFormDefaults = {
   startDate: today(),
   endDate: today(),
   expectedIncome: '',
-  actualIncome: '',
   status: 'planned',
 }

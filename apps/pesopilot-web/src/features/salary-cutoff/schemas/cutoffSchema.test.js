@@ -8,7 +8,6 @@ const validCutoff = {
   startDate: '2026-06-01',
   endDate: '2026-06-15',
   expectedIncome: '25000',
-  actualIncome: '',
   status: 'planned',
 }
 
@@ -20,7 +19,6 @@ describe('cutoffSchema', () => {
       name: 'June First Half',
       type: 'semi_monthly',
       expectedIncome: 25000,
-      actualIncome: null,
       status: 'planned',
     })
   })
@@ -32,7 +30,6 @@ describe('cutoffSchema', () => {
       startDate: '',
       endDate: '',
       expectedIncome: -1,
-      actualIncome: -5,
       status: '',
     })
 
@@ -44,7 +41,6 @@ describe('cutoffSchema', () => {
         'startDate',
         'endDate',
         'expectedIncome',
-        'actualIncome',
         'status',
       ]),
     )

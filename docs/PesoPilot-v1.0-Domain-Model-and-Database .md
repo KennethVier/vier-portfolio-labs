@@ -173,10 +173,15 @@ type
 startDate
 endDate
 expectedIncome
-actualIncome
 status
 createdAt
 updatedAt
+```
+
+Note:
+
+```txt
+Actual income is derived from Income Tracking records linked by cutoffId and should not be stored directly on salary cutoff entities.
 ```
 
 Indexes:

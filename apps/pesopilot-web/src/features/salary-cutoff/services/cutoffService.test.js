@@ -14,7 +14,6 @@ const firstHalfCutoff = {
   startDate: '2026-06-01',
   endDate: '2026-06-15',
   expectedIncome: 25000,
-  actualIncome: '',
   status: 'planned',
 }
 
@@ -24,7 +23,6 @@ const secondHalfCutoff = {
   startDate: '2026-06-16',
   endDate: '2026-06-30',
   expectedIncome: 25000,
-  actualIncome: '',
   status: 'planned',
 }
 
@@ -47,21 +45,18 @@ describe('cutoffService', () => {
       name: 'June First Half',
       type: 'semi_monthly',
       expectedIncome: 25000,
-      actualIncome: null,
       status: 'planned',
     })
 
     const updatedCutoff = await cutoffService.updateCutoff(createdCutoff.id, {
       ...firstHalfCutoff,
       name: 'June 1-15',
-      actualIncome: 26000,
       status: 'active',
     })
 
     expect(updatedCutoff).toMatchObject({
       id: createdCutoff.id,
       name: 'June 1-15',
-      actualIncome: 26000,
       status: 'active',
       createdAt: createdCutoff.createdAt,
     })

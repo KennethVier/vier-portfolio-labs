@@ -42,16 +42,10 @@ export function CutoffCard({
         </div>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+      <dl className="mt-4 grid gap-3 text-sm">
         <div>
           <dt className="text-xs font-semibold uppercase text-content-muted">Type</dt>
           <dd className="text-content">{cutoff.type}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-semibold uppercase text-content-muted">
-            Actual income
-          </dt>
-          <dd className="font-mono text-content">{formatMoney(cutoff.actualIncome)}</dd>
         </div>
       </dl>
 

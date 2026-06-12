@@ -23,7 +23,6 @@ async function createCutoff(name = 'June Second Half') {
     startDate: '2026-06-16',
     endDate: '2026-06-30',
     expectedIncome: 25000,
-    actualIncome: null,
     status: 'planned',
     createdAt: '2026-06-01T00:00:00.000Z',
     updatedAt: '2026-06-01T00:00:00.000Z',
