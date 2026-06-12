@@ -17,13 +17,66 @@ Derived From:
 
 ---
 
+## Roadmap Adjustment Notice
+
+The original MVP roadmap did not include a dedicated Income Tracking phase and placed Dashboard immediately after Salary Cutoff Mode.
+
+After completing Phase 0 through Phase 3, the implementation order was reviewed and adjusted to better align with the application's data dependencies and long-term architecture.
+
+### Reason
+
+The Dashboard depends on complete financial data.
+
+While Expense Tracking and Salary Cutoff Mode are already implemented, Dashboard metrics would still be incomplete without:
+
+* Income Tracking
+* Savings Tracking
+* Cashflow calculations
+
+Building the Dashboard before these foundations would result in incomplete business logic, duplicated work, and future refactoring.
+
+To maintain a clean architecture and reduce rework, additional foundation phases are introduced before Dashboard implementation.
+
+### Updated Implementation Order
+
+* Phase 3.5 — Income Tracking
+* Phase 5 — Savings Tracking
+* Phase 6 — Cashflow Engine
+* Phase 4 — Dashboard
+
+### Dependency Flow
+
+Expense Tracking
+↓
+Salary Cutoff Mode
+↓
+Income Tracking
+↓
+Savings Tracking
+↓
+Cashflow Engine
+↓
+Dashboard
+
+### Notes
+
+* This adjustment does not expand MVP scope.
+* This adjustment only changes implementation order.
+* Dashboard remains part of the MVP.
+* Dashboard implementation is intentionally delayed until sufficient financial data exists to support meaningful calculations and insights.
+* Existing completed phases remain unchanged.
+* Future roadmap phases may continue after Dashboard as originally planned.
+
+---
+
 # Overall MVP Progress
 
 ```txt
 Phase 0  ⬜
 Phase 1  ✅
 Phase 2  ✅
-Phase 3  ⬜
+Phase 3  🔄
+Phase 3.5 🔄
 Phase 4  ⬜
 Phase 5  ⬜
 Phase 6  ⬜
@@ -517,7 +570,7 @@ Phase 2 Expense Tracking is complete, including deferred Search Expenses. No Pha
 
 # Phase 3 — Salary Cutoff Mode
 
-Status: ⬜
+Status: 🔄
 
 Goal:
 
@@ -527,15 +580,15 @@ Implement salary-based budgeting.
 
 ## Features
 
-[ ] Create cutoff
+[x] Create cutoff
 
-[ ] Edit cutoff
+[x] Edit cutoff
 
-[ ] Delete cutoff
+[x] Delete cutoff
 
-[ ] Detect active cutoff
+[x] Detect active cutoff
 
-[ ] Assign expenses to cutoff
+[x] Assign expenses to cutoff
 
 [ ] Assign income to cutoff
 
@@ -545,9 +598,9 @@ Implement salary-based budgeting.
 
 ## Calculations
 
-[ ] Current cutoff detection
+[x] Current cutoff detection
 
-[ ] Date overlap prevention
+[x] Date overlap prevention
 
 [ ] Cutoff summaries
 
@@ -555,11 +608,165 @@ Implement salary-based budgeting.
 
 ## Testing
 
-[ ] Active cutoff tests
+[x] Active cutoff tests
 
-[ ] Edge case date tests
+[x] Edge case date tests
 
-[ ] Overlap tests
+[x] Overlap tests
+
+---
+
+## Actions Taken
+
+```txt
+Implemented Phase 3 salary cutoff setup in apps/pesopilot-web/src/features/salary-cutoff.
+Added cutoff form, list, mobile cards, status badge, hook, service, constants, and Zod schema.
+Integrated salary cutoff and expense repositories through cutoffService only.
+Added manual assignment of unlinked expenses to a selected cutoff by date range.
+```
+
+---
+
+## Blockers
+
+```txt
+None for the implemented Phase 3 salary cutoff setup scope.
+```
+
+---
+
+## Warnings
+
+```txt
+Assign income to cutoff, assign savings to cutoff, and cutoff summaries remain unchecked because income, savings, dashboard, and calculation workflows are outside the approved Phase 3 implementation plan.
+```
+
+---
+
+## Testing Status
+
+```txt
+npm run test passed.
+npm run lint passed.
+npm run build passed.
+```
+
+---
+
+# Phase 3.5 — Income Tracking
+
+Status: 🔄
+
+Goal:
+
+Implement complete income management and establish the second half of the financial equation before Dashboard implementation.
+
+Reason:
+
+Although the original roadmap places Dashboard as Phase 4, implementation experience showed that Dashboard calculations would be incomplete without Income Tracking.
+
+Phase 3.5 is therefore introduced as a dependency phase before Dashboard.
+
+---
+
+## Database
+
+[x] Income repository integration
+
+[x] Salary cutoff integration
+
+---
+
+## UI
+
+[x] IncomePage
+
+[x] IncomeForm
+
+[x] IncomeList
+
+[x] IncomeCard
+
+[x] IncomeFilters
+
+---
+
+## Features
+
+[x] Create Income
+
+[x] Edit Income
+
+[x] Delete Income
+
+[x] View Income
+
+[x] Search Income
+
+[x] Filter Income
+
+[x] Assign Income to Cutoff
+
+---
+
+## Validation
+
+[x] Amount validation
+
+[x] Source validation
+
+[x] Date validation
+
+---
+
+## Testing
+
+[x] Income CRUD tests
+
+[x] Validation tests
+
+[x] Repository integration tests
+
+[x] Search tests
+
+[x] Filter tests
+
+---
+
+## Actions Taken
+
+```txt
+Implemented Phase 3.5 income tracking in apps/pesopilot-web/src/features/income.
+Added income form, filters, list, mobile cards, hook, service, constants, and Zod schema.
+Integrated income and salary cutoff repositories through incomeService only.
+Added /income route and Income sidebar navigation entry.
+```
+
+---
+
+## Blockers
+
+```txt
+None for the implemented Phase 3.5 income tracking scope.
+```
+
+---
+
+## Warnings
+
+```txt
+Dashboard, savings, cashflow, reports, AI, forecasting, and budget shock remain deferred.
+```
+
+---
+
+## Testing Status
+
+```txt
+npm run test passed.
+npm run lint passed.
+npm run build passed.
+```
 
 ---
 
@@ -906,6 +1113,38 @@ Before MVP Release:
 [ ] Build passes
 
 [ ] Deployment verified
+
+---
+
+## Future Enhancement — Recurring Salary Profiles
+
+Status: ⬜ Future
+
+Description:
+
+Users should eventually be able to define a reusable salary profile instead of manually creating every salary cutoff period.
+
+Users define:
+
+- Salary Mode
+- Pay Schedule
+- Payday
+
+Expected behavior:
+
+- PesoPilot automatically generates future cutoff periods.
+- Expenses can be assigned to generated cutoff periods.
+- Users can still manually adjust generated cutoffs when needed.
+
+Reason:
+
+The current MVP supports manual salary cutoff periods. This future enhancement improves long-term usability by reducing repetitive monthly setup.
+
+Not part of MVP v1:
+
+- Do not implement during Phase 3.
+- Do not add new database tables yet.
+- Do not modify current salary cutoff behavior yet.
 
 ---
 

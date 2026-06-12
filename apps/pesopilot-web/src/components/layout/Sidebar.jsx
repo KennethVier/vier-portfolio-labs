@@ -4,6 +4,7 @@ const navItems = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Expenses', to: '/expenses' },
   { label: 'Salary Cutoff', to: '/salary-cutoff' },
+  { label: 'Income', to: '/income' },
   { label: 'Savings', to: '/savings' },
   { label: 'Cashflow', to: '/cashflow' },
   { label: 'Reports', to: '/reports' },
