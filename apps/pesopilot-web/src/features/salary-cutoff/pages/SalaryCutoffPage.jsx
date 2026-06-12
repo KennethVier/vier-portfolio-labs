@@ -1,5 +1,5 @@
-import { PlaceholderPage } from '@/features/shared/PlaceholderPage.jsx'
+import { SalaryCutoffSetupPage } from './SalaryCutoffSetupPage.jsx'
 
 export function SalaryCutoffPage() {
-  return <PlaceholderPage title="Salary Cutoff" />
+  return <SalaryCutoffSetupPage />
 }
