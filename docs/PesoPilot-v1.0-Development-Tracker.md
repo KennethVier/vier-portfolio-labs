@@ -79,7 +79,7 @@ Phase 3  🔄
 Phase 3.5 🔄
 Phase 4  ⬜
 Phase 5  ✅
-Phase 6  ⬜
+Phase 6  ✅
 Phase 7  ⬜
 Phase 8  ⬜
 Phase 9  ⬜
@@ -935,7 +935,7 @@ npm run build passed.
 
 # Phase 6 — Cashflow Tracking
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -945,21 +945,75 @@ Track available cash.
 
 ## Calculations
 
-[ ] Available Cash
+[x] Available Cash
 
 [ ] Daily Burn Rate
 
 [ ] Safe Daily Spend
 
-[ ] Remaining Cash
+[x] Remaining Cash
+
+[x] Total Income
+
+[x] Total Expenses
+
+[x] Total Savings
+
+[x] Expense Rate
+
+[x] Savings Rate
+
+[x] Income Variance
 
 ---
 
 ## Testing
 
-[ ] Cashflow calculations
+[x] Cashflow calculations
 
-[ ] Edge cases
+[x] Edge cases
+
+[x] Current cutoff tests
+
+[x] Data integrity tests
+
+---
+
+## Actions Taken
+
+```txt
+Implemented Phase 6 read-only cashflow engine in apps/pesopilot-web/src/features/cashflow.
+Added cashflow model, constants, service, hook, and development verification page.
+Calculated actual income from income records and did not persist cashflow snapshots.
+Reused cutoffService.findCurrentCutoff for active/date-range cutoff detection.
+```
+
+---
+
+## Blockers
+
+```txt
+None for the implemented Phase 6 read-only cashflow engine scope.
+```
+
+---
+
+## Warnings
+
+```txt
+Daily Burn Rate and Safe Daily Spend remain unchecked because they belong to forecasting/cashflow projection, not this read-only current-state engine.
+Dashboard, charts, reports, AI, forecasting, budget shock, backend APIs, new stores, new repositories, and persisted cashflow snapshots remain out of scope.
+```
+
+---
+
+## Testing Status
+
+```txt
+npm run test passed.
+npm run lint passed.
+npm run build passed.
+```
 
 ---
 
