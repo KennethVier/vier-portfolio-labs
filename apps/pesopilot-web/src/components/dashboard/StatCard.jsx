@@ -1,9 +1,17 @@
 const toneStyles = {
   neutral: 'border-outline-variant',
-  info: 'border-primary/40',
-  success: 'border-secondary/40',
-  warning: 'border-tertiary/40',
-  critical: 'border-error/40',
+  info: 'border-primary/25',
+  success: 'border-secondary/25',
+  warning: 'border-tertiary/25',
+  critical: 'border-error/25',
+}
+
+const valueStyles = {
+  neutral: 'text-content',
+  info: 'text-primary',
+  success: 'text-secondary',
+  warning: 'text-tertiary',
+  critical: 'text-error',
 }
 
 const trendStyles = {
@@ -28,7 +36,7 @@ export function StatCard({
   return (
     <section
       className={[
-        'rounded border bg-surface-container-lowest p-4',
+        'rounded border bg-surface-container-lowest p-3 shadow-sm shadow-slate-900/[0.02]',
         toneStyles[tone] ?? toneStyles.neutral,
         className,
       ].join(' ')}
@@ -39,11 +47,16 @@ export function StatCard({
         </p>
         {icon ? <div className="text-content-muted">{icon}</div> : null}
       </div>
-      <p className="mt-3 text-right font-mono text-xl font-semibold leading-7 text-content">
+      <p
+        className={[
+          'mt-2 text-right font-mono text-xl font-semibold leading-7',
+          valueStyles[tone] ?? valueStyles.neutral,
+        ].join(' ')}
+      >
         {value}
       </p>
       {(helperText || trendLabel) ? (
-        <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+        <div className="mt-2 flex items-center justify-between gap-3 text-xs">
           <span className="text-content-muted">{helperText}</span>
           {trendLabel ? (
             <span className={trendStyles[trendTone] ?? trendStyles.neutral}>

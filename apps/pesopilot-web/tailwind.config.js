@@ -21,14 +21,17 @@ export default {
           container: 'var(--color-primary-container)',
           inverse: 'var(--color-inverse-primary)',
         },
+        'primary-fixed': 'var(--color-primary-fixed)',
         secondary: {
           DEFAULT: 'var(--color-secondary)',
           container: 'var(--color-secondary-container)',
         },
+        'secondary-fixed': 'var(--color-secondary-fixed)',
         tertiary: {
           DEFAULT: 'var(--color-tertiary)',
           container: 'var(--color-tertiary-container)',
         },
+        'tertiary-fixed': 'var(--color-tertiary-fixed)',
         error: {
           DEFAULT: 'var(--color-error)',
           container: 'var(--color-error-container)',

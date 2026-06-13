@@ -1,9 +1,9 @@
 const toneStyles = {
   neutral: 'border-outline-variant',
-  info: 'border-primary/40',
-  success: 'border-secondary/40',
-  warning: 'border-tertiary/40',
-  critical: 'border-error/40',
+  info: 'border-primary/25',
+  success: 'border-secondary/25',
+  warning: 'border-tertiary/25',
+  critical: 'border-error/25',
 }
 
 const valueToneStyles = {
@@ -27,7 +27,7 @@ export function MetricCard({
   return (
     <section
       className={[
-        'rounded border bg-surface-container-lowest p-3',
+        'rounded border bg-surface-container-lowest p-3 shadow-sm shadow-slate-900/[0.02]',
         toneStyles[tone] ?? toneStyles.neutral,
         className,
       ].join(' ')}

@@ -8,10 +8,10 @@ const levelTones = {
 }
 
 const borderStyles = {
-  info: 'border-primary/40',
-  watch: 'border-tertiary/40',
-  warning: 'border-tertiary/40',
-  critical: 'border-error/40',
+  info: 'border-primary/25',
+  watch: 'border-tertiary/25',
+  warning: 'border-tertiary/25',
+  critical: 'border-error/25',
 }
 
 export function WarningCard({
@@ -26,7 +26,7 @@ export function WarningCard({
   return (
     <section
       className={[
-        'rounded border bg-surface-container-lowest p-4',
+        'rounded border bg-surface-container-lowest p-4 shadow-sm shadow-slate-900/[0.02]',
         borderStyles[level] ?? borderStyles.info,
         className,
       ].join(' ')}
@@ -37,7 +37,7 @@ export function WarningCard({
             {title}
           </h3>
           {message ? (
-            <p className="mt-1 text-sm text-content-muted">{message}</p>
+            <p className="mt-1 max-w-prose text-sm text-content-muted">{message}</p>
           ) : null}
         </div>
         <StatusBadge tone={tone}>{level}</StatusBadge>

@@ -21,7 +21,7 @@ export function InsightCard({
   return (
     <section
       className={[
-        'rounded border border-outline-variant bg-surface-container-lowest p-4',
+        'rounded border border-outline-variant bg-surface-container-lowest p-4 shadow-sm shadow-slate-900/[0.02]',
         className,
       ].join(' ')}
     >

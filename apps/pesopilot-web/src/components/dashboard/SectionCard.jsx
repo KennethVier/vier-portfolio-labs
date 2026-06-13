@@ -10,10 +10,10 @@ export function SectionCard({
   return (
     <Card className={['p-4', className].join(' ')}>
       {(title || description || actions) ? (
-        <div className="mb-4 flex flex-col gap-2 border-b border-outline-variant pb-3 md:flex-row md:items-start md:justify-between">
+        <div className="mb-3 flex flex-col gap-2 border-b border-outline-variant pb-3 md:flex-row md:items-start md:justify-between">
           <div>
             {title ? (
-              <h2 className="font-heading text-lg font-semibold leading-6 text-content">
+              <h2 className="font-heading text-base font-semibold leading-6 text-content">
                 {title}
               </h2>
             ) : null}

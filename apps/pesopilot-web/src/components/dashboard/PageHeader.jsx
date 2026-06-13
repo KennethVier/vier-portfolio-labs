@@ -6,7 +6,7 @@ export function PageHeader({
   title,
 }) {
   return (
-    <header className="flex flex-col gap-3 border-b border-outline-variant pb-4 md:flex-row md:items-end md:justify-between">
+    <header className="flex flex-col gap-3 border-b border-outline-variant pb-4 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0">
         {eyebrow ? (
           <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.05em] text-primary">
@@ -21,7 +21,11 @@ export function PageHeader({
             {description}
           </p>
         ) : null}
-        {meta ? <div className="mt-2 flex flex-wrap gap-2">{meta}</div> : null}
+        {meta ? (
+          <div className="mt-2 flex flex-wrap text-xs font-medium uppercase tracking-[0.05em] text-content-muted">
+            {meta}
+          </div>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
