@@ -8,23 +8,28 @@ export function SectionCard({
   title,
 }) {
   return (
-    <Card className={['p-4', className].join(' ')}>
+    <Card className={[' p-0', className].join(' ')}>
       {(title || description || actions) ? (
-        <div className="mb-3 flex flex-col gap-2 border-b border-outline-variant pb-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-4 py-3">
           <div>
             {title ? (
-              <h2 className="font-heading text-base font-semibold leading-6 text-content">
+              <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
                 {title}
               </h2>
             ) : null}
+
             {description ? (
-              <p className="mt-1 text-sm text-content-muted">{description}</p>
+              <p className="mt-1 text-body-sm text-on-surface-variant">
+                {description}
+              </p>
             ) : null}
           </div>
-          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+
+          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
         </div>
       ) : null}
-      {children}
+
+      <div className="p-4">{children}</div>
     </Card>
   )
 }

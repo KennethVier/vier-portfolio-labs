@@ -7,18 +7,32 @@ const toneStyles = {
 }
 
 const valueStyles = {
-  neutral: 'text-content',
+  neutral: 'text-on-surface',
   info: 'text-primary',
   success: 'text-secondary',
   warning: 'text-tertiary',
   critical: 'text-error',
 }
 
+const progressStyles = {
+  neutral: 'bg-outline',
+  info: 'bg-primary',
+  success: 'bg-secondary',
+  warning: 'bg-tertiary',
+  critical: 'bg-error',
+}
+
 const trendStyles = {
-  neutral: 'text-content-muted',
-  positive: 'text-secondary',
-  warning: 'text-tertiary',
-  negative: 'text-error',
+  neutral: 'bg-surface-container text-on-surface-variant',
+  positive: 'bg-secondary-container/20 text-secondary',
+  warning: 'bg-tertiary-container/20 text-tertiary',
+  negative: 'bg-error-container text-error',
+}
+
+const valueSizeStyles = {
+  display: 'text-display-lg',
+  headline: 'text-headline-md',
+  normal: 'text-xl leading-7',
 }
 
 export function StatCard({
@@ -26,9 +40,11 @@ export function StatCard({
   helperText,
   icon,
   label,
+  progress,
   tone = 'neutral',
   trend,
   value,
+  valueSize = 'headline',
 }) {
   const trendTone = typeof trend === 'object' ? trend.tone : 'neutral'
   const trendLabel = typeof trend === 'object' ? trend.label : trend
@@ -36,30 +52,58 @@ export function StatCard({
   return (
     <section
       className={[
-        'rounded border bg-surface-container-lowest p-3 shadow-sm shadow-slate-900/[0.02]',
+        'flex flex-col justify-between rounded-lg border bg-surface-container-lowest p-4 shadow-sm',
         toneStyles[tone] ?? toneStyles.neutral,
         className,
       ].join(' ')}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.05em] text-content-muted">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-label-caps text-label-caps uppercase text-outline">
           {label}
-        </p>
-        {icon ? <div className="text-content-muted">{icon}</div> : null}
+        </span>
+
+        {icon ? (
+          <span className={valueStyles[tone] ?? valueStyles.neutral}>
+            {icon}
+          </span>
+        ) : null}
       </div>
-      <p
+
+      <div
         className={[
-          'mt-2 text-right font-mono text-xl font-semibold leading-7',
+          'font-data-mono',
+          valueSizeStyles[valueSize] ?? valueSizeStyles.headline,
           valueStyles[tone] ?? valueStyles.neutral,
         ].join(' ')}
       >
         {value}
-      </p>
+      </div>
+
+      {progress !== undefined ? (
+        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-surface-container">
+          <div
+            className={[
+              'h-full',
+              progressStyles[tone] ?? progressStyles.neutral,
+            ].join(' ')}
+            style={{
+              width: `${Math.max(0, Math.min(100, Number(progress) || 0))}%`,
+            }}
+          />
+        </div>
+      ) : null}
+
       {(helperText || trendLabel) ? (
-        <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-          <span className="text-content-muted">{helperText}</span>
+        <div className="mt-2 flex items-center gap-1 text-body-sm text-on-surface-variant">
+          {helperText ? <span>{helperText}</span> : null}
+
           {trendLabel ? (
-            <span className={trendStyles[trendTone] ?? trendStyles.neutral}>
+            <span
+              className={[
+                'inline-block w-max rounded-full px-2 py-0.5 text-[10px] font-bold',
+                trendStyles[trendTone] ?? trendStyles.neutral,
+              ].join(' ')}
+            >
               {trendLabel}
             </span>
           ) : null}

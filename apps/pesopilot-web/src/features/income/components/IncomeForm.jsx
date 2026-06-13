@@ -50,7 +50,6 @@ export function IncomeForm({
   }
 
   return (
-    <Card className="p-4">
       <form className="space-y-4" onSubmit={handleSubmit(submitIncome)}>
         <div>
           <h2 className="font-heading text-lg font-semibold text-content">
@@ -135,6 +134,5 @@ export function IncomeForm({
           ) : null}
         </div>
       </form>
-    </Card>
   )
 }
