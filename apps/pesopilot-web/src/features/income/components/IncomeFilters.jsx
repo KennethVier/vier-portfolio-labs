@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/Input.jsx'
 
 import { EMPTY_INCOME_FILTERS, INCOME_SOURCES } from '../constants/incomeConstants.js'
 
-export function IncomeFilters({ filters, onChange, salaryCutoffs }) {
+export function IncomeFilters({ filters, framed = true, onChange, salaryCutoffs }) {
   function updateFilter(key, value) {
     onChange({
       ...filters,
@@ -12,9 +12,8 @@ export function IncomeFilters({ filters, onChange, salaryCutoffs }) {
     })
   }
 
-  return (
-    <Card className="p-4">
-      <div className="grid gap-3 lg:grid-cols-[1.5fr_repeat(4,_1fr)_auto]">
+  const content = (
+    <div className="grid gap-3 lg:grid-cols-[1.5fr_repeat(4,_1fr)_auto]">
         <Input
           id="income-search"
           label="Search"
@@ -80,7 +79,16 @@ export function IncomeFilters({ filters, onChange, salaryCutoffs }) {
             Clear
           </Button>
         </div>
-      </div>
+    </div>
+  )
+
+  if (!framed) {
+    return content
+  }
+
+  return (
+    <Card className="p-4">
+      {content}
     </Card>
   )
 }
