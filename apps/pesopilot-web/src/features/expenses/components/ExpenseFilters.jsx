@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/Input.jsx'
 
 import { PAYMENT_METHODS } from '../constants/expenseConstants.js'
 
-export function ExpenseFilters({ categories, filters, onChange }) {
+export function ExpenseFilters({ categories, filters, framed = true, onChange }) {
   function updateFilter(name, value) {
     onChange({
       ...filters,
@@ -12,7 +12,14 @@ export function ExpenseFilters({ categories, filters, onChange }) {
   }
 
   return (
-    <div className="space-y-3 rounded border border-outline-variant bg-surface-container-lowest p-4">
+    <div
+      className={[
+        'space-y-3',
+        framed
+          ? 'rounded border border-outline-variant bg-surface-container-lowest p-4'
+          : '',
+      ].join(' ')}
+    >
       <div className="flex flex-col gap-2 md:flex-row md:items-end">
         <div className="flex-1">
           <Input
