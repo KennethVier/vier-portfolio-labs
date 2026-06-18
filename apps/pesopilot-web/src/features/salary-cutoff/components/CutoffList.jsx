@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/EmptyState.jsx'
 
 import { CutoffCard } from './CutoffCard.jsx'
 import { CutoffStatusBadge } from './CutoffStatusBadge.jsx'
+import { getCutoffTypeLabel } from '../constants/cutoffConstants.js'
 
 const moneyFormatter = new Intl.NumberFormat('en-PH', {
   currency: 'PHP',
@@ -38,7 +39,9 @@ export function CutoffList({
     name: (
       <div>
         <div className="font-semibold text-content">{cutoff.name}</div>
-        <div className="text-xs text-content-muted">{cutoff.type}</div>
+        <div className="text-xs text-content-muted">
+          {getCutoffTypeLabel(cutoff.type)}
+        </div>
       </div>
     ),
     period: `${cutoff.startDate} to ${cutoff.endDate}`,

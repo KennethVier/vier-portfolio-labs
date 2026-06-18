@@ -2,6 +2,7 @@ import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
 
 import { cutoffSchema } from '../schemas/cutoffSchema.js'
+import { generateSalaryCutoffCycle } from './cutoffCycle.js'
 
 function nowIso() {
   return new Date().toISOString()
@@ -31,12 +32,30 @@ function rangesOverlap(firstRange, secondRange) {
 function normalizeCutoffPayload(payload, existingCutoff = null) {
   const parsedCutoff = cutoffSchema.parse(payload)
   const timestamp = nowIso()
+  const referenceDate =
+    parsedCutoff.type === 'custom'
+      ? parsedCutoff.startDate
+      : parsedCutoff.referenceDate ?? existingCutoff?.startDate ?? todayIsoDate()
+  const generatedCycle =
+    parsedCutoff.type === 'custom'
+      ? {
+          startDate: parsedCutoff.startDate,
+          endDate: parsedCutoff.endDate,
+        }
+      : generateSalaryCutoffCycle({
+          payday1: parsedCutoff.payday1,
+          payday2: parsedCutoff.payday2,
+          referenceDate,
+          type: parsedCutoff.type,
+        })
 
   return {
     name: parsedCutoff.name,
     type: parsedCutoff.type,
-    startDate: parsedCutoff.startDate,
-    endDate: parsedCutoff.endDate,
+    payday1: parsedCutoff.type === 'custom' ? null : parsedCutoff.payday1,
+    payday2: parsedCutoff.type === 'semi_monthly' ? parsedCutoff.payday2 : null,
+    startDate: generatedCycle.startDate,
+    endDate: generatedCycle.endDate,
     expectedIncome: parsedCutoff.expectedIncome,
     status: parsedCutoff.status,
     createdAt: existingCutoff?.createdAt ?? timestamp,

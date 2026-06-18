@@ -623,6 +623,12 @@ Implemented Phase 3 salary cutoff setup in apps/pesopilot-web/src/features/salar
 Added cutoff form, list, mobile cards, status badge, hook, service, constants, and Zod schema.
 Integrated salary cutoff and expense repositories through cutoffService only.
 Added manual assignment of unlinked expenses to a selected cutoff by date range.
+Corrected salary cutoff semantics from manual/payroll-style date periods to salary-funded spending cycles.
+Semi-monthly and Monthly now generate start/end dates from payday rules.
+Semi-monthly supports user-defined Payday 1 and Payday 2.
+Monthly supports one user-defined payday.
+Custom remains manual.
+Weekly and Irregular are removed from new cutoff creation and cannot be re-saved after edit.
 ```
 
 ---

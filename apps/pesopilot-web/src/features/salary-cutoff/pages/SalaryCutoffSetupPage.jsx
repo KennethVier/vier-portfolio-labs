@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal.jsx'
 
 import { CutoffForm } from '../components/CutoffForm.jsx'
 import { CutoffList } from '../components/CutoffList.jsx'
+import { getCutoffTypeLabel } from '../constants/cutoffConstants.js'
 import { useSalaryCutoffs } from '../hooks/useSalaryCutoffs.js'
 
 const moneyFormatter = new Intl.NumberFormat('en-PH', {
@@ -86,7 +87,7 @@ function CutoffKpiGrid({ activeCutoff, daysRemaining }) {
         value={activeCutoff?.name ?? 'None'}
         footer={
           <span className="text-xs font-bold uppercase text-primary">
-            {activeCutoff?.type ?? 'No Active Cycle'}
+            {activeCutoff ? getCutoffTypeLabel(activeCutoff.type) : 'No Active Cycle'}
           </span>
         }
       />

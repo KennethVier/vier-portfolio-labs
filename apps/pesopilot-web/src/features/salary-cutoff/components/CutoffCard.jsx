@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/Badge.jsx'
 import { Card } from '@/components/ui/Card.jsx'
 
 import { CutoffStatusBadge } from './CutoffStatusBadge.jsx'
+import { getCutoffTypeLabel } from '../constants/cutoffConstants.js'
 
 const moneyFormatter = new Intl.NumberFormat('en-PH', {
   currency: 'PHP',
@@ -45,7 +46,7 @@ export function CutoffCard({
       <dl className="mt-4 grid gap-3 text-sm">
         <div>
           <dt className="text-xs font-semibold uppercase text-content-muted">Type</dt>
-          <dd className="text-content">{cutoff.type}</dd>
+          <dd className="text-content">{getCutoffTypeLabel(cutoff.type)}</dd>
         </div>
       </dl>
 
