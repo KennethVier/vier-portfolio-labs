@@ -6,13 +6,15 @@ export function ExpenseCard({ expense, categoryName, formattedAmount, onDelete, 
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="font-heading text-base font-semibold text-content">
             {expense.merchant || 'Untitled expense'}
           </p>
           <p className="mt-1 text-sm text-content-muted">{expense.date}</p>
         </div>
-        <p className="font-mono text-sm font-semibold text-content">{formattedAmount}</p>
+        <p className="shrink-0 whitespace-nowrap font-mono text-sm font-semibold text-content">
+          {formattedAmount}
+        </p>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Badge>{categoryName}</Badge>

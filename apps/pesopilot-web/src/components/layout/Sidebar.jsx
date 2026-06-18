@@ -14,7 +14,7 @@ const navItems = [
 
 export function Sidebar() {
   return (
-    <aside className="w-[240px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col h-full py-6 px-4 z-50">
+    <aside className="fixed left-0 top-0 z-50 hidden h-screen w-[240px] flex-col border-r border-outline-variant bg-surface px-4 py-6 lg:flex">
       <div className="mb-8 px-2 flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-lg">account_balance_wallet</span>

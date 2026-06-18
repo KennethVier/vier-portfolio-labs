@@ -1,11 +1,10 @@
-import {
-  KpiGrid,
-  PageHeader,
-  SectionCard,
-  StatCard,
-} from '@/components/dashboard'
+import { useEffect, useState } from 'react'
+
+import { useHeader } from '@/components/layout/HeaderContent.jsx'
+import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
 
 import { ExpenseFilters } from '../components/ExpenseFilters.jsx'
 import { ExpenseForm } from '../components/ExpenseForm.jsx'
@@ -48,7 +47,134 @@ function getExpenseKpis(expenses, categories) {
   }
 }
 
+function ExpenseKpiCard({ helper, label, tone = 'content', value }) {
+  const toneClasses = {
+    content: 'text-content',
+    critical: 'text-error',
+    primary: 'text-primary',
+    secondary: 'text-secondary',
+    warning: 'text-tertiary',
+  }
+
+  return (
+    <div className="border border-outline-variant bg-surface-container-lowest p-4">
+      <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-content-muted">
+        {label}
+      </p>
+      <div className="flex flex-col items-start gap-1 xl:flex-row xl:items-end xl:justify-between xl:gap-3">
+        <span
+          className={[
+            'min-w-0 whitespace-nowrap font-mono text-xl font-semibold leading-7 sm:text-2xl xl:leading-8',
+            toneClasses[tone],
+          ].join(' ')}
+        >
+          {value}
+        </span>
+        {helper ? (
+          <span className="shrink-0 whitespace-nowrap font-mono text-xs font-medium leading-4 text-content-muted xl:text-right xl:text-sm xl:leading-5">
+            {helper}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function ExpensesKpiGrid({ expenseKpis }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ExpenseKpiCard
+        helper="Current Cycle"
+        label="Total Expenses"
+        tone="primary"
+        value={currencyFormatter.format(expenseKpis.totalExpenses)}
+      />
+      <ExpenseKpiCard
+        helper="Verified"
+        label="Transactions"
+        tone="content"
+        value={expenseKpis.transactionCount}
+      />
+      <ExpenseKpiCard
+        helper="Top Spend"
+        label="Largest Category"
+        tone="warning"
+        value={expenseKpis.largestCategory}
+      />
+      <ExpenseKpiCard
+        helper="Average"
+        label="Avg Expense"
+        tone="content"
+        value={currencyFormatter.format(expenseKpis.averageExpense)}
+      />
+    </div>
+  )
+}
+
+function ExpensesActionBar({
+  categories,
+  filters,
+  onAddExpense,
+  onFilterChange,
+}) {
+  return (
+    <div className="sticky top-0 z-30 flex flex-col gap-2 bg-background py-2 xl:flex-row xl:items-center xl:justify-between">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center sm:justify-end xl:order-2">
+        <Button variant="gray">
+          <span className="material-symbols-outlined text-lg">
+            ios_share
+          </span>
+          Export
+        </Button>
+        <Button onClick={onAddExpense}>
+          <span className="material-symbols-outlined text-lg">
+            add
+          </span>
+          Add Expense
+        </Button>
+      </div>
+      <div className="min-w-0 flex-1 xl:order-1">
+        <ExpenseFilters
+          categories={categories}
+          compact
+          filters={filters}
+          framed={false}
+          showSearch={false}
+          onChange={onFilterChange}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ExpenseLedgerPanel({
+  categories,
+  expenses,
+  isLoading,
+  onDelete,
+  onEdit,
+}) {
+  return (
+    <div className="overflow-hidden border border-outline-variant bg-surface-container-lowest">
+      {isLoading ? (
+        <div className="p-3">
+          <LoadingState label="Loading expenses" />
+        </div>
+      ) : (
+        <ExpenseList
+          categories={categories}
+          expenses={expenses}
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
+      )}
+    </div>
+  )
+}
+
 export function ExpensesPage() {
+  const [isExpensePanelOpen, setIsExpensePanelOpen] = useState(false)
+  const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const {
     categories,
     clearEditingExpense,
@@ -66,74 +192,83 @@ export function ExpensesPage() {
   } = useExpenses()
   const expenseKpis = getExpenseKpis(expenses, categories)
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="Spending"
-        title="Expenses"
-        description="Manual expense tracking"
-        meta={`${expenseKpis.transactionCount} visible transactions`}
-      />
+  useEffect(() => {
+    setHeaderConfig({
+      searchPlaceholder: 'Search transactions...',
+      searchValue: filters.search,
+      showSearch: true,
+      onSearchChange: (value) =>
+        updateFilters({
+          ...filters,
+          search: value,
+        }),
+    })
 
-      <KpiGrid columns={4}>
-        <StatCard
-          label="Total Expenses"
-          value={currencyFormatter.format(expenseKpis.totalExpenses)}
-          helperText="Visible filtered spend"
-          tone="critical"
-        />
-        <StatCard
-          label="Transactions"
-          value={expenseKpis.transactionCount}
-          helperText="Visible records"
-          tone="info"
-        />
-        <StatCard
-          label="Largest Category"
-          value={expenseKpis.largestCategory}
-          helperText="By visible spend"
-          tone="warning"
-        />
-        <StatCard
-          label="Average Expense"
-          value={currencyFormatter.format(expenseKpis.averageExpense)}
-          helperText="Visible average"
-          tone="neutral"
-        />
-      </KpiGrid>
+    return () => resetHeaderConfig()
+  }, [filters, resetHeaderConfig, setHeaderConfig, updateFilters])
+
+  function openCreatePanel() {
+    clearEditingExpense()
+    setIsExpensePanelOpen(true)
+  }
+
+  function openEditPanel(expense) {
+    setEditingExpense(expense)
+    setIsExpensePanelOpen(true)
+  }
+
+  function closeExpensePanel() {
+    clearEditingExpense()
+    setIsExpensePanelOpen(false)
+  }
+
+  async function submitExpense(expense) {
+    await saveExpense(expense)
+    setIsExpensePanelOpen(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <ExpensesKpiGrid expenseKpis={expenseKpis} />
 
       {error ? <ErrorState title="Unable to process expenses" message={error} /> : null}
 
-      <ExpenseForm
+      <ExpensesActionBar
         categories={categories}
-        editingExpense={editingExpense}
-        isSaving={isSaving}
-        salaryCutoffs={salaryCutoffs}
-        onCancel={clearEditingExpense}
-        onSubmit={saveExpense}
+        filters={filters}
+        onAddExpense={openCreatePanel}
+        onFilterChange={updateFilters}
       />
 
-      <SectionCard title="Filters">
-        <ExpenseFilters
+      <Modal
+        isOpen={isExpensePanelOpen || Boolean(editingExpense)}
+        title={editingExpense ? 'Edit Expense' : 'Add Expense'}
+        description={
+          editingExpense
+            ? 'Update an existing expense record.'
+            : 'Add a manual spending entry.'
+        }
+        size="lg"
+        onClose={closeExpensePanel}
+      >
+        <ExpenseForm
           categories={categories}
-          filters={filters}
+          editingExpense={editingExpense}
           framed={false}
-          onChange={updateFilters}
+          isSaving={isSaving}
+          salaryCutoffs={salaryCutoffs}
+          onCancel={closeExpensePanel}
+          onSubmit={submitExpense}
         />
-      </SectionCard>
+      </Modal>
 
-      <SectionCard title="Expense Records">
-        {isLoading ? (
-          <LoadingState label="Loading expenses" />
-        ) : (
-          <ExpenseList
-            categories={categories}
-            expenses={expenses}
-            onDelete={deleteExpense}
-            onEdit={setEditingExpense}
-          />
-        )}
-      </SectionCard>
+      <ExpenseLedgerPanel
+        categories={categories}
+        expenses={expenses}
+        isLoading={isLoading}
+        onDelete={deleteExpense}
+        onEdit={openEditPanel}
+      />
     </div>
   )
 }

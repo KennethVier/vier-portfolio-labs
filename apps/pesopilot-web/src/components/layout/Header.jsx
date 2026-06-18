@@ -13,10 +13,10 @@ export function Header() {
   } = config
 
   return (
-    <header className="sticky top-0 z-40 ml-[240px] flex h-14 w-[calc(100%-240px)] items-center justify-between border-b border-outline-variant bg-surface px-6">
-      <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-40 flex min-h-14 w-full items-center justify-between gap-3 border-b border-outline-variant bg-surface px-4 py-2 lg:ml-[240px] lg:h-14 lg:w-[calc(100%-240px)] lg:px-6 lg:py-0">
+      <div className="flex min-w-0 flex-1 items-center gap-6">
         {showSearch ? (
-          <div className="flex w-64 items-center rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-1.5">
+          <div className="flex min-w-0 flex-1 items-center rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-1.5 sm:max-w-64">
             <span className="material-symbols-outlined mr-2 text-sm text-outline">
               search
             </span>
@@ -40,7 +40,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         <button className="relative rounded-full p-2 text-on-surface-variant transition-all hover:bg-surface-container">
           <span className="material-symbols-outlined">notifications</span>
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-error" />

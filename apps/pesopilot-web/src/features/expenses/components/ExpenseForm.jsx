@@ -34,6 +34,7 @@ function mapExpenseToFormValues(expense) {
 export function ExpenseForm({
   categories,
   editingExpense,
+  framed = true,
   isSaving,
   onCancel,
   onSubmit,
@@ -63,8 +64,7 @@ export function ExpenseForm({
 
   const hasCategories = categories.length > 0
 
-  return (
-    <Card className="p-4">
+  const content = (
       <form className="space-y-4" onSubmit={handleSubmit(submitExpense)}>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -198,6 +198,15 @@ export function ExpenseForm({
           ) : null}
         </div>
       </form>
+  )
+
+  if (!framed) {
+    return content
+  }
+
+  return (
+    <Card className="p-4">
+      {content}
     </Card>
   )
 }
