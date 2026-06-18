@@ -24,7 +24,13 @@ function mapCutoffToFormValues(cutoff) {
   }
 }
 
-export function CutoffForm({ editingCutoff, isSaving, onCancel, onSubmit }) {
+export function CutoffForm({
+  editingCutoff,
+  framed = true,
+  isSaving,
+  onCancel,
+  onSubmit,
+}) {
   const {
     formState: { errors },
     handleSubmit,
@@ -44,8 +50,7 @@ export function CutoffForm({ editingCutoff, isSaving, onCancel, onSubmit }) {
     reset(cutoffFormDefaults)
   }
 
-  return (
-    <Card className="p-4">
+  const content = (
       <form className="space-y-4" onSubmit={handleSubmit(submitCutoff)}>
         <div>
           <h2 className="font-heading text-lg font-semibold text-content">
@@ -139,6 +144,15 @@ export function CutoffForm({ editingCutoff, isSaving, onCancel, onSubmit }) {
           ) : null}
         </div>
       </form>
+  )
+
+  if (!framed) {
+    return content
+  }
+
+  return (
+    <Card className="p-4">
+      {content}
     </Card>
   )
 }

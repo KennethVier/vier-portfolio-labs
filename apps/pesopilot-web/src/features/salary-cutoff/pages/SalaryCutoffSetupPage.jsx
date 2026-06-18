@@ -1,12 +1,10 @@
-import {
-  KpiGrid,
-  PageHeader,
-  SectionCard,
-  StatCard,
-  StatusBadge,
-} from '@/components/dashboard'
+import { useState } from 'react'
+
+import { SectionCard } from '@/components/dashboard'
+import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
 
 import { CutoffForm } from '../components/CutoffForm.jsx'
 import { CutoffList } from '../components/CutoffList.jsx'
@@ -18,9 +16,9 @@ const moneyFormatter = new Intl.NumberFormat('en-PH', {
 })
 
 const statusToneByStatus = {
-  active: 'success',
-  closed: 'warning',
-  planned: 'neutral',
+  active: 'text-secondary',
+  closed: 'text-tertiary',
+  planned: 'text-content-muted',
 }
 
 function formatMoney(value) {
@@ -58,7 +56,230 @@ function getCutoffKpis(cutoffs) {
   }
 }
 
+function CutoffKpiCard({
+  children,
+  footer,
+  label,
+  value,
+  valueClassName = 'text-content',
+}) {
+  return (
+    <div className="flex min-h-28 flex-col justify-between border border-outline-variant bg-surface-container-lowest p-4">
+      <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
+        {label}
+      </span>
+      {children ?? (
+        <div className={['font-heading text-2xl font-semibold leading-8', valueClassName].join(' ')}>
+          {value}
+        </div>
+      )}
+      {footer ? <div className="flex justify-end">{footer}</div> : null}
+    </div>
+  )
+}
+
+function CutoffKpiGrid({ activeCutoff, daysRemaining }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <CutoffKpiCard
+        label="Current Cutoff"
+        value={activeCutoff?.name ?? 'None'}
+        footer={
+          <span className="text-xs font-bold uppercase text-primary">
+            {activeCutoff?.type ?? 'No Active Cycle'}
+          </span>
+        }
+      />
+      <CutoffKpiCard
+        label="Expected Income"
+        value={formatMoney(activeCutoff?.expectedIncome)}
+        valueClassName="font-mono text-primary"
+        footer={<span className="text-xs text-content-muted">Gross Est.</span>}
+      />
+      <CutoffKpiCard label="Days Remaining">
+        <div className="font-heading text-2xl font-semibold leading-8 text-tertiary">
+          {formatDays(daysRemaining)}
+        </div>
+        <div className="mt-2 h-1 w-full bg-surface-container">
+          <div className="h-full w-4/5 bg-tertiary" />
+        </div>
+      </CutoffKpiCard>
+      <CutoffKpiCard label="Status">
+        <div className="flex items-center gap-2">
+          <span
+            className={[
+              'h-2 w-2 rounded-full',
+              activeCutoff ? 'bg-secondary' : 'bg-outline',
+            ].join(' ')}
+          />
+          <span
+            className={[
+              'font-heading text-lg font-semibold capitalize leading-6',
+              statusToneByStatus[activeCutoff?.status] ?? 'text-content-muted',
+            ].join(' ')}
+          >
+            {activeCutoff?.status ?? 'No Active'}
+          </span>
+        </div>
+        <div className="flex justify-end">
+          {activeCutoff ? (
+            <span className="bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase text-on-secondary-container">
+              Live Tracking
+            </span>
+          ) : (
+            <span className="bg-surface-container px-2 py-0.5 text-[10px] font-bold uppercase text-content-muted">
+              Setup Needed
+            </span>
+          )}
+        </div>
+      </CutoffKpiCard>
+    </div>
+  )
+}
+
+function CutoffManagementPanel({
+  activeCutoff,
+  onAssignExpenses,
+  onEdit,
+}) {
+  const progress = activeCutoff ? 80 : 0
+
+  return (
+    <SectionCard
+      title="Cutoff Management"
+      titleClassName="font-heading text-lg font-bold normal-case tracking-normal text-content"
+      description="Cycle progress vs. algorithmic spending velocity."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!activeCutoff}
+            onClick={() => activeCutoff && onEdit(activeCutoff)}
+          >
+            Edit Schedule
+          </Button>
+          <Button
+            type="button"
+            disabled={!activeCutoff}
+            onClick={() => activeCutoff && onAssignExpenses(activeCutoff.id)}
+          >
+            Quick Allocate
+          </Button>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <div>
+            <div className="mb-2 flex justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
+                Cycle Progression (Day 12 of 15)
+              </span>
+              <span className="font-mono text-sm">{progress.toFixed(1)}%</span>
+            </div>
+            <div className="relative h-6 overflow-hidden rounded border border-outline-variant bg-surface-container">
+              <div className="h-full bg-primary-container" style={{ width: `${progress}%` }} />
+              <div className="absolute left-[65%] top-0 z-10 h-full w-0.5 bg-error" />
+            </div>
+            <div className="mt-1 flex justify-between">
+              <span className="text-[10px] font-medium text-content-muted">
+                {activeCutoff?.startDate ?? 'START'}
+              </span>
+              <span className="text-[10px] font-bold text-error">BUDGET LIMIT (80%)</span>
+              <span className="text-[10px] font-medium text-content-muted">
+                {activeCutoff?.endDate ?? 'END'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded border border-outline-variant bg-surface p-3">
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
+                Current Velocity
+              </div>
+              <div className="font-mono text-lg font-semibold text-content">
+                PHP 142.50 <span className="text-sm font-normal">/ day</span>
+              </div>
+            </div>
+            <div className="rounded border border-outline-variant bg-surface p-3">
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
+                Target Velocity
+              </div>
+              <div className="font-mono text-lg font-semibold text-secondary">
+                PHP 115.00 <span className="text-sm font-normal">/ day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded border border-outline-variant bg-surface p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">analytics</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.05em]">
+              AI Insight
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-content">
+            Your spending velocity is <span className="font-bold text-error">24% higher</span>{' '}
+            than the projected budget. To maintain a Grade A rating this cutoff,
+            reduce discretionary spending by <span className="font-mono">PHP 27.50</span>{' '}
+            daily for the next 3 days.
+          </p>
+          <div className="border-t border-outline-variant pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Predicted Grade:</span>
+              <span className="font-bold text-tertiary">B+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
+function HistoricalRecordsPanel({
+  currentCutoff,
+  cutoffs,
+  isLoading,
+  onCreate,
+  onAssignExpenses,
+  onClose,
+  onDelete,
+  onEdit,
+  onMarkActive,
+}) {
+  return (
+    <section className="border border-outline-variant bg-surface-container-lowest">
+      <div className="flex items-center justify-between gap-3 border-b border-outline-variant p-4">
+        <h2 className="font-heading text-lg font-semibold leading-6 text-content">
+          Historical Performance
+        </h2>
+        <Button type="button" variant="secondary" onClick={onCreate}>
+          Add Cutoff
+        </Button>
+      </div>
+      <div className="p-3">
+        {isLoading ? (
+          <LoadingState label="Loading salary cutoffs" />
+        ) : (
+          <CutoffList
+            currentCutoff={currentCutoff}
+            cutoffs={cutoffs}
+            onAssignExpenses={onAssignExpenses}
+            onClose={onClose}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onMarkActive={onMarkActive}
+          />
+        )}
+      </div>
+    </section>
+  )
+}
+
 export function SalaryCutoffSetupPage() {
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const {
     assignExpensesToCutoff,
     clearEditingCutoff,
@@ -87,117 +308,68 @@ export function SalaryCutoffSetupPage() {
     await assignExpensesToCutoff(id)
   }
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        eyebrow="Pay Periods"
-        title="Salary Cutoff"
-        description="Local pay-period setup for grouping expenses."
-        meta={`${cutoffs.length} cutoff records`}
-      />
+  function openCreateForm() {
+    clearEditingCutoff()
+    setIsFormOpen(true)
+  }
 
-      <KpiGrid columns={4}>
-        <StatCard
-          label="Current Cutoff"
-          value={activeCutoff?.name ?? 'None'}
-          helperText="Active status only"
-          tone="info"
-        />
-        <StatCard
-          label="Expected Income"
-          value={formatMoney(activeCutoff?.expectedIncome)}
-          helperText="Active cutoff"
-          tone="success"
-        />
-        <StatCard
-          label="Days Remaining"
-          value={formatDays(cutoffKpis.daysRemaining)}
-          helperText="Until cutoff end"
-          tone="warning"
-        />
-        <StatCard
-          label="Cutoff Status"
-          value={
-            activeCutoff ? (
-              <StatusBadge tone={statusToneByStatus[activeCutoff.status]}>
-                {activeCutoff.status}
-              </StatusBadge>
-            ) : (
-              <StatusBadge tone="neutral">No Active Cutoff</StatusBadge>
-            )
-          }
-          helperText="Active cutoff state"
-          tone={activeCutoff ? 'success' : 'neutral'}
-        />
-      </KpiGrid>
+  function openEditForm(cutoff) {
+    setEditingCutoff(cutoff)
+    setIsFormOpen(true)
+  }
+
+  function closeForm() {
+    clearEditingCutoff()
+    setIsFormOpen(false)
+  }
+
+  async function submitCutoff(values) {
+    await saveCutoff(values)
+    setIsFormOpen(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <CutoffKpiGrid
+        activeCutoff={activeCutoff}
+        daysRemaining={cutoffKpis.daysRemaining}
+      />
 
       {error ? <ErrorState title="Unable to process salary cutoffs" message={error} /> : null}
 
-      <CutoffForm
-        editingCutoff={editingCutoff}
-        isSaving={isSaving}
-        onCancel={clearEditingCutoff}
-        onSubmit={saveCutoff}
+      <CutoffManagementPanel
+        activeCutoff={activeCutoff}
+        onAssignExpenses={handleAssignExpenses}
+        onEdit={openEditForm}
       />
 
-      <SectionCard title="Current Cutoff">
-        {activeCutoff ? (
-          <div className="grid gap-3 md:grid-cols-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Start Date
-              </p>
-              <p className="mt-1 font-mono text-sm font-semibold text-content">
-                {activeCutoff.startDate}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                End Date
-              </p>
-              <p className="mt-1 font-mono text-sm font-semibold text-content">
-                {activeCutoff.endDate}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Expected Income
-              </p>
-              <p className="mt-1 font-mono text-sm font-semibold text-content">
-                {formatMoney(activeCutoff.expectedIncome)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Status
-              </p>
-              <div className="mt-1">
-                <StatusBadge tone={statusToneByStatus[activeCutoff.status]}>
-                  {activeCutoff.status}
-                </StatusBadge>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-content-muted">No active cutoff found.</p>
-        )}
-      </SectionCard>
+      <HistoricalRecordsPanel
+        currentCutoff={currentCutoff}
+        cutoffs={cutoffs}
+        isLoading={isLoading}
+        onCreate={openCreateForm}
+        onAssignExpenses={handleAssignExpenses}
+        onClose={closeCutoff}
+        onDelete={handleDelete}
+        onEdit={openEditForm}
+        onMarkActive={markCutoffActive}
+      />
 
-      <SectionCard title="Cutoff Records">
-        {isLoading ? (
-          <LoadingState label="Loading salary cutoffs" />
-        ) : (
-          <CutoffList
-            currentCutoff={currentCutoff}
-            cutoffs={cutoffs}
-            onAssignExpenses={handleAssignExpenses}
-            onClose={closeCutoff}
-            onDelete={handleDelete}
-            onEdit={setEditingCutoff}
-            onMarkActive={markCutoffActive}
-          />
-        )}
-      </SectionCard>
+      <Modal
+        isOpen={isFormOpen || Boolean(editingCutoff)}
+        title={editingCutoff ? 'Edit Salary Cutoff' : 'Create Salary Cutoff'}
+        description="Define the local period used for expense grouping."
+        size="lg"
+        onClose={closeForm}
+      >
+        <CutoffForm
+          editingCutoff={editingCutoff}
+          framed={false}
+          isSaving={isSaving}
+          onCancel={closeForm}
+          onSubmit={submitCutoff}
+        />
+      </Modal>
     </div>
   )
 }

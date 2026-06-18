@@ -6,6 +6,7 @@ export function SectionCard({
   className = '',
   description,
   title,
+  titleClassName = '',
 }) {
   return (
     <Card className={[' p-0', className].join(' ')}>
@@ -13,7 +14,12 @@ export function SectionCard({
         <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-4 py-3">
           <div>
             {title ? (
-              <h2 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              <h2
+                className={[
+                  'font-label-caps text-label-caps uppercase text-on-surface-variant',
+                  titleClassName,
+                ].join(' ')}
+              >
                 {title}
               </h2>
             ) : null}
