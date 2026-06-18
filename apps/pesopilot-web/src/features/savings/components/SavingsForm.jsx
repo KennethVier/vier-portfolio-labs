@@ -25,6 +25,7 @@ function mapSavingsToFormValues(savings) {
 
 export function SavingsForm({
   editingSavings,
+  framed = true,
   isSaving,
   onCancel,
   onSubmit,
@@ -49,8 +50,7 @@ export function SavingsForm({
     reset(savingsFormDefaults)
   }
 
-  return (
-    <Card className="p-4">
+  const content = (
       <form className="space-y-4" onSubmit={handleSubmit(submitSavings)}>
         <div>
           <h2 className="font-heading text-lg font-semibold text-content">
@@ -135,6 +135,15 @@ export function SavingsForm({
           ) : null}
         </div>
       </form>
+  )
+
+  if (!framed) {
+    return content
+  }
+
+  return (
+    <Card className="p-4">
+      {content}
     </Card>
   )
 }

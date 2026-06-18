@@ -4,7 +4,13 @@ import { Input } from '@/components/ui/Input.jsx'
 
 import { EMPTY_SAVINGS_FILTERS, SAVINGS_SOURCES } from '../constants/savingsConstants.js'
 
-export function SavingsFilters({ filters, framed = true, onChange, salaryCutoffs }) {
+export function SavingsFilters({
+  filters,
+  framed = true,
+  onChange,
+  salaryCutoffs,
+  showSearch = true,
+}) {
   function updateFilter(key, value) {
     onChange({
       ...filters,
@@ -13,7 +19,15 @@ export function SavingsFilters({ filters, framed = true, onChange, salaryCutoffs
   }
 
   const content = (
-    <div className="grid gap-3 lg:grid-cols-[1.5fr_repeat(4,_1fr)_auto]">
+    <div
+      className={[
+        'grid gap-3',
+        showSearch
+          ? 'lg:grid-cols-[1.5fr_repeat(4,_1fr)_auto]'
+          : 'lg:grid-cols-[repeat(4,_minmax(0,_1fr))_auto]',
+      ].join(' ')}
+    >
+        {showSearch ? (
         <Input
           id="savings-search"
           label="Search"
@@ -21,6 +35,7 @@ export function SavingsFilters({ filters, framed = true, onChange, salaryCutoffs
           value={filters.search}
           onChange={(event) => updateFilter('search', event.target.value)}
         />
+        ) : null}
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-content">
             Cutoff
