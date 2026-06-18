@@ -7,6 +7,7 @@ const defaultHeaderConfig = {
   onSearchChange: undefined,
   healthScore: 94,
   nextCutoff: '3d',
+  statusSize: 'md',
 }
 
 const HeaderContext = createContext(null)

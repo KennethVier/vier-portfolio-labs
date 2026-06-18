@@ -10,7 +10,12 @@ export function Header() {
     onSearchChange,
     healthScore,
     nextCutoff,
+    statusSize,
   } = config
+  const statusClassName =
+    statusSize === 'lg'
+      ? 'text-xs leading-4 tracking-[0.08em]'
+      : 'text-label-caps'
 
   return (
     <header className="sticky top-0 z-40 flex min-h-14 w-full items-center justify-between gap-3 border-b border-outline-variant bg-surface px-4 py-2 lg:ml-[240px] lg:h-14 lg:w-[calc(100%-240px)] lg:px-6 lg:py-0">
@@ -31,10 +36,20 @@ export function Header() {
         ) : null}
 
         <div className="hidden items-center gap-4 md:flex">
-          <span className="font-label-caps text-label-caps font-bold uppercase tracking-wider text-secondary">
+          <span
+            className={[
+              'font-label-caps font-bold uppercase tracking-wider text-secondary',
+              statusClassName,
+            ].join(' ')}
+          >
             Health Score: {healthScore}
           </span>
-          <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline">
+          <span
+            className={[
+              'font-label-caps uppercase tracking-wider text-outline',
+              statusClassName,
+            ].join(' ')}
+          >
             Next Cutoff: {nextCutoff}
           </span>
         </div>
