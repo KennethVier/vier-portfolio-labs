@@ -772,7 +772,7 @@ npm run build passed.
 
 # Phase 4 — Dashboard
 
-Status: ⬜
+Status: 🟨
 
 Goal:
 
@@ -1029,63 +1029,93 @@ Align all existing pages with the approved Stitch Dashboard design language befo
 
 # Phase 7 — Reports and Graphs
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
-Visual reporting.
+Visual reporting and historical financial analysis.
 
 ---
 
 ## Reports
 
-[ ] Category Breakdown
+[x] Category Breakdown
 
-[ ] Expense Trend
+[x] Expense Trend
 
-[ ] Savings Trend
+[x] Income vs Expense
 
-[ ] Cashflow Trend
+[x] Savings Trend
+
+[x] Cashflow Trend
+
+[x] Cutoff Comparison
 
 ---
 
 ## Charts
 
-[ ] Recharts integration
+[x] Recharts integration
 
-[ ] Responsive charts
+[x] Responsive charts
 
----
+[x] Empty states
 
-# Phase 8 — Expense Review Inbox
+[x] Loading states
 
-Status: ⬜
+[x] Tooltip formatting
 
-Goal:
-
-Review detected expenses.
-
----
-
-## Features
-
-[ ] Inbox page
-
-[ ] Review expense
-
-[ ] Approve expense
-
-[ ] Reject expense
-
-[ ] Edit before approval
+[x] PHP currency formatting
 
 ---
 
 ## Testing
 
-[ ] Approval flow
+[x] Report calculation tests
 
-[ ] Rejection flow
+[x] Chart data transformation tests
+
+[x] Empty state tests
+
+---
+
+# Phase 8 — Expense Review Inbox
+
+Status: ✅
+
+Goal:
+
+Review detected expenses before they become official expenses.
+
+---
+
+## Features
+
+[x] Inbox page
+
+[x] View detected expense
+
+[x] Review expense
+
+[x] Approve expense
+
+[x] Reject expense
+
+[x] Edit before approval
+
+[x] Convert approved item into expense record
+
+---
+
+## Testing
+
+[x] Approval flow
+
+[x] Rejection flow
+
+[x] Edit before approval flow
+
+[x] Approved expense persistence test
 
 ---
 
