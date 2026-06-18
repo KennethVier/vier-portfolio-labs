@@ -1,6 +1,5 @@
 import {
   KpiGrid,
-  MetricCard,
   PageHeader,
   SectionCard,
   StatCard,
@@ -68,6 +67,304 @@ function getCashflowStatus(remainingCash) {
   }
 }
 
+function PeriodSelector() {
+  return (
+    <div className="flex gap-1 rounded-lg bg-surface-container p-1">
+      <button
+        type="button"
+        className="rounded bg-surface-container-lowest px-3 py-1 text-body-sm font-semibold text-primary shadow-sm"
+      >
+        Last 6 Cycles
+      </button>
+      <button
+        type="button"
+        className="rounded px-3 py-1 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-lowest/60"
+      >
+        Quarterly
+      </button>
+      <button
+        type="button"
+        className="rounded px-3 py-1 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-lowest/60"
+      >
+        YTD
+      </button>
+    </div>
+  )
+}
+
+function FlowComparisonCard() {
+  const bars = [
+    ['JUL', 60, 25],
+    ['AUG', 75, 30],
+    ['SEP', 65, 35],
+    ['OCT', 90, 40],
+    ['NOV', 70, 20],
+    ['DEC', 85, 28],
+  ]
+
+  return (
+    <SectionCard
+      title="Flow Comparison"
+      description="Inflow vs Outflow velocity per cycle"
+      className="lg:col-span-2"
+      actions={
+        <div className="hidden gap-4 sm:flex">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-primary" />
+            <span className="text-label-caps font-label-caps">Inflow</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-outline-variant" />
+            <span className="text-label-caps font-label-caps">Outflow</span>
+          </div>
+        </div>
+      }
+    >
+      <div className="relative flex h-64 w-full items-end gap-2">
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between opacity-20">
+          <div className="border-t border-outline" />
+          <div className="border-t border-outline" />
+          <div className="border-t border-outline" />
+          <div className="border-t border-outline" />
+          <div className="border-t border-outline" />
+        </div>
+
+        {bars.map(([label, inflow, outflow]) => (
+          <div key={label} className="group flex h-full flex-1 flex-col justify-end gap-1">
+            <div
+              className="w-full rounded-t-sm bg-primary opacity-80 transition-all group-hover:opacity-100"
+              style={{ height: `${inflow}%` }}
+            />
+            <div
+              className="w-full rounded-b-sm bg-outline-variant opacity-80 transition-all group-hover:opacity-100"
+              style={{ height: `${outflow}%` }}
+            />
+            <span className="mt-2 text-center text-[10px] font-label-caps text-on-surface-variant">
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  )
+}
+
+function HealthStatusPanel({ cashflowStatus }) {
+  return (
+    <section className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="material-symbols-outlined text-primary">insights</span>
+        <h3 className="font-headline-sm text-headline-sm">Health Status</h3>
+      </div>
+
+      <div className="flex-1 space-y-4">
+        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-3">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-label-caps font-label-caps">Liquidity Score</span>
+            <StatusBadge tone={cashflowStatus.tone}>{cashflowStatus.label}</StatusBadge>
+          </div>
+          <p className="text-body-sm italic leading-relaxed text-on-surface-variant">
+            Current cash position is evaluated from the active cutoff totals.
+            Runway and projection details are placeholders until forecasting exists.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-3">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-label-caps font-label-caps">AI Commentary</span>
+          </div>
+          <p className="text-body-sm leading-relaxed text-on-surface-variant">
+            <span className="font-semibold text-primary">Optimization Alert:</span>{' '}
+            Cashflow insights are static in this phase. No AI, forecasting,
+            burn rate, or safe spend calculation is running here.
+          </p>
+        </div>
+
+        <div className="border-t border-outline-variant pt-4">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded bg-on-primary-fixed py-2 text-body-sm font-semibold text-white transition-colors hover:bg-on-primary-fixed-variant"
+          >
+            <span className="material-symbols-outlined text-sm">auto_awesome</span>
+            Deep Dive Report
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function MetricPanel({
+  icon,
+  label,
+  tone = 'primary',
+  value,
+  tag,
+}) {
+  const toneClasses = {
+    critical: {
+      bar: 'bg-error',
+      tag: 'bg-error-container/30 text-error',
+    },
+    primary: {
+      bar: 'bg-primary',
+      tag: 'bg-primary-container/10 text-primary',
+    },
+    secondary: {
+      bar: 'bg-secondary',
+      tag: 'bg-secondary-container/30 text-secondary',
+    },
+  }[tone]
+
+  return (
+    <section className="rounded-lg border border-outline-variant bg-surface-container-lowest p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-label-caps font-label-caps uppercase text-on-surface-variant">
+          {label}
+        </span>
+        <span className="material-symbols-outlined text-on-surface-variant/40">
+          {icon}
+        </span>
+      </div>
+      <div className="flex items-end gap-3">
+        <span className="font-display-lg text-[28px] font-bold text-on-surface">
+          {value}
+        </span>
+        <span className={['mb-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase', toneClasses.tag].join(' ')}>
+          {tag}
+        </span>
+      </div>
+      <div className="mt-4 flex gap-1">
+        <div className={['h-1 flex-1 rounded-full', toneClasses.bar].join(' ')} />
+        <div className={['h-1 flex-1 rounded-full', toneClasses.bar].join(' ')} />
+        <div className="h-1 flex-1 rounded-full bg-surface-container" />
+      </div>
+    </section>
+  )
+}
+
+function MetricsGrid({ cashflow }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <MetricPanel
+        icon="shopping_cart"
+        label="Expense Rate"
+        value={formatPercent(cashflow.expenseRate)}
+        tag="-2.4% vs Avg"
+        tone="primary"
+      />
+      <MetricPanel
+        icon="savings"
+        label="Savings Rate"
+        value={formatPercent(cashflow.savingsRate)}
+        tag="Target Met"
+        tone="secondary"
+      />
+      <MetricPanel
+        icon="query_stats"
+        label="Variance"
+        value={formatMoney(cashflow.incomeVariance)}
+        tag={getVarianceTone(cashflow.incomeVariance) === 'critical' ? 'Deficit Risk' : 'Stable'}
+        tone={getVarianceTone(cashflow.incomeVariance) === 'critical' ? 'critical' : 'secondary'}
+      />
+    </div>
+  )
+}
+
+function CurrentCutoffSummary({ cashflow, cashflowStatus }) {
+  return (
+    <SectionCard
+      title="Current Cutoff Summary"
+      actions={<StatusBadge tone={cashflowStatus.tone}>{cashflowStatus.label}</StatusBadge>}
+    >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+        {[
+          ['Current Cutoff', cashflow.cutoffName, 'text-primary'],
+          ['Expected Income', formatMoney(cashflow.expectedIncome), 'text-primary'],
+          ['Actual Income', formatMoney(cashflow.actualIncome), 'text-secondary'],
+          ['Expenses', formatMoney(cashflow.totalExpenses), 'text-error'],
+          ['Savings', formatMoney(cashflow.totalSavings), 'text-secondary'],
+          ['Remaining Cash', formatMoney(cashflow.remainingCash), getRemainingCashTone(cashflow) === 'critical' ? 'text-error' : 'text-secondary'],
+        ].map(([label, value, valueClassName]) => (
+          <div
+            key={label}
+            className="rounded border border-outline-variant bg-surface p-3"
+          >
+            <p className="text-label-caps font-label-caps uppercase text-on-surface-variant">
+              {label}
+            </p>
+            <p className={['mt-1 font-data-mono text-body-sm font-semibold', valueClassName].join(' ')}>
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  )
+}
+
+function RecentCashflowsPreview() {
+  const rows = [
+    ['Dec 24, 2023', 'Income record total', 'Income', '+PHP 4,200.00', 'Cleared', 'text-secondary'],
+    ['Dec 22, 2023', 'Expense record total', 'Expense', '-PHP 850.24', 'Cleared', 'text-on-surface'],
+    ['Dec 20, 2023', 'Savings allocation', 'Savings', '-PHP 500.00', 'Pending', 'text-tertiary'],
+  ]
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
+      <div className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
+        <h3 className="font-headline-sm text-headline-sm">Recent Cashflows</h3>
+        <button
+          type="button"
+          className="flex items-center gap-1 text-body-sm font-semibold text-primary hover:underline"
+        >
+          View All
+          <span className="material-symbols-outlined text-sm">arrow_forward</span>
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left">
+          <thead className="bg-surface-container-low text-label-caps font-label-caps text-on-surface-variant">
+            <tr>
+              <th className="border-b border-outline-variant px-6 py-3">Date</th>
+              <th className="border-b border-outline-variant px-6 py-3">Entity</th>
+              <th className="border-b border-outline-variant px-6 py-3">Category</th>
+              <th className="border-b border-outline-variant px-6 py-3 text-right">Amount</th>
+              <th className="border-b border-outline-variant px-6 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody className="text-body-sm">
+            {rows.map(([date, entity, category, amount, status, amountClassName]) => (
+              <tr key={`${date}-${category}`} className="transition-colors hover:bg-background">
+                <td className="border-b border-outline-variant px-6 py-4 font-data-mono">
+                  {date}
+                </td>
+                <td className="border-b border-outline-variant px-6 py-4 font-semibold">
+                  {entity}
+                </td>
+                <td className="border-b border-outline-variant px-6 py-4">
+                  <span className="rounded bg-primary-container/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
+                    {category}
+                  </span>
+                </td>
+                <td className={['border-b border-outline-variant px-6 py-4 text-right font-data-mono', amountClassName].join(' ')}>
+                  {amount}
+                </td>
+                <td className="border-b border-outline-variant px-6 py-4">
+                  <span className="flex items-center gap-1.5 text-secondary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+                    {status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 export function CashflowPage() {
   const {
     cashflow,
@@ -78,12 +375,11 @@ export function CashflowPage() {
   const cashflowStatus = getCashflowStatus(cashflow?.remainingCash)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
-        eyebrow="Current State"
-        title="Cashflow"
-        description="Current cutoff cashflow verification."
-        meta={cashflow?.cutoffName ?? 'Read-only engine'}
+        title="Cashflow Management"
+        description="Analyze liquidity cycles and transactional velocity."
+        actions={<PeriodSelector />}
       />
 
       {error ? <ErrorState title="Unable to load cashflow" message={error} /> : null}
@@ -113,13 +409,13 @@ export function CashflowPage() {
               tone="success"
             />
             <StatCard
-              label="Total Expenses"
+              label="Expenses"
               value={formatMoney(cashflow.totalExpenses)}
               helperText="Expense records"
               tone="critical"
             />
             <StatCard
-              label="Total Savings"
+              label="Savings"
               value={formatMoney(cashflow.totalSavings)}
               helperText="Savings records"
               tone="success"
@@ -127,82 +423,24 @@ export function CashflowPage() {
             <StatCard
               label="Remaining Cash"
               value={formatMoney(cashflow.remainingCash)}
-              helperText="After expenses and savings"
+              helperText="Net cash"
               tone={getRemainingCashTone(cashflow)}
             />
           </KpiGrid>
 
-          <SectionCard title="Financial Metrics">
-            <div className="grid gap-3 md:grid-cols-3">
-              <MetricCard
-                label="Expense Rate"
-                value={formatPercent(cashflow.expenseRate)}
-                tone="critical"
-              />
-              <MetricCard
-                label="Savings Rate"
-                value={formatPercent(cashflow.savingsRate)}
-                tone="success"
-              />
-              <MetricCard
-                label="Income Variance"
-                value={formatMoney(cashflow.incomeVariance)}
-                tone={getVarianceTone(cashflow.incomeVariance)}
-              />
-            </div>
-          </SectionCard>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <FlowComparisonCard />
+            <HealthStatusPanel cashflowStatus={cashflowStatus} />
+          </div>
 
-          <SectionCard title="Current Cutoff Summary">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-              <MetricCard
-                align="left"
-                label="Current Cutoff"
-                value={cashflow.cutoffName}
-                tone="info"
-              />
-              <MetricCard
-                label="Expected Income"
-                value={formatMoney(cashflow.expectedIncome)}
-                tone="info"
-              />
-              <MetricCard
-                label="Actual Income"
-                value={formatMoney(cashflow.actualIncome)}
-                tone="success"
-              />
-              <MetricCard
-                label="Expenses"
-                value={formatMoney(cashflow.totalExpenses)}
-                tone="critical"
-              />
-              <MetricCard
-                label="Savings"
-                value={formatMoney(cashflow.totalSavings)}
-                tone="success"
-              />
-              <MetricCard
-                label="Remaining Cash"
-                value={formatMoney(cashflow.remainingCash)}
-                tone={getRemainingCashTone(cashflow)}
-              />
-            </div>
+          <MetricsGrid cashflow={cashflow} />
 
-            <div className="mt-4 rounded border border-outline-variant bg-surface-container-lowest p-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                    Status
-                  </p>
-                  <p className="mt-1 text-sm text-content-muted">
-                    Current cutoff cash position
-                  </p>
-                </div>
-                <StatusBadge tone={cashflowStatus.tone}>
-                  {cashflowStatus.label}
-                </StatusBadge>
-              </div>
-            </div>
-          </SectionCard>
+          <CurrentCutoffSummary
+            cashflow={cashflow}
+            cashflowStatus={cashflowStatus}
+          />
+
+          <RecentCashflowsPreview />
         </>
       ) : null}
     </div>
