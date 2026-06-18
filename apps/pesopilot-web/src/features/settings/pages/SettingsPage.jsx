@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { StatusBadge } from '@/components/dashboard'
-import { useHeader } from '@/components/layout/HeaderContent.jsx'
+import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
 import { Input } from '@/components/ui/Input.jsx'
 

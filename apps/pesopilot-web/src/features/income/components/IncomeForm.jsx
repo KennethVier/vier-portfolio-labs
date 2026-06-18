@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/Button.jsx'
-import { Card } from '@/components/ui/Card.jsx'
 import { Input } from '@/components/ui/Input.jsx'
 
 import { INCOME_SOURCES } from '../constants/incomeConstants.js'

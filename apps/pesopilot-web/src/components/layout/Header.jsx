@@ -1,4 +1,4 @@
-import { useHeader } from '@/components/layout/HeaderContent.jsx'
+import { useHeader } from '@/components/layout/headerContext.js'
 
 export function Header() {
   const { config } = useHeader()

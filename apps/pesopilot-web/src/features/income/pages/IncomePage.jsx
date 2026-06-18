@@ -8,7 +8,7 @@ import {
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 
-import { useHeader } from '@/components/layout/HeaderContent.jsx'
+import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
 import { Popover } from '@/components/ui/Popover.jsx'
 import { IncomeFilters } from '../components/IncomeFilters.jsx'
