@@ -27,8 +27,11 @@ export function useExpenseInbox() {
     [inboxRecords, selectedRecordId],
   )
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true)
+  const refresh = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setIsLoading(true)
+    }
+
     setError(null)
 
     try {
@@ -46,7 +49,9 @@ export function useExpenseInbox() {
     } catch (loadError) {
       setError(loadError.message ?? 'Unable to load expense inbox')
     } finally {
-      setIsLoading(false)
+      if (showLoading) {
+        setIsLoading(false)
+      }
     }
   }, [filters])
 
@@ -61,7 +66,7 @@ export function useExpenseInbox() {
     try {
       await action()
       setEditingRecord(null)
-      await refresh()
+      await refresh({ showLoading: false })
     } catch (mutationError) {
       setError(mutationError.message ?? 'Unable to update inbox record')
       throw mutationError

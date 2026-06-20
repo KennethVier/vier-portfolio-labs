@@ -31,12 +31,12 @@ const chartColors = {
 }
 
 const pieColors = [
-  chartColors.primary,
-  chartColors.secondary,
-  chartColors.tertiary,
-  chartColors.error,
-  'var(--color-primary-container)',
-  'var(--color-secondary-fixed-dim)',
+  '#004ac6',
+  '#006c49',
+  '#784b00',
+  '#ba1a1a',
+  '#2563eb',
+  '#4edea3',
 ]
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -113,12 +113,17 @@ function CategoryBreakdownChart({ data }) {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
+              cx="50%"
+              cy="50%"
               data={data}
               dataKey="value"
               innerRadius={52}
+              isAnimationActive={false}
               nameKey="name"
               outerRadius={92}
               paddingAngle={2}
+              stroke="var(--color-surface-container-lowest)"
+              strokeWidth={2}
             >
               {data.map((entry, index) => (
                 <Cell

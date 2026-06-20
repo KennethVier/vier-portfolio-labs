@@ -14,6 +14,7 @@ import {
   devQaSeedInternals,
   QA_SEED_MARKER,
   seedBasicDataset,
+  seedLargeDataset,
 } from './devQaSeedService.js'
 
 beforeEach(async () => {
@@ -28,6 +29,22 @@ afterEach(async () => {
 })
 
 describe('devQaSeedService', () => {
+  async function createActiveCutoff(overrides = {}) {
+    return salaryCutoffRepository.create({
+      createdAt: '2026-06-01T00:00:00.000Z',
+      endDate: '2026-06-24',
+      expectedIncome: 42000,
+      name: 'Real Active Salary Cycle',
+      payday1: 10,
+      payday2: 25,
+      startDate: '2026-06-10',
+      status: 'active',
+      type: 'semi_monthly',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+      ...overrides,
+    })
+  }
+
   it('generates valid dates and valid expense amounts', () => {
     const cutoff = {
       id: 1,
@@ -90,6 +107,99 @@ describe('devQaSeedService', () => {
     expect((await detectedExpenseRepository.findAll()).every((record) =>
       record.rawText.includes(QA_SEED_MARKER),
     )).toBe(true)
+  })
+
+  it('shifts QA cutoff windows when existing user cutoffs would overlap', async () => {
+    await createActiveCutoff({ name: 'Real Current Salary Cycle' })
+
+    await expect(seedBasicDataset('2026-06-20')).resolves.toMatchObject({
+      detectedExpenses: 3,
+      expenses: 10,
+      income: 3,
+      salaryCutoffs: 2,
+      savings: 3,
+    })
+
+    const cutoffs = await salaryCutoffRepository.findAll()
+    const realCutoff = cutoffs.find((cutoff) => cutoff.name === 'Real Current Salary Cycle')
+    const qaCutoffs = cutoffs.filter((cutoff) => cutoff.name.includes(QA_SEED_MARKER))
+
+    expect(realCutoff).toEqual(expect.objectContaining({ status: 'active' }))
+    expect(qaCutoffs).toHaveLength(2)
+    expect(qaCutoffs.every((cutoff) => cutoff.startDate > realCutoff.endDate)).toBe(true)
+    expect(qaCutoffs.some((cutoff) => cutoff.status === 'active')).toBe(false)
+  })
+
+  it('targets the active cutoff for the basic dataset without creating QA cutoffs', async () => {
+    const activeCutoffId = await createActiveCutoff()
+
+    await expect(
+      seedBasicDataset('2026-06-20', { targetActiveCutoff: true }),
+    ).resolves.toMatchObject({
+      detectedExpenses: 3,
+      expenses: 10,
+      income: 3,
+      salaryCutoffs: 0,
+      savings: 3,
+      target: 'activeCutoff',
+    })
+
+    await expect(salaryCutoffRepository.findAll()).resolves.toHaveLength(1)
+
+    const [expenses, income, savings] = await Promise.all([
+      expenseRepository.findAll(),
+      incomeRepository.findAll(),
+      savingsRepository.findAll(),
+    ])
+
+    expect([...expenses, ...income, ...savings].every((record) =>
+      String(record.cutoffId) === String(activeCutoffId),
+    )).toBe(true)
+    expect([...expenses, ...income, ...savings].every((record) =>
+      record.date >= '2026-06-10' && record.date <= '2026-06-24',
+    )).toBe(true)
+    expect([...expenses, ...income, ...savings].every((record) =>
+      record.note.includes(QA_SEED_MARKER),
+    )).toBe(true)
+  })
+
+  it('targets the active cutoff for the large dataset with current-cycle expenses', async () => {
+    const activeCutoffId = await createActiveCutoff()
+
+    await expect(
+      seedLargeDataset('2026-06-20', { targetActiveCutoff: true }),
+    ).resolves.toMatchObject({
+      detectedExpenses: 20,
+      expenses: 200,
+      income: 20,
+      salaryCutoffs: 0,
+      savings: 20,
+      target: 'activeCutoff',
+    })
+
+    const expenses = await expenseRepository.findAll()
+
+    expect(expenses).toHaveLength(200)
+    expect(expenses.every((expense) =>
+      String(expense.cutoffId) === String(activeCutoffId),
+    )).toBe(true)
+    expect(expenses.every((expense) =>
+      expense.date >= '2026-06-10' && expense.date <= '2026-06-24',
+    )).toBe(true)
+  })
+
+  it('falls back to generated QA cutoffs when active cutoff targeting has no active cutoff', async () => {
+    await expect(
+      seedBasicDataset('2026-06-20', { targetActiveCutoff: true }),
+    ).resolves.toMatchObject({
+      salaryCutoffs: 2,
+      target: 'generatedCutoffs',
+    })
+
+    const cutoffs = await salaryCutoffRepository.findAll()
+
+    expect(cutoffs).toHaveLength(2)
+    expect(cutoffs.every((cutoff) => cutoff.name.includes(QA_SEED_MARKER))).toBe(true)
   })
 
   it('clears only QA records and preserves non-QA records', async () => {

@@ -38,6 +38,7 @@ export function DevToolsPage() {
   const [isRunning, setIsRunning] = useState(false)
   const [lastAction, setLastAction] = useState(null)
   const [result, setResult] = useState(null)
+  const [targetActiveCutoff, setTargetActiveCutoff] = useState(false)
 
   async function runAction(label, action) {
     setError(null)
@@ -76,18 +77,46 @@ export function DevToolsPage() {
             Developer QA tools only. Do not use with real production data.
           </div>
 
+          <label className="flex items-start gap-3 rounded border border-outline-variant bg-surface p-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary"
+              checked={targetActiveCutoff}
+              disabled={isRunning}
+              onChange={(event) => setTargetActiveCutoff(event.target.checked)}
+            />
+            <span>
+              <span className="block font-body-md font-semibold text-on-surface">
+                Target active cutoff
+              </span>
+              <span className="block text-body-sm text-on-surface-variant">
+                Seeds ledger records into your active cutoff so Dashboard current-cycle widgets populate.
+              </span>
+            </span>
+          </label>
+
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Button
               type="button"
               disabled={isRunning}
-              onClick={() => runAction('Seed Basic Dataset', seedBasicDataset)}
+              onClick={() =>
+                runAction(
+                  'Seed Basic Dataset',
+                  () => seedBasicDataset(undefined, { targetActiveCutoff }),
+                )
+              }
             >
               Seed Basic Dataset
             </Button>
             <Button
               type="button"
               disabled={isRunning}
-              onClick={() => runAction('Seed Large Dataset', seedLargeDataset)}
+              onClick={() =>
+                runAction(
+                  'Seed Large Dataset',
+                  () => seedLargeDataset(undefined, { targetActiveCutoff }),
+                )
+              }
             >
               Seed Large Dataset
             </Button>

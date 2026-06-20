@@ -6,6 +6,7 @@ import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
 
 import { expenseService } from '@/features/expenses/services/expenseService.js'
 import { incomeService } from '@/features/income/services/incomeService.js'
+import { generateSalaryCutoffCycle } from '@/features/salary-cutoff/services/cutoffCycle.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 import { savingsService } from '@/features/savings/services/savingsService.js'
 
@@ -68,6 +69,26 @@ function addMonths(date, months) {
   return nextDate
 }
 
+function shiftReferenceDateByMonths(referenceDate, months) {
+  const parsedDate = parseIsoDate(referenceDate)
+  const shiftedMonth = new Date(
+    Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth() + months, 1),
+  )
+  const lastDay = new Date(
+    Date.UTC(shiftedMonth.getUTCFullYear(), shiftedMonth.getUTCMonth() + 1, 0),
+  ).getUTCDate()
+
+  return formatIsoDate(
+    new Date(
+      Date.UTC(
+        shiftedMonth.getUTCFullYear(),
+        shiftedMonth.getUTCMonth(),
+        Math.min(parsedDate.getUTCDate(), lastDay),
+      ),
+    ),
+  )
+}
+
 function getDateInMonth(baseDate, day) {
   const lastDay = new Date(
     Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0),
@@ -101,6 +122,13 @@ function getQANote(label) {
 
 function hasMarker(value) {
   return String(value ?? '').includes(QA_SEED_MARKER)
+}
+
+function rangesOverlap(firstRange, secondRange) {
+  return (
+    firstRange.startDate <= secondRange.endDate &&
+    firstRange.endDate >= secondRange.startDate
+  )
 }
 
 function getInboxStatus(index) {
@@ -249,6 +277,73 @@ function buildInboxRecord(referenceDate, index) {
   }
 }
 
+function getCutoffSpecRange(cutoffSpec) {
+  if (cutoffSpec.type === 'custom') {
+    return {
+      endDate: cutoffSpec.endDate,
+      startDate: cutoffSpec.startDate,
+    }
+  }
+
+  return generateSalaryCutoffCycle({
+    payday1: cutoffSpec.payday1,
+    payday2: cutoffSpec.payday2,
+    referenceDate: cutoffSpec.referenceDate,
+    type: cutoffSpec.type,
+  })
+}
+
+function specsOverlapExistingCutoffs(cutoffSpecs, existingCutoffs) {
+  const generatedRanges = cutoffSpecs.map(getCutoffSpecRange)
+
+  return generatedRanges.some((generatedRange, index) => {
+    const overlapsEarlierSeedRange = generatedRanges
+      .slice(0, index)
+      .some((existingSeedRange) => rangesOverlap(generatedRange, existingSeedRange))
+    const overlapsExistingRange = existingCutoffs.some((existingCutoff) =>
+      rangesOverlap(generatedRange, existingCutoff),
+    )
+
+    return overlapsEarlierSeedRange || overlapsExistingRange
+  })
+}
+
+function preserveUserActiveCutoff(cutoffSpecs, existingCutoffs) {
+  const hasUserActiveCutoff = existingCutoffs.some(
+    (cutoff) => cutoff.status === 'active' && !hasMarker(cutoff.name),
+  )
+
+  if (!hasUserActiveCutoff) {
+    return cutoffSpecs
+  }
+
+  return cutoffSpecs.map((cutoffSpec) => ({
+    ...cutoffSpec,
+    status: cutoffSpec.status === 'active' ? 'planned' : cutoffSpec.status,
+  }))
+}
+
+async function buildNonOverlappingSeedPlan(buildCutoffSpecs, referenceDate) {
+  const existingCutoffs = await salaryCutoffRepository.findAll()
+
+  for (let monthOffset = 0; monthOffset <= 60; monthOffset += 1) {
+    const candidateReferenceDate = shiftReferenceDateByMonths(referenceDate, monthOffset)
+    const cutoffSpecs = preserveUserActiveCutoff(
+      buildCutoffSpecs(candidateReferenceDate),
+      existingCutoffs,
+    )
+
+    if (!specsOverlapExistingCutoffs(cutoffSpecs, existingCutoffs)) {
+      return {
+        cutoffSpecs,
+        referenceDate: candidateReferenceDate,
+      }
+    }
+  }
+
+  throw new Error('Unable to find a non-overlapping QA seed cutoff window')
+}
+
 async function clearRecords(repository, isQaRecord) {
   const records = await repository.findAll()
   const qaRecords = records.filter(isQaRecord)
@@ -256,6 +351,36 @@ async function clearRecords(repository, isQaRecord) {
   await Promise.all(qaRecords.map((record) => repository.remove(record.id)))
 
   return qaRecords.length
+}
+
+async function clearQaGeneratedData({ includeCutoffs = true } = {}) {
+  const [
+    salaryCutoffs,
+    expenses,
+    income,
+    savings,
+    detectedExpenses,
+  ] = await Promise.all([
+    includeCutoffs
+      ? clearRecords(salaryCutoffRepository, (record) => hasMarker(record.name))
+      : Promise.resolve(0),
+    clearRecords(expenseRepository, (record) => hasMarker(record.note)),
+    clearRecords(incomeRepository, (record) => hasMarker(record.note)),
+    clearRecords(savingsRepository, (record) => hasMarker(record.note)),
+    clearRecords(
+      detectedExpenseRepository,
+      (record) => hasMarker(record.rawText) || hasMarker(record.note),
+    ),
+  ])
+
+  return {
+    detectedExpenses,
+    expenses,
+    income,
+    salaryCutoffs,
+    savings,
+    total: salaryCutoffs + expenses + income + savings + detectedExpenses,
+  }
 }
 
 async function createCutoffs(cutoffSpecs) {
@@ -300,72 +425,101 @@ async function createInboxItems(count, referenceDate) {
   return count
 }
 
+async function findActiveCutoff() {
+  const cutoffs = await salaryCutoffRepository.findAll()
+  return cutoffs.find((cutoff) => cutoff.status === 'active') ?? null
+}
+
 export async function clearQaData() {
-  const [
-    salaryCutoffs,
-    expenses,
-    income,
-    savings,
-    detectedExpenses,
-  ] = await Promise.all([
-    clearRecords(salaryCutoffRepository, (record) => hasMarker(record.name)),
-    clearRecords(expenseRepository, (record) => hasMarker(record.note)),
-    clearRecords(incomeRepository, (record) => hasMarker(record.note)),
-    clearRecords(savingsRepository, (record) => hasMarker(record.note)),
-    clearRecords(
-      detectedExpenseRepository,
-      (record) => hasMarker(record.rawText) || hasMarker(record.note),
-    ),
+  return clearQaGeneratedData()
+}
+
+async function seedDataset({
+  buildCutoffSpecs,
+  detectedExpenseCount,
+  expenseCount,
+  incomeCount,
+  referenceDate,
+  savingsCount,
+  targetActiveCutoff = false,
+}) {
+  if (targetActiveCutoff) {
+    const activeCutoff = await findActiveCutoff()
+
+    if (activeCutoff) {
+      await clearQaGeneratedData({ includeCutoffs: false })
+
+      const [expenses, income, savings, detectedExpenses] = await Promise.all([
+        createExpenses(expenseCount, [activeCutoff]),
+        createIncome(incomeCount, [activeCutoff]),
+        createSavings(savingsCount, [activeCutoff]),
+        createInboxItems(detectedExpenseCount, activeCutoff.startDate),
+      ])
+
+      return {
+        detectedExpenses,
+        expenses,
+        income,
+        message: `Seeded ledger records into active cutoff: ${activeCutoff.name}`,
+        salaryCutoffs: 0,
+        savings,
+        target: 'activeCutoff',
+      }
+    }
+  }
+
+  await clearQaData()
+  const seedPlan = await buildNonOverlappingSeedPlan(buildCutoffSpecs, referenceDate)
+  const cutoffs = await createCutoffs(seedPlan.cutoffSpecs)
+
+  const [expenses, income, savings, detectedExpenses] = await Promise.all([
+    createExpenses(expenseCount, cutoffs),
+    createIncome(incomeCount, cutoffs),
+    createSavings(savingsCount, cutoffs),
+    createInboxItems(detectedExpenseCount, seedPlan.referenceDate),
   ])
 
   return {
     detectedExpenses,
     expenses,
     income,
-    salaryCutoffs,
+    message: targetActiveCutoff
+      ? 'No active cutoff found. Seeded generated QA cutoffs instead.'
+      : 'Seeded generated QA cutoffs.',
+    salaryCutoffs: cutoffs.length,
     savings,
-    total: salaryCutoffs + expenses + income + savings + detectedExpenses,
+    target: 'generatedCutoffs',
   }
 }
 
-export async function seedBasicDataset(referenceDate = todayIsoDate()) {
-  await clearQaData()
-  const cutoffs = await createCutoffs(buildBasicCutoffSpecs(referenceDate))
-
-  const [expenses, income, savings, detectedExpenses] = await Promise.all([
-    createExpenses(10, cutoffs),
-    createIncome(3, cutoffs),
-    createSavings(3, cutoffs),
-    createInboxItems(3, referenceDate),
-  ])
-
-  return {
-    detectedExpenses,
-    expenses,
-    income,
-    salaryCutoffs: cutoffs.length,
-    savings,
-  }
+export async function seedBasicDataset(
+  referenceDate = todayIsoDate(),
+  { targetActiveCutoff = false } = {},
+) {
+  return seedDataset({
+    buildCutoffSpecs: buildBasicCutoffSpecs,
+    detectedExpenseCount: 3,
+    expenseCount: 10,
+    incomeCount: 3,
+    referenceDate,
+    savingsCount: 3,
+    targetActiveCutoff,
+  })
 }
 
-export async function seedLargeDataset(referenceDate = todayIsoDate()) {
-  await clearQaData()
-  const cutoffs = await createCutoffs(buildLargeCutoffSpecs(referenceDate))
-
-  const [expenses, income, savings, detectedExpenses] = await Promise.all([
-    createExpenses(200, cutoffs),
-    createIncome(20, cutoffs),
-    createSavings(20, cutoffs),
-    createInboxItems(20, referenceDate),
-  ])
-
-  return {
-    detectedExpenses,
-    expenses,
-    income,
-    salaryCutoffs: cutoffs.length,
-    savings,
-  }
+export async function seedLargeDataset(
+  referenceDate = todayIsoDate(),
+  { targetActiveCutoff = false } = {},
+) {
+  return seedDataset({
+    buildCutoffSpecs: buildLargeCutoffSpecs,
+    detectedExpenseCount: 20,
+    expenseCount: 200,
+    incomeCount: 20,
+    referenceDate,
+    savingsCount: 20,
+    targetActiveCutoff,
+  })
 }
 
 export async function seedExpenseInboxItems(referenceDate = todayIsoDate()) {
@@ -386,6 +540,8 @@ export const devQaSeedInternals = {
   buildExpensePayload,
   buildInboxRecord,
   buildLargeCutoffSpecs,
+  buildNonOverlappingSeedPlan,
+  clearQaGeneratedData,
   getDateInsideRange,
   hasMarker,
 }
