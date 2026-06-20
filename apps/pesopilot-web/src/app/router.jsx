@@ -17,6 +17,31 @@ const ReportsPage = lazy(() =>
   })),
 )
 
+const DevToolsPage = lazy(() =>
+  import('@/features/dev-tools/pages/DevToolsPage.jsx').then((module) => ({
+    default: module.DevToolsPage,
+  })),
+)
+
+const devRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: 'dev-tools',
+        element: (
+          <Suspense
+            fallback={
+              <div className="rounded border border-outline-variant bg-surface-container-lowest p-3 text-sm text-content-muted">
+                Loading dev tools
+              </div>
+            }
+          >
+            <DevToolsPage />
+          </Suspense>
+        ),
+      },
+    ]
+  : []
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -45,6 +70,7 @@ export const router = createBrowserRouter([
       },
       { path: 'expense-inbox', element: <ExpenseInboxPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      ...devRoutes,
     ],
   },
 ])

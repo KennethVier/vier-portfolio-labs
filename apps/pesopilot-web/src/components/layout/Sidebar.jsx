@@ -10,6 +10,9 @@ const navItems = [
   { icon: 'bar_chart', label: 'Reports', to: '/reports' },
   { icon: 'inbox', label: 'Expense Inbox', to: '/expense-inbox' },
   { icon: 'settings', label: 'Settings', to: '/settings' },
+  ...(import.meta.env.DEV
+    ? [{ icon: 'construction', label: 'Dev Tools', to: '/dev-tools' }]
+    : []),
 ]
 
 export function Sidebar() {

@@ -1123,6 +1123,317 @@ Review detected expenses before they become official expenses.
 
 [x] Approved expense persistence test
 
+# Phase 8.5 — MVP Stabilization and Manual QA
+
+Status: ⬜
+
+Goal:
+
+Validate all completed MVP flows before AI, forecasting, and advanced automation phases.
+
+This phase focuses on stability, correctness, usability, and data integrity.
+
+---
+
+## Pages
+
+### Core Modules
+
+[ ] Dashboard
+
+[ ] Expenses
+
+[ ] Income
+
+[ ] Savings
+
+[ ] Salary Cutoff
+
+[ ] Cashflow
+
+[ ] Reports
+
+[ ] Expense Inbox
+
+[ ] Settings
+
+---
+
+## Manual Testing
+
+### CRUD
+
+[ ] Create flow
+
+[ ] Edit flow
+
+[ ] Delete flow
+
+### Search & Filters
+
+[ ] Search
+
+[ ] Filters
+
+[ ] Filter reset
+
+[ ] Combined filters
+
+### States
+
+[ ] Empty states
+
+[ ] Error states
+
+[ ] Loading states
+
+### Layout & Responsiveness
+
+[ ] Mobile responsiveness
+
+[ ] Tablet responsiveness
+
+[ ] Desktop responsiveness
+
+[ ] Table overflow handling
+
+[ ] Sidebar navigation
+
+[ ] Header search behavior
+
+### UI Components
+
+[ ] Modal behavior
+
+[ ] Popover behavior
+
+[ ] KPI cards
+
+[ ] Charts
+
+[ ] Tables
+
+[ ] Forms
+
+---
+
+## Critical Flows
+
+### Expenses
+
+[ ] Create expense
+
+[ ] Edit expense
+
+[ ] Delete expense
+
+[ ] Create expense with cutoff
+
+### Income
+
+[ ] Create income
+
+[ ] Edit income
+
+[ ] Delete income
+
+[ ] Create income with cutoff
+
+### Savings
+
+[ ] Create savings
+
+[ ] Edit savings
+
+[ ] Delete savings
+
+[ ] Create savings with cutoff
+
+### Salary Cutoff
+
+[ ] Create monthly cutoff
+
+[ ] Create semi-monthly cutoff
+
+[ ] Create custom cutoff
+
+[ ] Edit cutoff
+
+[ ] Delete cutoff
+
+[ ] Current cutoff detection
+
+[ ] Generated cycle correctness
+
+### Cashflow
+
+[ ] Cashflow reflects expenses
+
+[ ] Cashflow reflects income
+
+[ ] Cashflow reflects savings
+
+[ ] Cashflow reflects cutoffs
+
+### Dashboard
+
+[ ] Dashboard reflects expenses
+
+[ ] Dashboard reflects income
+
+[ ] Dashboard reflects savings
+
+[ ] Dashboard reflects cashflow
+
+### Reports
+
+[ ] Reports reflect expenses
+
+[ ] Reports reflect income
+
+[ ] Reports reflect savings
+
+[ ] Reports reflect cutoff data
+
+### Expense Inbox
+
+[ ] Approve creates expense
+
+[ ] Reject does not create expense
+
+[ ] Edit before approval
+
+[ ] Approved record cannot be approved twice
+
+[ ] Preview panel accuracy
+
+---
+
+## Data Integrity
+
+[ ] No duplicate expense after inbox approval
+
+[ ] Approved inbox item cannot be approved twice
+
+[ ] Rejected inbox item does not affect expenses
+
+[ ] Deleted cutoff fallback displays safely
+
+[ ] Legacy cutoff types do not crash
+
+[ ] Monthly generated dates are correct
+
+[ ] Semi-monthly generated dates are correct
+
+[ ] Dashboard totals match raw records
+
+[ ] Report totals match raw records
+
+[ ] Cashflow totals match raw records
+
+---
+
+## Browser & Storage Testing
+
+[ ] IndexedDB persistence after refresh
+
+[ ] Hard refresh keeps data
+
+[ ] Browser close and reopen keeps data
+
+[ ] Clear IndexedDB shows proper empty states
+
+[ ] App works with no seed data
+
+[ ] App works with realistic multi-month data
+
+---
+
+## Dev QA Tools
+
+[x] Development-only Dev Tools route
+
+[x] Development-only sidebar item
+
+[x] Basic QA dataset seeding
+
+[x] Large multi-month QA dataset seeding
+
+[x] Expense Inbox QA item seeding
+
+[x] QA_SEED-only clear behavior
+
+[x] Dev QA seed utility tests
+
+---
+
+## UX Polish
+
+[ ] Buttons have clear labels
+
+[ ] Validation messages are readable
+
+[ ] Forms reset correctly after submit
+
+[ ] Modals close correctly
+
+[ ] Popovers position correctly
+
+[ ] Currency formatting is consistent
+
+[ ] Date formatting is consistent
+
+[ ] Charts render correctly with large datasets
+
+[ ] Charts render correctly with minimal datasets
+
+[ ] No visual overflow or clipping
+
+---
+
+## Verification
+
+[ ] npm.cmd run test
+
+[ ] npm.cmd run lint
+
+[ ] npm.cmd run build
+
+---
+
+## Known Issues Found
+
+```txt
+Pending.
+```
+
+---
+
+## Fixes Applied
+
+```txt
+Pending.
+```
+
+---
+
+## Actions Taken
+
+```txt
+Added development-only /dev-tools page for local QA seed data.
+Added basic and large QA dataset generation for salary cutoffs, expenses, income, savings, and expense inbox records.
+Added QA_SEED marker-based clear behavior that preserves non-QA records.
+Added tests for Dev QA seed utility generation and safe clearing.
+```
+ 
+---
+
+## Final QA Verdict
+
+```txt
+Pending.
+```
+
 ---
 
 # Phase 9 — Manual AI Expense Input
