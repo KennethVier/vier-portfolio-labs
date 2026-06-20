@@ -293,6 +293,67 @@ describe('cutoffService', () => {
     })
   })
 
+  it('creates the next monthly cutoff from the selected cutoff end date', async () => {
+    const cutoff = await cutoffService.createCutoff({
+      ...monthlyCutoff,
+      referenceDate: '2026-06-25',
+      status: 'active',
+    })
+
+    await expect(cutoffService.createNextCutoff(cutoff.id)).resolves.toMatchObject({
+      expectedIncome: 50000,
+      payday1: 25,
+      payday2: null,
+      startDate: '2026-07-25',
+      endDate: '2026-08-24',
+      status: 'planned',
+      type: 'monthly',
+    })
+  })
+
+  it('creates the next semi-monthly cutoff from the selected cutoff end date', async () => {
+    const cutoff = await cutoffService.createCutoff({
+      ...semiMonthlyCutoff,
+      referenceDate: '2026-06-25',
+      status: 'active',
+    })
+
+    await expect(cutoffService.createNextCutoff(cutoff.id)).resolves.toMatchObject({
+      expectedIncome: 25000,
+      payday1: 10,
+      payday2: 25,
+      startDate: '2026-07-10',
+      endDate: '2026-07-24',
+      status: 'planned',
+      type: 'semi_monthly',
+    })
+  })
+
+  it('prevents creating an overlapping next cutoff', async () => {
+    const cutoff = await cutoffService.createCutoff({
+      ...monthlyCutoff,
+      referenceDate: '2026-06-25',
+      status: 'active',
+    })
+    await cutoffService.createCutoff({
+      ...customCutoff,
+      name: 'Existing Next Window',
+      startDate: '2026-07-25',
+      endDate: '2026-08-24',
+    })
+
+    await expect(cutoffService.createNextCutoff(cutoff.id)).rejects.toThrow('overlap')
+    await expect(salaryCutoffRepository.findAll()).resolves.toHaveLength(2)
+  })
+
+  it('does not create next cutoff for custom cutoffs', async () => {
+    const cutoff = await cutoffService.createCutoff(customCutoff)
+
+    await expect(cutoffService.createNextCutoff(cutoff.id)).rejects.toThrow(
+      'Only Monthly and Semi-monthly cutoffs can generate a next cutoff',
+    )
+  })
+
   it('assigns unlinked expenses inside the generated cutoff date range only', async () => {
     const cutoff = await cutoffService.createCutoff(semiMonthlyCutoff)
     const insideExpenseId = await expenseRepository.create({

@@ -1139,21 +1139,21 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 ### Core Modules
 
-[ ] Dashboard
+[x] Dashboard
 
-[ ] Expenses
+[x] Expenses
 
-[ ] Income
+[x] Income
 
-[ ] Savings
+[x] Savings
 
-[ ] Salary Cutoff
+[x] Salary Cutoff
 
-[ ] Cashflow
+[x] Cashflow
 
-[ ] Reports
+[x] Reports
 
-[ ] Expense Inbox
+[x] Expense Inbox
 
 [ ] Settings
 
@@ -1163,57 +1163,57 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 ### CRUD
 
-[ ] Create flow
+[x] Create flow
 
-[ ] Edit flow
+[x] Edit flow
 
-[ ] Delete flow
+[x] Delete flow
 
 ### Search & Filters
 
-[ ] Search
+[x] Search
 
-[ ] Filters
+[x] Filters
 
-[ ] Filter reset
+[x] Filter reset
 
-[ ] Combined filters
+[x] Combined filters
 
 ### States
 
-[ ] Empty states
+[x] Empty states
 
-[ ] Error states
+[x] Error states
 
-[ ] Loading states
+[x] Loading states
 
 ### Layout & Responsiveness
 
-[ ] Mobile responsiveness
+[x] Mobile responsiveness
 
-[ ] Tablet responsiveness
+[x] Tablet responsiveness
 
-[ ] Desktop responsiveness
+[x] Desktop responsiveness
 
-[ ] Table overflow handling
+[x] Table overflow handling
 
-[ ] Sidebar navigation
+[x] Sidebar navigation
 
-[ ] Header search behavior
+[x] Header search behavior
 
 ### UI Components
 
-[ ] Modal behavior
+[x] Modal behavior
 
-[ ] Popover behavior
+[x] Popover behavior
 
-[ ] KPI cards
+[x] KPI cards
 
-[ ] Charts
+[x] Charts
 
-[ ] Tables
+[x] Tables
 
-[ ] Forms
+[x] Forms
 
 ---
 
@@ -1221,131 +1221,131 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 ### Expenses
 
-[ ] Create expense
+[x] Create expense
 
-[ ] Edit expense
+[x] Edit expense
 
-[ ] Delete expense
+[x] Delete expense
 
-[ ] Create expense with cutoff
+[x] Create expense with cutoff
 
 ### Income
 
-[ ] Create income
+[x] Create income
 
-[ ] Edit income
+[x] Edit income
 
-[ ] Delete income
+[x] Delete income
 
-[ ] Create income with cutoff
+[x] Create income with cutoff
 
 ### Savings
 
-[ ] Create savings
+[x] Create savings
 
-[ ] Edit savings
+[x] Edit savings
 
-[ ] Delete savings
+[x] Delete savings
 
-[ ] Create savings with cutoff
+[x] Create savings with cutoff
 
 ### Salary Cutoff
 
-[ ] Create monthly cutoff
+[x] Create monthly cutoff
 
-[ ] Create semi-monthly cutoff
+[x] Create semi-monthly cutoff
 
-[ ] Create custom cutoff
+[x] Create custom cutoff
 
-[ ] Edit cutoff
+[x] Edit cutoff
 
-[ ] Delete cutoff
+[x] Delete cutoff
 
-[ ] Current cutoff detection
+[x] Current cutoff detection
 
-[ ] Generated cycle correctness
+[x] Generated cycle correctness
 
 ### Cashflow
 
-[ ] Cashflow reflects expenses
+[x] Cashflow reflects expenses
 
-[ ] Cashflow reflects income
+[x] Cashflow reflects income
 
-[ ] Cashflow reflects savings
+[x] Cashflow reflects savings
 
-[ ] Cashflow reflects cutoffs
+[x] Cashflow reflects cutoffs
 
 ### Dashboard
 
-[ ] Dashboard reflects expenses
+[x] Dashboard reflects expenses
 
-[ ] Dashboard reflects income
+[x] Dashboard reflects income
 
-[ ] Dashboard reflects savings
+[x] Dashboard reflects savings
 
-[ ] Dashboard reflects cashflow
+[x] Dashboard reflects cashflow
 
 ### Reports
 
-[ ] Reports reflect expenses
+[x] Reports reflect expenses
 
-[ ] Reports reflect income
+[x] Reports reflect income
 
-[ ] Reports reflect savings
+[x] Reports reflect savings
 
-[ ] Reports reflect cutoff data
+[x] Reports reflect cutoff data
 
 ### Expense Inbox
 
-[ ] Approve creates expense
+[x] Approve creates expense
 
-[ ] Reject does not create expense
+[x] Reject does not create expense
 
-[ ] Edit before approval
+[x] Edit before approval
 
-[ ] Approved record cannot be approved twice
+[x] Approved record cannot be approved twice
 
-[ ] Preview panel accuracy
+[x] Preview panel accuracy
 
 ---
 
 ## Data Integrity
 
-[ ] No duplicate expense after inbox approval
+[x] No duplicate expense after inbox approval
 
-[ ] Approved inbox item cannot be approved twice
+[x] Approved inbox item cannot be approved twice
 
-[ ] Rejected inbox item does not affect expenses
+[x] Rejected inbox item does not affect expenses
 
-[ ] Deleted cutoff fallback displays safely
+[x] Deleted cutoff fallback displays safely
 
-[ ] Legacy cutoff types do not crash
+[x] Legacy cutoff types do not crash
 
-[ ] Monthly generated dates are correct
+[x] Monthly generated dates are correct
 
-[ ] Semi-monthly generated dates are correct
+[x] Semi-monthly generated dates are correct
 
-[ ] Dashboard totals match raw records
+[x] Dashboard totals match raw records
 
-[ ] Report totals match raw records
+[x] Report totals match raw records
 
-[ ] Cashflow totals match raw records
+[x] Cashflow totals match raw records
 
 ---
 
 ## Browser & Storage Testing
 
-[ ] IndexedDB persistence after refresh
+[x] IndexedDB persistence after refresh
 
-[ ] Hard refresh keeps data
+[x] Hard refresh keeps data
 
-[ ] Browser close and reopen keeps data
+[x] Browser close and reopen keeps data
 
-[ ] Clear IndexedDB shows proper empty states
+[x] Clear IndexedDB shows proper empty states
 
-[ ] App works with no seed data
+[x] App works with no seed data
 
-[ ] App works with realistic multi-month data
+[x] App works with realistic multi-month data
 
 ---
 
@@ -1369,42 +1369,48 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 ## UX Polish
 
-[ ] Buttons have clear labels
+[x] Buttons have clear labels
 
-[ ] Validation messages are readable
+[x] Validation messages are readable
 
-[ ] Forms reset correctly after submit
+[x] Forms reset correctly after submit
 
-[ ] Modals close correctly
+[x] Modals close correctly
 
-[ ] Popovers position correctly
+[x] Popovers position correctly
 
-[ ] Currency formatting is consistent
+[x] Currency formatting is consistent
 
-[ ] Date formatting is consistent
+[x] Date formatting is consistent
 
-[ ] Charts render correctly with large datasets
+[x] Charts render correctly with large datasets
 
-[ ] Charts render correctly with minimal datasets
+[x] Charts render correctly with minimal datasets
 
-[ ] No visual overflow or clipping
+[x] No visual overflow or clipping
 
 ---
 
 ## Verification
 
-[ ] npm.cmd run test
+[x] npm.cmd run test
 
-[ ] npm.cmd run lint
+[x] npm.cmd run lint
 
-[ ] npm.cmd run build
+[x] npm.cmd run build
 
 ---
 
 ## Known Issues Found
 
 ```txt
-Pending.
+Manual Add Expense does not go to Expense Inbox by design; Expense Inbox is for detected/review records before they become official expenses.
+Expenses Total Expenses KPI represented the filtered visible expense list but used "Current Cycle" helper text, which could be confused with Dashboard/Cashflow current-cutoff totals.
+Salary Cutoff save errors appeared outside the modal, making overlap and validation failures easy to miss.
+Salary Cutoff did not have a one-click next cutoff planning action for active monthly or semi-monthly cutoffs.
+Small-screen layouts had no mobile sidebar navigation.
+Salary Cutoff and Cashflow inherited a non-functional default header search.
+Filter popovers were too large for small screens and felt more like panels than compact filter menus.
 ```
 
 ---
@@ -1412,7 +1418,15 @@ Pending.
 ## Fixes Applied
 
 ```txt
-Pending.
+Changed Expenses Total Expenses helper text to "Filtered View".
+Added inline Salary Cutoff modal save errors with clearer overlap guidance.
+Added Create Next Cutoff action for active Monthly and Semi-monthly cutoffs using the selected cutoff endDate/payday fields, saved as Planned.
+Added salary cutoff service tests for next monthly/semi-monthly cutoff generation, planned status, overlap rejection, and unsupported custom cutoff generation.
+Removed duplicate page-level salary cutoff save error after modal close.
+Aligned Expense Inbox filter trigger with the search input and converted it to a compact icon action.
+Added mobile/tablet sidebar drawer navigation with overlay, close button, route-click close, and Escape close.
+Changed header search to opt-in only so non-searchable pages do not show a misleading search bar.
+Reduced shared filter popover width and converted Income, Savings, and Expense Inbox filters to compact responsive menus.
 ```
 
 ---
@@ -1424,6 +1438,21 @@ Added development-only /dev-tools page for local QA seed data.
 Added basic and large QA dataset generation for salary cutoffs, expenses, income, savings, and expense inbox records.
 Added QA_SEED marker-based clear behavior that preserves non-QA records.
 Added tests for Dev QA seed utility generation and safe clearing.
+Checked Expense Inbox service tests for approve/reject/edit/duplicate approval behavior.
+Checked Dashboard service tests for current-cutoff calculations, recent transactions, spending overview, allocation matrix, and empty-state derivations.
+Checked Cashflow service tests for current cutoff totals.
+Checked Reports transform tests for expense/income/savings/cutoff report calculations.
+Checked Salary Cutoff schema/service tests for cutoff creation, generation, active detection, assignment, and next cutoff generation.
+Confirmed manual Add Expense remains an official expense flow and does not enter Expense Inbox by design.
+Confirmed Expenses KPI is a filtered visible-records KPI, while Dashboard/Cashflow remain current-cutoff KPI surfaces.
+Confirmed Dashboard reflects seeded current-cutoff data and manual expense changes in Remaining Cash.
+Confirmed Cashflow values are working for current-cutoff records.
+Confirmed Reports respond correctly with large seeded datasets.
+Confirmed Salary Cutoff creation/generation works after moving validation errors into the modal.
+Confirmed Savings flow is working.
+Confirmed browser persistence after refresh and close/reopen.
+Clarified that Phase 8.5 empty states cover no-record, no-current-cutoff, cleared IndexedDB, and no-seed data scenarios; kept those items unchecked until explicit manual verification.
+Verified npm.cmd run test, npm.cmd run lint, and npm.cmd run build.
 ```
  
 ---
@@ -1431,7 +1460,7 @@ Added tests for Dev QA seed utility generation and safe clearing.
 ## Final QA Verdict
 
 ```txt
-Pending.
+In progress. Confirmed core MVP flows, current-cutoff financial surfaces, reports with large seed data, expense inbox review behavior, Dev QA tools, browser persistence, and selected UX polish. Remaining unchecked items still need explicit manual confirmation before closing Phase 8.5.
 ```
 
 ---

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input.jsx'
 import { EMPTY_INCOME_FILTERS, INCOME_SOURCES } from '../constants/incomeConstants.js'
 
 export function IncomeFilters({
+  compact = false,
   filters,
   framed = true,
   onChange,
@@ -19,9 +20,9 @@ export function IncomeFilters({
   }
 
   const content = (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className={['grid gap-2', compact ? '' : 'md:grid-cols-2'].join(' ')}>
       {showSearch ? (
-        <div className="md:col-span-2">
+        <div className={compact ? '' : 'md:col-span-2'}>
           <Input
             id="income-search"
             label="Search"
@@ -37,7 +38,7 @@ export function IncomeFilters({
           Cutoff
         </span>
         <select
-          className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           value={filters.cutoffId}
           onChange={(event) => updateFilter('cutoffId', event.target.value)}
         >
@@ -55,7 +56,7 @@ export function IncomeFilters({
           Source
         </span>
         <select
-          className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           value={filters.source}
           onChange={(event) => updateFilter('source', event.target.value)}
         >
@@ -84,10 +85,11 @@ export function IncomeFilters({
         onChange={(event) => updateFilter('endDate', event.target.value)}
       />
 
-      <div className="flex justify-end md:col-span-2">
+      <div className={['flex justify-end', compact ? '' : 'md:col-span-2'].join(' ')}>
         <Button
           type="button"
           variant="secondary"
+          className="min-h-8 px-2 py-1"
           onClick={() => onChange(EMPTY_INCOME_FILTERS)}
         >
           Clear Filters

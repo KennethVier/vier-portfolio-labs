@@ -1,6 +1,6 @@
 import { useHeader } from '@/components/layout/headerContext.js'
 
-export function Header() {
+export function Header({ onMenuClick }) {
   const { config } = useHeader()
 
   const {
@@ -20,6 +20,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 flex min-h-14 w-full items-center justify-between gap-3 border-b border-outline-variant bg-surface px-4 py-2 lg:ml-[240px] lg:h-14 lg:w-[calc(100%-240px)] lg:px-6 lg:py-0">
       <div className="flex min-w-0 flex-1 items-center gap-6">
+        <button
+          type="button"
+          className="rounded border border-outline-variant bg-surface-container-lowest p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container lg:hidden"
+          aria-label="Open navigation"
+          onClick={onMenuClick}
+        >
+          <span className="material-symbols-outlined text-xl">menu</span>
+        </button>
+
         {showSearch ? (
           <div className="flex min-w-0 flex-1 items-center rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-1.5 sm:max-w-64">
             <span className="material-symbols-outlined mr-2 text-sm text-outline">

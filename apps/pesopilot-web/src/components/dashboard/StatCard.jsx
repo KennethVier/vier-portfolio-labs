@@ -30,8 +30,8 @@ const trendStyles = {
 }
 
 const valueSizeStyles = {
-  display: 'text-display-lg',
-  headline: 'text-headline-md',
+  display: 'text-2xl leading-8 xl:text-display-lg',
+  headline: 'text-xl leading-7 xl:text-headline-md',
   normal: 'text-xl leading-7',
 }
 
@@ -71,7 +71,7 @@ export function StatCard({
 
       <div
         className={[
-          'font-data-mono',
+          'min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-data-mono',
           valueSizeStyles[valueSize] ?? valueSizeStyles.headline,
           valueStyles[tone] ?? valueStyles.neutral,
         ].join(' ')}

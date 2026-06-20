@@ -41,6 +41,7 @@ export function CutoffForm({
   isSaving,
   onCancel,
   onSubmit,
+  submitError,
 }) {
   const {
     formState: { errors },
@@ -97,6 +98,13 @@ export function CutoffForm({
             Define the salary-funded spending cycle used for expense grouping.
           </p>
         </div>
+
+        {submitError ? (
+          <div className="rounded border border-error/30 bg-error-container p-3 text-sm text-error">
+            <div className="font-semibold">Unable to save cutoff</div>
+            <p className="mt-1 leading-relaxed">{submitError}</p>
+          </div>
+        ) : null}
 
         <div className="grid gap-3 md:grid-cols-2">
           <Input

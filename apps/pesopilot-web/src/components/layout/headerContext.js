@@ -3,10 +3,10 @@ import { createContext, useContext } from 'react'
 export const defaultHeaderConfig = {
   searchPlaceholder: 'Search data points...',
   searchValue: '',
-  showSearch: true,
+  showSearch: false,
   onSearchChange: undefined,
-  healthScore: 94,
-  nextCutoff: '3d',
+  healthScore: '--',
+  nextCutoff: '--',
   statusSize: 'md',
 }
 

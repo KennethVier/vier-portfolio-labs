@@ -2,6 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { cutoffService } from '../services/cutoffService.js'
 
+function getCutoffErrorMessage(error, fallbackMessage) {
+  const message = error.message || fallbackMessage
+
+  if (message.toLowerCase().includes('overlap')) {
+    return 'This cutoff overlaps an existing cutoff. Choose another payday/date range, edit the existing cutoff, or create the next non-overlapping cycle.'
+  }
+
+  return message
+}
+
 export function useSalaryCutoffs() {
   const [cutoffs, setCutoffs] = useState([])
   const [currentCutoff, setCurrentCutoff] = useState(null)
@@ -43,8 +53,9 @@ export function useSalaryCutoffs() {
       setEditingCutoff(null)
       await loadCutoffs()
     } catch (saveError) {
-      setError(saveError.message || 'Unable to save salary cutoff')
-      throw saveError
+      const message = getCutoffErrorMessage(saveError, 'Unable to save salary cutoff')
+      setError(message)
+      throw new Error(message)
     } finally {
       setIsSaving(false)
     }
@@ -58,6 +69,20 @@ export function useSalaryCutoffs() {
       await loadCutoffs()
     } catch (deleteError) {
       setError(deleteError.message || 'Unable to delete salary cutoff')
+    }
+  }
+
+  async function createNextCutoff(id) {
+    setError(null)
+
+    try {
+      const nextCutoff = await cutoffService.createNextCutoff(id)
+      await loadCutoffs()
+      return nextCutoff
+    } catch (nextError) {
+      const message = getCutoffErrorMessage(nextError, 'Unable to create next cutoff')
+      setError(message)
+      throw new Error(message)
     }
   }
 
@@ -100,10 +125,16 @@ export function useSalaryCutoffs() {
     setEditingCutoff(null)
   }
 
+  function clearError() {
+    setError(null)
+  }
+
   return {
     assignExpensesToCutoff,
+    clearError,
     clearEditingCutoff,
     closeCutoff,
+    createNextCutoff,
     currentCutoff,
     cutoffs,
     deleteCutoff,

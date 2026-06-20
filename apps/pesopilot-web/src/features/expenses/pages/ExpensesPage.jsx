@@ -61,17 +61,17 @@ function ExpenseKpiCard({ helper, label, tone = 'content', value }) {
       <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-content-muted">
         {label}
       </p>
-      <div className="flex flex-col items-start gap-1 xl:flex-row xl:items-end xl:justify-between xl:gap-3">
+      <div className="flex flex-col items-start gap-1 2xl:flex-row 2xl:items-end 2xl:justify-between 2xl:gap-3">
         <span
           className={[
-            'min-w-0 whitespace-nowrap font-mono text-xl font-semibold leading-7 sm:text-2xl xl:leading-8',
+            'min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xl font-semibold leading-7 sm:text-2xl 2xl:leading-8',
             toneClasses[tone],
           ].join(' ')}
         >
           {value}
         </span>
         {helper ? (
-          <span className="shrink-0 whitespace-nowrap font-mono text-xs font-medium leading-4 text-content-muted xl:text-right xl:text-sm xl:leading-5">
+          <span className="shrink-0 whitespace-nowrap font-mono text-xs font-medium leading-4 text-content-muted 2xl:text-right 2xl:text-sm 2xl:leading-5">
             {helper}
           </span>
         ) : null}
@@ -82,9 +82,9 @@ function ExpenseKpiCard({ helper, label, tone = 'content', value }) {
 
 function ExpensesKpiGrid({ expenseKpis }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
       <ExpenseKpiCard
-        helper="Current Cycle"
+        helper="Filtered View"
         label="Total Expenses"
         tone="primary"
         value={currencyFormatter.format(expenseKpis.totalExpenses)}

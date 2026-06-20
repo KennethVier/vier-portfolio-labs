@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input.jsx'
 import { EMPTY_SAVINGS_FILTERS, SAVINGS_SOURCES } from '../constants/savingsConstants.js'
 
 export function SavingsFilters({
+  compact = false,
   filters,
   framed = true,
   onChange,
@@ -22,7 +23,9 @@ export function SavingsFilters({
     <div
       className={[
         'grid gap-3',
-        showSearch
+        compact
+          ? ''
+          : showSearch
           ? 'lg:grid-cols-[1.5fr_repeat(4,_1fr)_auto]'
           : 'lg:grid-cols-[repeat(4,_minmax(0,_1fr))_auto]',
       ].join(' ')}
@@ -41,7 +44,7 @@ export function SavingsFilters({
             Cutoff
           </span>
           <select
-            className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm"
+            className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-sm"
             value={filters.cutoffId}
             onChange={(event) => updateFilter('cutoffId', event.target.value)}
           >
@@ -58,7 +61,7 @@ export function SavingsFilters({
             Type
           </span>
           <select
-            className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm"
+            className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-sm"
             value={filters.source}
             onChange={(event) => updateFilter('source', event.target.value)}
           >
@@ -88,7 +91,7 @@ export function SavingsFilters({
           <Button
             type="button"
             variant="secondary"
-            className="w-full"
+            className="min-h-8 w-full px-2 py-1"
             onClick={() => onChange(EMPTY_SAVINGS_FILTERS)}
           >
             Clear

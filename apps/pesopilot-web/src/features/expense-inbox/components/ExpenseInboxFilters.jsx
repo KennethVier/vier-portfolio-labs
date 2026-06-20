@@ -27,7 +27,7 @@ export function ExpenseInboxFilters({ categories, filters, onChange }) {
   ].filter(Boolean).length
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0 flex-1">
         <Input
           id="expense-inbox-search"
@@ -41,25 +41,33 @@ export function ExpenseInboxFilters({ categories, filters, onChange }) {
       <div className="flex flex-wrap items-center gap-2">
         <Popover
           isOpen={isOpen}
-          className="right-auto left-0 w-[min(92vw,520px)] p-4 md:left-auto md:right-0"
+          className="right-auto left-0 p-3 md:left-auto md:right-0"
           anchor={(
             <Button
               type="button"
               variant="secondary"
+              className="relative h-8 w-8 px-0 py-0"
+              aria-label="Open inbox filters"
+              title="Filters"
               onClick={() => setIsOpen((current) => !current)}
             >
               <span className="material-symbols-outlined text-base">filter_list</span>
-              Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+              <span className="sr-only">Filters</span>
+              {activeFilterCount ? (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
+                  {activeFilterCount}
+                </span>
+              ) : null}
             </Button>
           )}
         >
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-2">
             <label className="block">
               <span className="mb-1 block font-label-caps text-label-caps uppercase text-on-surface-variant">
                 Status
               </span>
               <select
-                className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 value={filters.status}
                 onChange={(event) => updateFilter('status', event.target.value)}
               >
@@ -77,7 +85,7 @@ export function ExpenseInboxFilters({ categories, filters, onChange }) {
                 Category
               </span>
               <select
-                className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="min-h-8 w-full rounded border border-outline-variant bg-surface-container-lowest px-2 text-body-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 value={filters.categoryId}
                 onChange={(event) => updateFilter('categoryId', event.target.value)}
               >
@@ -111,6 +119,7 @@ export function ExpenseInboxFilters({ categories, filters, onChange }) {
         <Button
           type="button"
           variant="ghost"
+          className="h-8 px-2 py-1"
           onClick={() => onChange(EMPTY_INBOX_FILTERS)}
         >
           Clear

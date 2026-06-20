@@ -288,10 +288,12 @@ export function IncomePage() {
                 </button>
               }
             >
-              <div className="p-4">
+              <div className="p-3">
                 <IncomeFilters
+                  compact
                   filters={filters}
                   framed={false}
+                  showSearch={false}
                   salaryCutoffs={salaryCutoffs}
                   onChange={updateFilters}
                 />

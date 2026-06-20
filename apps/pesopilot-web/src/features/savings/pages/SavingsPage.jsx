@@ -370,17 +370,18 @@ export function SavingsPage() {
             anchor={
               <button
                 type="button"
-                className="flex items-center gap-1 rounded border border-outline-variant bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                className="rounded p-1 text-outline transition-colors hover:bg-surface-container hover:text-primary"
                 onClick={() => setIsFilterOpen((value) => !value)}
                 aria-label="Open savings filters"
+                title="Filters"
               >
-                <span className="material-symbols-outlined text-sm">filter_list</span>
-                Filters
+                <span className="material-symbols-outlined text-lg">filter_list</span>
               </button>
             }
           >
-            <div className="p-4">
+            <div className="p-3">
               <SavingsFilters
+                compact
                 filters={filters}
                 framed={false}
                 showSearch={false}

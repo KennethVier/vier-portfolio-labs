@@ -12,6 +12,20 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function parseIsoDate(value) {
+  return new Date(`${value}T00:00:00.000Z`)
+}
+
+function formatIsoDate(date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date)
+  nextDate.setUTCDate(nextDate.getUTCDate() + days)
+  return nextDate
+}
+
 function sortCutoffs(cutoffs) {
   return [...cutoffs].sort((firstCutoff, secondCutoff) => {
     if (firstCutoff.startDate === secondCutoff.startDate) {
@@ -89,6 +103,38 @@ async function deactivateOtherActiveCutoffs(activeCutoffId = null) {
       }),
     ),
   )
+}
+
+function buildNextCutoffPayload(cutoff) {
+  if (!['monthly', 'semi_monthly'].includes(cutoff.type)) {
+    throw new Error('Only Monthly and Semi-monthly cutoffs can generate a next cutoff')
+  }
+
+  if (!cutoff.endDate || !cutoff.payday1) {
+    throw new Error('This cutoff is missing payday details required to generate the next cutoff')
+  }
+
+  if (cutoff.type === 'semi_monthly' && !cutoff.payday2) {
+    throw new Error('Semi-monthly cutoffs require Payday 1 and Payday 2 to generate the next cutoff')
+  }
+
+  const referenceDate = formatIsoDate(addDays(parseIsoDate(cutoff.endDate), 1))
+  const nextCycle = generateSalaryCutoffCycle({
+    payday1: cutoff.payday1,
+    payday2: cutoff.payday2,
+    referenceDate,
+    type: cutoff.type,
+  })
+
+  return {
+    expectedIncome: cutoff.expectedIncome,
+    name: `${cutoff.name} Next (${nextCycle.startDate})`,
+    payday1: cutoff.payday1,
+    payday2: cutoff.payday2,
+    referenceDate,
+    status: 'planned',
+    type: cutoff.type,
+  }
 }
 
 function findCurrentCutoffFromList(cutoffs, date = todayIsoDate()) {
@@ -187,6 +233,16 @@ export const cutoffService = {
     return salaryCutoffRepository.findById(id)
   },
 
+  async createNextCutoff(id) {
+    const cutoff = await salaryCutoffRepository.findById(id)
+
+    if (!cutoff) {
+      throw new Error('Salary cutoff not found')
+    }
+
+    return this.createCutoff(buildNextCutoffPayload(cutoff))
+  },
+
   async findCurrentCutoff(date = todayIsoDate()) {
     return findCurrentCutoffFromList(await salaryCutoffRepository.findAll(), date)
   },
@@ -219,5 +275,6 @@ export const cutoffService = {
 }
 
 export const cutoffServiceInternals = {
+  buildNextCutoffPayload,
   findCurrentCutoffFromList,
 }

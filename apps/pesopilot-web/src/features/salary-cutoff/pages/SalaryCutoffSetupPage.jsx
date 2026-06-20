@@ -141,9 +141,11 @@ function CutoffKpiGrid({ activeCutoff, daysRemaining }) {
 function CutoffManagementPanel({
   activeCutoff,
   onAssignExpenses,
+  onCreateNextCutoff,
   onEdit,
 }) {
   const progress = activeCutoff ? 80 : 0
+  const canCreateNextCutoff = ['monthly', 'semi_monthly'].includes(activeCutoff?.type)
 
   return (
     <SectionCard
@@ -159,6 +161,14 @@ function CutoffManagementPanel({
             onClick={() => activeCutoff && onEdit(activeCutoff)}
           >
             Edit Schedule
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!canCreateNextCutoff}
+            onClick={() => activeCutoff && onCreateNextCutoff(activeCutoff.id)}
+          >
+            Create Next Cutoff
           </Button>
           <Button
             type="button"
@@ -280,12 +290,15 @@ function HistoricalRecordsPanel({
 }
 
 export function SalaryCutoffSetupPage() {
+  const [formError, setFormError] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const {
     assignExpensesToCutoff,
+    clearError,
     clearEditingCutoff,
     closeCutoff,
     currentCutoff,
+    createNextCutoff,
     cutoffs,
     deleteCutoff,
     editingCutoff,
@@ -309,24 +322,45 @@ export function SalaryCutoffSetupPage() {
     await assignExpensesToCutoff(id)
   }
 
+  async function handleCreateNextCutoff(id) {
+    try {
+      await createNextCutoff(id)
+    } catch {
+      // The hook owns the user-facing error state for this page action.
+    }
+  }
+
   function openCreateForm() {
+    clearError()
     clearEditingCutoff()
+    setFormError(null)
     setIsFormOpen(true)
   }
 
   function openEditForm(cutoff) {
+    clearError()
+    setFormError(null)
     setEditingCutoff(cutoff)
     setIsFormOpen(true)
   }
 
   function closeForm() {
+    clearError()
     clearEditingCutoff()
+    setFormError(null)
     setIsFormOpen(false)
   }
 
   async function submitCutoff(values) {
-    await saveCutoff(values)
-    setIsFormOpen(false)
+    setFormError(null)
+
+    try {
+      await saveCutoff(values)
+      setIsFormOpen(false)
+    } catch (saveError) {
+      setFormError(saveError.message || 'Unable to save salary cutoff')
+      throw saveError
+    }
   }
 
   return (
@@ -336,11 +370,14 @@ export function SalaryCutoffSetupPage() {
         daysRemaining={cutoffKpis.daysRemaining}
       />
 
-      {error ? <ErrorState title="Unable to process salary cutoffs" message={error} /> : null}
+      {error && !isFormOpen ? (
+        <ErrorState title="Unable to process salary cutoffs" message={error} />
+      ) : null}
 
       <CutoffManagementPanel
         activeCutoff={activeCutoff}
         onAssignExpenses={handleAssignExpenses}
+        onCreateNextCutoff={handleCreateNextCutoff}
         onEdit={openEditForm}
       />
 
@@ -367,6 +404,7 @@ export function SalaryCutoffSetupPage() {
           editingCutoff={editingCutoff}
           framed={false}
           isSaving={isSaving}
+          submitError={formError}
           onCancel={closeForm}
           onSubmit={submitCutoff}
         />
