@@ -176,6 +176,74 @@ describe('incomeService', () => {
     })
   })
 
+  it('calculates current-cutoff income KPIs independently from table filters', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const historicalCutoffId = await createCutoff('Historical Cutoff')
+    const deletedCutoffId = await createCutoff('Deleted Cutoff')
+
+    await incomeService.createIncome({
+      ...validIncome,
+      amount: 40000,
+      cutoffId: activeCutoffId,
+      source: 'Salary',
+    })
+    await incomeService.createIncome({
+      ...validIncome,
+      amount: 5000,
+      cutoffId: activeCutoffId,
+      source: 'Freelance',
+    })
+    await incomeService.createIncome({
+      ...validIncome,
+      amount: 40000,
+      cutoffId: historicalCutoffId,
+      source: 'Salary',
+    })
+    await incomeService.createIncome({
+      ...validIncome,
+      amount: 3000,
+      cutoffId: deletedCutoffId,
+      source: 'Bonus',
+    })
+    await incomeService.createIncome({
+      ...validIncome,
+      amount: 2000,
+      cutoffId: '',
+      source: 'Gift',
+    })
+    await salaryCutoffRepository.remove(deletedCutoffId)
+
+    await expect(incomeService.loadIncome({ search: 'Freelance' })).resolves.toHaveLength(1)
+    await expect(incomeService.loadIncomeKpis()).resolves.toEqual({
+      currentCutoffId: activeCutoffId,
+      incomeRecords: 2,
+      otherIncome: 5000,
+      salaryIncome: 40000,
+      totalIncome: 45000,
+    })
+  })
+
+  it('returns zero income KPIs when no current cutoff exists', async () => {
+    await incomeService.createIncome(validIncome)
+
+    await expect(incomeService.loadIncomeKpis()).resolves.toEqual({
+      currentCutoffId: null,
+      incomeRecords: 0,
+      otherIncome: 0,
+      salaryIncome: 0,
+      totalIncome: 0,
+    })
+  })
+
   it('rejects invalid income before persistence', async () => {
     await expect(
       incomeService.createIncome({

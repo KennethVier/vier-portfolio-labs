@@ -1,5 +1,7 @@
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
+import { filterRecordsByCurrentCutoff } from '@/features/shared/utils/currentCutoffFilters.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { EMPTY_SAVINGS_FILTERS } from '../constants/savingsConstants.js'
 import { savingsSchema } from '../schemas/savingsSchema.js'
@@ -112,6 +114,44 @@ function decorateSavingsWithCutoffs(savingsRecords, cutoffs) {
   }))
 }
 
+function buildSavingsKpis(savingsRecords, currentCutoff) {
+  const typeTotals = new Map()
+  const currentSavings = filterRecordsByCurrentCutoff(savingsRecords, currentCutoff)
+  const totals = currentSavings.reduce(
+    (kpis, savings) => {
+      const amount = Number(savings.amount) || 0
+
+      kpis.totalSavings += amount
+      kpis.savingsRecords += 1
+
+      typeTotals.set(
+        savings.source,
+        (typeTotals.get(savings.source) ?? 0) + amount,
+      )
+
+      return kpis
+    },
+    {
+      currentCutoffId: currentCutoff?.id ?? null,
+      savingsRecords: 0,
+      totalSavings: 0,
+    },
+  )
+  const largestSavingsType =
+    [...typeTotals.entries()].sort((firstType, secondType) => {
+      if (secondType[1] === firstType[1]) {
+        return firstType[0].localeCompare(secondType[0])
+      }
+
+      return secondType[1] - firstType[1]
+    })[0]?.[0] ?? 'None'
+
+  return {
+    ...totals,
+    largestSavingsType,
+  }
+}
+
 export const savingsService = {
   async loadSavings(filters = EMPTY_SAVINGS_FILTERS) {
     const [savingsRecords, cutoffs] = await Promise.all([
@@ -125,6 +165,15 @@ export const savingsService = {
 
   async loadSalaryCutoffs() {
     return salaryCutoffRepository.findAll()
+  },
+
+  async loadSavingsKpis() {
+    const [savingsRecords, currentCutoff] = await Promise.all([
+      savingsRepository.findAll(),
+      cutoffService.findCurrentCutoff(),
+    ])
+
+    return buildSavingsKpis(savingsRecords, currentCutoff)
   },
 
   async createSavings(payload) {
@@ -152,6 +201,7 @@ export const savingsService = {
 
 export const savingsServiceInternals = {
   applySavingsFilters,
+  buildSavingsKpis,
   decorateSavingsWithCutoffs,
   sortSavings,
 }

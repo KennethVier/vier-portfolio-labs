@@ -5,6 +5,13 @@ import { incomeService } from '../services/incomeService.js'
 
 export function useIncome() {
   const [income, setIncome] = useState([])
+  const [incomeKpis, setIncomeKpis] = useState({
+    currentCutoffId: null,
+    incomeRecords: 0,
+    otherIncome: 0,
+    salaryIncome: 0,
+    totalIncome: 0,
+  })
   const [salaryCutoffs, setSalaryCutoffs] = useState([])
   const [filters, setFilters] = useState(EMPTY_INCOME_FILTERS)
   const [editingIncome, setEditingIncome] = useState(null)
@@ -17,12 +24,14 @@ export function useIncome() {
     setError(null)
 
     try {
-      const [nextIncome, nextSalaryCutoffs] = await Promise.all([
+      const [nextIncome, nextSalaryCutoffs, nextIncomeKpis] = await Promise.all([
         incomeService.loadIncome(nextFilters),
         incomeService.loadSalaryCutoffs(),
+        incomeService.loadIncomeKpis(),
       ])
 
       setIncome(nextIncome)
+      setIncomeKpis(nextIncomeKpis)
       setSalaryCutoffs(nextSalaryCutoffs)
     } catch (loadError) {
       setError(loadError.message || 'Unable to load income')
@@ -85,6 +94,7 @@ export function useIncome() {
     error,
     filters,
     income,
+    incomeKpis,
     isLoading,
     isSaving,
     salaryCutoffs,

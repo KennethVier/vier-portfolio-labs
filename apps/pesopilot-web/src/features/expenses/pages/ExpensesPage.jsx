@@ -16,37 +16,6 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
 })
 
-function getExpenseKpis(expenses, categories) {
-  const categoriesById = new Map(
-    categories.map((category) => [category.id, category]),
-  )
-  const categoryTotals = new Map()
-  const totalExpenses = expenses.reduce((total, expense) => {
-    const amount = Number(expense.amount) || 0
-    const categoryName = categoriesById.get(expense.categoryId)?.name ?? 'Uncategorized'
-
-    categoryTotals.set(categoryName, (categoryTotals.get(categoryName) ?? 0) + amount)
-
-    return total + amount
-  }, 0)
-  const largestCategory =
-    [...categoryTotals.entries()].sort((firstCategory, secondCategory) => {
-      if (secondCategory[1] === firstCategory[1]) {
-        return firstCategory[0].localeCompare(secondCategory[0])
-      }
-
-      return secondCategory[1] - firstCategory[1]
-    })[0]?.[0] ?? 'None'
-  const transactionCount = expenses.length
-
-  return {
-    averageExpense: transactionCount === 0 ? 0 : totalExpenses / transactionCount,
-    largestCategory,
-    totalExpenses,
-    transactionCount,
-  }
-}
-
 function ExpenseKpiCard({ helper, label, tone = 'content', value }) {
   const toneClasses = {
     content: 'text-content',
@@ -81,28 +50,30 @@ function ExpenseKpiCard({ helper, label, tone = 'content', value }) {
 }
 
 function ExpensesKpiGrid({ expenseKpis }) {
+  const kpiHelperText = expenseKpis.currentCutoffId ? 'Current Cutoff' : 'No Current Cutoff'
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
       <ExpenseKpiCard
-        helper="Filtered View"
+        helper={kpiHelperText}
         label="Total Expenses"
         tone="primary"
         value={currencyFormatter.format(expenseKpis.totalExpenses)}
       />
       <ExpenseKpiCard
-        helper="Verified"
+        helper={kpiHelperText}
         label="Transactions"
         tone="content"
         value={expenseKpis.transactionCount}
       />
       <ExpenseKpiCard
-        helper="Top Spend"
+        helper={kpiHelperText}
         label="Largest Category"
         tone="warning"
         value={expenseKpis.largestCategory}
       />
       <ExpenseKpiCard
-        helper="Average"
+        helper={kpiHelperText}
         label="Avg Expense"
         tone="content"
         value={currencyFormatter.format(expenseKpis.averageExpense)}
@@ -181,6 +152,7 @@ export function ExpensesPage() {
     deleteExpense,
     editingExpense,
     error,
+    expenseKpis,
     expenses,
     filters,
     isLoading,
@@ -190,7 +162,6 @@ export function ExpensesPage() {
     setEditingExpense,
     updateFilters,
   } = useExpenses()
-  const expenseKpis = getExpenseKpis(expenses, categories)
 
   useEffect(() => {
     setHeaderConfig({

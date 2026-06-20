@@ -1,5 +1,7 @@
 import { incomeRepository } from '@/lib/db/repositories/incomeRepository.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
+import { filterRecordsByCurrentCutoff } from '@/features/shared/utils/currentCutoffFilters.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { EMPTY_INCOME_FILTERS } from '../constants/incomeConstants.js'
 import { incomeSchema } from '../schemas/incomeSchema.js'
@@ -112,6 +114,32 @@ function decorateIncomeWithCutoffs(incomeRecords, cutoffs) {
   }))
 }
 
+function buildIncomeKpis(incomeRecords, currentCutoff) {
+  return filterRecordsByCurrentCutoff(incomeRecords, currentCutoff).reduce(
+    (kpis, incomeRecord) => {
+      const amount = Number(incomeRecord.amount) || 0
+
+      if (incomeRecord.source === 'Salary') {
+        kpis.salaryIncome += amount
+      } else {
+        kpis.otherIncome += amount
+      }
+
+      kpis.totalIncome += amount
+      kpis.incomeRecords += 1
+
+      return kpis
+    },
+    {
+      currentCutoffId: currentCutoff?.id ?? null,
+      incomeRecords: 0,
+      otherIncome: 0,
+      salaryIncome: 0,
+      totalIncome: 0,
+    },
+  )
+}
+
 export const incomeService = {
   async loadIncome(filters = EMPTY_INCOME_FILTERS) {
     const [incomeRecords, cutoffs] = await Promise.all([
@@ -125,6 +153,15 @@ export const incomeService = {
 
   async loadSalaryCutoffs() {
     return salaryCutoffRepository.findAll()
+  },
+
+  async loadIncomeKpis() {
+    const [incomeRecords, currentCutoff] = await Promise.all([
+      incomeRepository.findAll(),
+      cutoffService.findCurrentCutoff(),
+    ])
+
+    return buildIncomeKpis(incomeRecords, currentCutoff)
   },
 
   async createIncome(payload) {
@@ -152,6 +189,7 @@ export const incomeService = {
 
 export const incomeServiceInternals = {
   applyIncomeFilters,
+  buildIncomeKpis,
   decorateIncomeWithCutoffs,
   sortIncome,
 }

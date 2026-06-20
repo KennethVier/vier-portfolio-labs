@@ -5,6 +5,12 @@ import { savingsService } from '../services/savingsService.js'
 
 export function useSavings() {
   const [savings, setSavings] = useState([])
+  const [savingsKpis, setSavingsKpis] = useState({
+    currentCutoffId: null,
+    largestSavingsType: 'None',
+    savingsRecords: 0,
+    totalSavings: 0,
+  })
   const [salaryCutoffs, setSalaryCutoffs] = useState([])
   const [filters, setFilters] = useState(EMPTY_SAVINGS_FILTERS)
   const [editingSavings, setEditingSavings] = useState(null)
@@ -17,12 +23,14 @@ export function useSavings() {
     setError(null)
 
     try {
-      const [nextSavings, nextSalaryCutoffs] = await Promise.all([
+      const [nextSavings, nextSalaryCutoffs, nextSavingsKpis] = await Promise.all([
         savingsService.loadSavings(nextFilters),
         savingsService.loadSalaryCutoffs(),
+        savingsService.loadSavingsKpis(),
       ])
 
       setSavings(nextSavings)
+      setSavingsKpis(nextSavingsKpis)
       setSalaryCutoffs(nextSalaryCutoffs)
     } catch (loadError) {
       setError(loadError.message || 'Unable to load savings')
@@ -89,6 +97,7 @@ export function useSavings() {
     salaryCutoffs,
     saveSavings,
     savings,
+    savingsKpis,
     setEditingSavings,
     updateFilters,
   }

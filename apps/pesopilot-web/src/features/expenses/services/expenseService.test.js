@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clearDatabase } from '@/lib/db/devTools.js'
 import { db } from '@/lib/db/dexie.js'
 import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
+import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
 import { seedDatabase } from '@/lib/db/seed.js'
 
 import { expenseService } from './expenseService.js'
@@ -186,6 +187,96 @@ describe('expenseService', () => {
     await expect(
       expenseService.loadExpenses({ categoryId: 'food', search: '   ' }),
     ).resolves.toHaveLength(1)
+  })
+
+  it('calculates current-cutoff expense KPIs independently from table filters', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const historicalCutoffId = await salaryCutoffRepository.create({
+      name: 'Historical Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-01',
+      endDate: '2026-06-15',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const deletedCutoffId = await salaryCutoffRepository.create({
+      name: 'Deleted Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-05-16',
+      endDate: '2026-05-31',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    await expenseService.createExpense({
+      ...validExpense,
+      amount: 500,
+      categoryId: 'food',
+      cutoffId: activeCutoffId,
+      merchant: 'Jollibee',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      amount: 1500,
+      categoryId: 'bills',
+      cutoffId: activeCutoffId,
+      merchant: 'Meralco',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      amount: 900,
+      categoryId: 'food',
+      cutoffId: historicalCutoffId,
+      merchant: 'McDo',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      amount: 700,
+      categoryId: 'shopping',
+      cutoffId: deletedCutoffId,
+      merchant: 'Shopee',
+    })
+    await expenseService.createExpense({
+      ...validExpense,
+      amount: 300,
+      cutoffId: null,
+      merchant: 'Unlinked',
+    })
+    await salaryCutoffRepository.remove(deletedCutoffId)
+
+    await expect(expenseService.loadExpenses({ search: 'Meralco' })).resolves.toHaveLength(1)
+    await expect(expenseService.loadExpenseKpis()).resolves.toEqual({
+      averageExpense: 1000,
+      currentCutoffId: activeCutoffId,
+      largestCategory: 'Bills',
+      totalExpenses: 2000,
+      transactionCount: 2,
+    })
+  })
+
+  it('returns zero expense KPIs when no current cutoff exists', async () => {
+    await expenseService.createExpense(validExpense)
+
+    await expect(expenseService.loadExpenseKpis()).resolves.toEqual({
+      averageExpense: 0,
+      currentCutoffId: null,
+      largestCategory: 'None',
+      totalExpenses: 0,
+      transactionCount: 0,
+    })
   })
 
   it('rejects invalid expenses before persistence', async () => {

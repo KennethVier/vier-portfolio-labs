@@ -1405,7 +1405,7 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 ```txt
 Manual Add Expense does not go to Expense Inbox by design; Expense Inbox is for detected/review records before they become official expenses.
-Expenses Total Expenses KPI represented the filtered visible expense list but used "Current Cycle" helper text, which could be confused with Dashboard/Cashflow current-cutoff totals.
+Income, Expenses, and Savings KPI cards previously used filtered visible table records, which could be confused with Dashboard/Cashflow current-cutoff totals.
 Salary Cutoff save errors appeared outside the modal, making overlap and validation failures easy to miss.
 Salary Cutoff did not have a one-click next cutoff planning action for active monthly or semi-monthly cutoffs.
 Small-screen layouts had no mobile sidebar navigation.
@@ -1419,6 +1419,9 @@ Filter popovers were too large for small screens and felt more like panels than 
 
 ```txt
 Changed Expenses Total Expenses helper text to "Filtered View".
+Aligned Income, Expenses, and Savings KPI cards to the salary-funded current cutoff cycle instead of filtered visible table records.
+Added shared current-cutoff record filtering utility for KPI read models.
+Added service-level current-cycle KPI summaries for Income, Expenses, and Savings using centralized cutoff detection.
 Added inline Salary Cutoff modal save errors with clearer overlap guidance.
 Added Create Next Cutoff action for active Monthly and Semi-monthly cutoffs using the selected cutoff endDate/payday fields, saved as Planned.
 Added salary cutoff service tests for next monthly/semi-monthly cutoff generation, planned status, overlap rejection, and unsupported custom cutoff generation.
@@ -1444,7 +1447,8 @@ Checked Cashflow service tests for current cutoff totals.
 Checked Reports transform tests for expense/income/savings/cutoff report calculations.
 Checked Salary Cutoff schema/service tests for cutoff creation, generation, active detection, assignment, and next cutoff generation.
 Confirmed manual Add Expense remains an official expense flow and does not enter Expense Inbox by design.
-Confirmed Expenses KPI is a filtered visible-records KPI, while Dashboard/Cashflow remain current-cutoff KPI surfaces.
+Confirmed Income, Expenses, Savings, Dashboard, and Cashflow KPI surfaces are current-cutoff based.
+Confirmed Income, Expense, and Savings tables remain historical/filterable ledger views.
 Confirmed Dashboard reflects seeded current-cutoff data and manual expense changes in Remaining Cash.
 Confirmed Cashflow values are working for current-cutoff records.
 Confirmed Reports respond correctly with large seeded datasets.
@@ -1455,6 +1459,25 @@ Clarified that Phase 8.5 empty states cover no-record, no-current-cutoff, cleare
 Verified npm.cmd run test, npm.cmd run lint, and npm.cmd run build.
 ```
  
+---
+
+## Update Log
+
+### 2026-06-20 — Cutoff-Centric KPI Alignment
+
+```txt
+Aligned PesoPilot KPI behavior with the salary-funded cutoff model.
+Income, Expenses, and Savings KPI cards now use current-cutoff records only.
+Search, filters, and table contents no longer affect KPI totals.
+Records contribute to KPI calculations only when cutoffId exists and matches the current cutoff id.
+Null cutoffId records, orphaned/deleted cutoff references, and historical cutoff records are excluded from KPI totals.
+Added shared currentCutoffFilters utility and tests.
+Added current-cycle KPI summary methods in incomeService, expenseService, and savingsService.
+Kept current cutoff lookup centralized in service-level read models through cutoffService.findCurrentCutoff().
+Preserved historical ledger behavior for Income, Expenses, and Savings tables.
+Verified npm.cmd run test, npm.cmd run lint, and npm.cmd run build.
+```
+
 ---
 
 ## Final QA Verdict

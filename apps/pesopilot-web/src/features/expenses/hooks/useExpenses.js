@@ -5,6 +5,13 @@ import { expenseService } from '../services/expenseService.js'
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState([])
+  const [expenseKpis, setExpenseKpis] = useState({
+    averageExpense: 0,
+    currentCutoffId: null,
+    largestCategory: 'None',
+    totalExpenses: 0,
+    transactionCount: 0,
+  })
   const [categories, setCategories] = useState([])
   const [salaryCutoffs, setSalaryCutoffs] = useState([])
   const [filters, setFilters] = useState(EMPTY_EXPENSE_FILTERS)
@@ -18,13 +25,20 @@ export function useExpenses() {
     setError(null)
 
     try {
-      const [nextExpenses, nextCategories, nextSalaryCutoffs] = await Promise.all([
+      const [
+        nextExpenses,
+        nextCategories,
+        nextSalaryCutoffs,
+        nextExpenseKpis,
+      ] = await Promise.all([
         expenseService.loadExpenses(nextFilters),
         expenseService.loadCategories(),
         expenseService.loadSalaryCutoffs(),
+        expenseService.loadExpenseKpis(),
       ])
 
       setExpenses(nextExpenses)
+      setExpenseKpis(nextExpenseKpis)
       setCategories(nextCategories)
       setSalaryCutoffs(nextSalaryCutoffs)
     } catch (loadError) {
@@ -87,6 +101,7 @@ export function useExpenses() {
     deleteExpense,
     editingExpense,
     error,
+    expenseKpis,
     expenses,
     filters,
     isLoading,

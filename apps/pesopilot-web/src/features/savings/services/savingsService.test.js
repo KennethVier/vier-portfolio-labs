@@ -176,6 +176,72 @@ describe('savingsService', () => {
     })
   })
 
+  it('calculates current-cutoff savings KPIs independently from table filters', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const historicalCutoffId = await createCutoff('Historical Cutoff')
+    const deletedCutoffId = await createCutoff('Deleted Cutoff')
+
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 5000,
+      cutoffId: activeCutoffId,
+      source: 'Emergency Fund',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 2000,
+      cutoffId: activeCutoffId,
+      source: 'Travel Fund',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 6000,
+      cutoffId: historicalCutoffId,
+      source: 'Emergency Fund',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 3000,
+      cutoffId: deletedCutoffId,
+      source: 'General Savings',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 1000,
+      cutoffId: '',
+      source: 'Other',
+    })
+    await salaryCutoffRepository.remove(deletedCutoffId)
+
+    await expect(savingsService.loadSavings({ source: 'Travel Fund' })).resolves.toHaveLength(1)
+    await expect(savingsService.loadSavingsKpis()).resolves.toEqual({
+      currentCutoffId: activeCutoffId,
+      largestSavingsType: 'Emergency Fund',
+      savingsRecords: 2,
+      totalSavings: 7000,
+    })
+  })
+
+  it('returns zero savings KPIs when no current cutoff exists', async () => {
+    await savingsService.createSavings(validSavings)
+
+    await expect(savingsService.loadSavingsKpis()).resolves.toEqual({
+      currentCutoffId: null,
+      largestSavingsType: 'None',
+      savingsRecords: 0,
+      totalSavings: 0,
+    })
+  })
+
   it('rejects invalid savings before persistence', async () => {
     await expect(
       savingsService.createSavings({

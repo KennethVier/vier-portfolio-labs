@@ -23,31 +23,6 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
 })
 
-function getIncomeKpis(income) {
-  return income.reduce(
-    (kpis, incomeRecord) => {
-      const amount = Number(incomeRecord.amount) || 0
-
-      if (incomeRecord.source === 'Salary') {
-        kpis.salaryIncome += amount
-      } else {
-        kpis.otherIncome += amount
-      }
-
-      kpis.totalIncome += amount
-      kpis.incomeRecords += 1
-
-      return kpis
-    },
-    {
-      incomeRecords: 0,
-      otherIncome: 0,
-      salaryIncome: 0,
-      totalIncome: 0,
-    },
-  )
-}
-
 export function IncomePage() {
   const {
     clearEditingIncome,
@@ -56,6 +31,7 @@ export function IncomePage() {
     error,
     filters,
     income,
+    incomeKpis,
     isLoading,
     isSaving,
     salaryCutoffs,
@@ -81,7 +57,7 @@ export function IncomePage() {
     return () => resetHeaderConfig()
   }, [filters, resetHeaderConfig, setHeaderConfig, updateFilters])
 
-  const incomeKpis = getIncomeKpis(income);
+  const kpiHelperText = incomeKpis.currentCutoffId ? 'Current Cutoff' : 'No Current Cutoff'
 
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -123,14 +99,15 @@ export function IncomePage() {
             </span>
           }
           trend={{
-            label: '+12.4% vs prev. month',
-            tone: 'positive',
+            label: kpiHelperText,
+            tone: incomeKpis.currentCutoffId ? 'positive' : 'neutral',
           }}
         />
 
         <StatCard
           label="Salary"
           value={currencyFormatter.format(incomeKpis.salaryIncome)}
+          helperText={kpiHelperText}
           tone="info"
           progress={68}
         />
@@ -138,6 +115,7 @@ export function IncomePage() {
         <StatCard
           label="Other Income"
           value={currencyFormatter.format(incomeKpis.otherIncome)}
+          helperText={kpiHelperText}
           tone="success"
           progress={32}
         />
@@ -151,7 +129,7 @@ export function IncomePage() {
               <span className="material-symbols-outlined text-sm">
                 schedule
               </span>
-              Pending: 1 verification
+              {kpiHelperText}
             </>
           }
         />

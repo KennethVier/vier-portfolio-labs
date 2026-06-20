@@ -23,52 +23,6 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
 })
 
-function getSavingsKpis(savings, salaryCutoffs) {
-  const activeCutoff = salaryCutoffs.find((cutoff) => cutoff.status === 'active')
-  const typeTotals = new Map()
-
-  const totals = savings.reduce(
-    (kpis, savingsRecord) => {
-      const amount = Number(savingsRecord.amount) || 0
-
-      kpis.totalSavings += amount
-      kpis.savingsRecords += 1
-
-      if (
-        activeCutoff &&
-        String(savingsRecord.cutoffId) === String(activeCutoff.id)
-      ) {
-        kpis.currentCutoffSavings += amount
-      }
-
-      typeTotals.set(
-        savingsRecord.source,
-        (typeTotals.get(savingsRecord.source) ?? 0) + amount,
-      )
-
-      return kpis
-    },
-    {
-      currentCutoffSavings: 0,
-      savingsRecords: 0,
-      totalSavings: 0,
-    },
-  )
-  const largestSavingsType =
-    [...typeTotals.entries()].sort((firstType, secondType) => {
-      if (secondType[1] === firstType[1]) {
-        return firstType[0].localeCompare(secondType[0])
-      }
-
-      return secondType[1] - firstType[1]
-    })[0]?.[0] ?? 'None'
-
-  return {
-    ...totals,
-    largestSavingsType,
-  }
-}
-
 function ProgressBar({ tone = 'primary', value }) {
   const toneClassName = {
     critical: 'bg-error',
@@ -275,11 +229,12 @@ export function SavingsPage() {
     salaryCutoffs,
     saveSavings,
     savings,
+    savingsKpis,
     setEditingSavings,
     updateFilters,
   } = useSavings()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
-  const savingsKpis = getSavingsKpis(savings, salaryCutoffs)
+  const kpiHelperText = savingsKpis.currentCutoffId ? 'Current Cutoff' : 'No Current Cutoff'
 
   useEffect(() => {
     setHeaderConfig({
@@ -333,26 +288,26 @@ export function SavingsPage() {
           valueSize="display"
           icon={<span className="material-symbols-outlined text-lg">account_balance</span>}
           trend={{
-            label: '+1.2% from last month',
-            tone: 'positive',
+            label: kpiHelperText,
+            tone: savingsKpis.currentCutoffId ? 'positive' : 'neutral',
           }}
         />
         <StatCard
           label="Cutoff Savings"
-          value={currencyFormatter.format(savingsKpis.currentCutoffSavings)}
-          helperText="Active cutoff only"
+          value={currencyFormatter.format(savingsKpis.totalSavings)}
+          helperText={kpiHelperText}
           tone="success"
         />
         <StatCard
           label="Largest Fund"
           value={savingsKpis.largestSavingsType}
-          helperText="By visible savings"
+          helperText={kpiHelperText}
           tone="warning"
         />
         <StatCard
           label="Savings Records"
           value={savingsKpis.savingsRecords}
-          helperText="Visible records"
+          helperText={kpiHelperText}
           tone="neutral"
         />
       </KpiGrid>

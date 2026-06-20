@@ -1,6 +1,8 @@
 import { categoryRepository } from '@/lib/db/repositories/categoryRepository.js'
 import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
+import { filterRecordsByCurrentCutoff } from '@/features/shared/utils/currentCutoffFilters.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { EMPTY_EXPENSE_FILTERS, EXPENSE_SOURCE_MANUAL } from '../constants/expenseConstants.js'
 import { expenseSchema } from '../schemas/expenseSchema.js'
@@ -98,6 +100,40 @@ function sortExpenses(expenses) {
   })
 }
 
+function buildExpenseKpis(expenses, categories, currentCutoff) {
+  const categoriesById = new Map(
+    categories.map((category) => [category.id, category]),
+  )
+  const categoryTotals = new Map()
+  const currentExpenses = filterRecordsByCurrentCutoff(expenses, currentCutoff)
+  const totalExpenses = currentExpenses.reduce((total, expense) => {
+    const amount = Number(expense.amount) || 0
+    const categoryName =
+      categoriesById.get(expense.categoryId)?.name ?? 'Uncategorized'
+
+    categoryTotals.set(categoryName, (categoryTotals.get(categoryName) ?? 0) + amount)
+
+    return total + amount
+  }, 0)
+  const transactionCount = currentExpenses.length
+  const largestCategory =
+    [...categoryTotals.entries()].sort((firstCategory, secondCategory) => {
+      if (secondCategory[1] === firstCategory[1]) {
+        return firstCategory[0].localeCompare(secondCategory[0])
+      }
+
+      return secondCategory[1] - firstCategory[1]
+    })[0]?.[0] ?? 'None'
+
+  return {
+    averageExpense: transactionCount === 0 ? 0 : totalExpenses / transactionCount,
+    currentCutoffId: currentCutoff?.id ?? null,
+    largestCategory,
+    totalExpenses,
+    transactionCount,
+  }
+}
+
 export const expenseService = {
   async loadExpenses(filters = EMPTY_EXPENSE_FILTERS) {
     const [expenses, categories] = await Promise.all([
@@ -114,6 +150,16 @@ export const expenseService = {
 
   async loadSalaryCutoffs() {
     return salaryCutoffRepository.findAll()
+  },
+
+  async loadExpenseKpis() {
+    const [expenses, categories, currentCutoff] = await Promise.all([
+      expenseRepository.findAll(),
+      categoryRepository.findAll(),
+      cutoffService.findCurrentCutoff(),
+    ])
+
+    return buildExpenseKpis(expenses, categories, currentCutoff)
   },
 
   async createExpense(payload) {
@@ -137,4 +183,10 @@ export const expenseService = {
   async deleteExpense(id) {
     await expenseRepository.remove(id)
   },
+}
+
+export const expenseServiceInternals = {
+  applyExpenseFilters,
+  buildExpenseKpis,
+  sortExpenses,
 }
