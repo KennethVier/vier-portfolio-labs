@@ -15,6 +15,7 @@ export const EMPTY_INBOX_FILTERS = {
 }
 
 export const INBOX_SOURCE_LABELS = {
+  manual_ai_input: 'AI Expense Input',
   manual_input: 'Manual Input',
   receipt_scan: 'Receipt Scan',
   sms_parse: 'SMS Parse',

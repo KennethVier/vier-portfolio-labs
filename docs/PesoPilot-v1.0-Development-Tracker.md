@@ -1025,7 +1025,7 @@ npm run build passed.
 
 # UI/UX Modernization Phase
 
-Status: ⬜
+Status: ✅
 
 Purpose:
 
@@ -1490,31 +1490,111 @@ In progress. Confirmed core MVP flows, current-cutoff financial surfaces, report
 
 # Phase 9 — Manual AI Expense Input
 
-Status: ⬜
+Status: Complete
 
 Goal:
 
-Natural language expense parsing.
+Natural language expense parsing into Expense Review Inbox.
+
+Implementation Status:
+
+```txt
+Complete. Local deterministic parser, editable preview, Expense Inbox submission, route/sidebar entry, and tests are implemented.
+```
 
 ---
 
-## Backend
+## Parser Layer
 
-[ ] ExpenseParser API
+[x] Expense parser interface
 
-[ ] DTOs
+[x] Parser DTOs
 
-[ ] Parsing service
+[x] Parsing service
+
+[x] Amount extraction
+
+[x] Merchant extraction
+
+[x] Date extraction
+
+[x] Payment method/source extraction
+
+[x] Category guess
+
+[x] Confidence score
+
+[x] Raw input preservation
 
 ---
 
 ## Frontend
 
-[ ] Parser form
+[x] Parser input form
 
-[ ] Result preview
+[x] Example prompts
 
-[ ] Inbox integration
+[x] Parsed result preview
+
+[x] Edit parsed result before submit
+
+[x] Submit parsed result to Expense Inbox
+
+---
+
+## Inbox Integration
+
+[x] Create detected expense record
+
+[x] Mark source as `manual_ai_input`
+
+[x] Preserve original raw text
+
+[x] Route approved parsed record through existing Expense Inbox approval flow
+
+---
+
+## Testing
+
+[x] Parse amount
+
+[x] Parse merchant
+
+[x] Parse exact dates
+
+[x] Parse relative dates like today/yesterday
+
+[x] Parse payment method/source
+
+[x] Handle unknown or incomplete input
+
+[x] Create inbox record from parsed result
+
+[x] Approved parsed expense becomes official expense
+
+---
+
+## Actions Taken
+
+```txt
+Implemented manual natural language expense parsing with editable preview and Expense Inbox submission.
+Parsed records do not create official expenses until approved through the existing inbox workflow.
+Added /manual-ai-expense route and AI Expense Input sidebar entry.
+Added deterministic local parser for amount, merchant, date, payment method, category guess, confidence, warnings, and raw text preservation.
+Added detected-expense source/display label manual_ai_input without adding it as an official Expense source or payment method.
+Added parser and inbox integration tests.
+```
+
+---
+
+## Warnings
+
+```txt
+Phase 9 does not create official expenses directly.
+Parsed expenses must go through Expense Inbox review before approval.
+No AI summary, forecasting, budget shock engine, OCR, SMS parsing, or email parsing is part of this phase.
+manual_ai_input is a detected-expense source/display label only.
+```
 
 ---
 

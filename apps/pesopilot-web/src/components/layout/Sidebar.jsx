@@ -9,6 +9,7 @@ const navItems = [
   { icon: 'savings', label: 'Savings', to: '/savings' },
   { icon: 'swap_calls', label: 'Cashflow', to: '/cashflow' },
   { icon: 'bar_chart', label: 'Reports', to: '/reports' },
+  { icon: 'auto_awesome', label: 'AI Expense Input', to: '/manual-ai-expense' },
   { icon: 'inbox', label: 'Expense Inbox', to: '/expense-inbox' },
   { icon: 'settings', label: 'Settings', to: '/settings' },
   ...(import.meta.env.DEV
