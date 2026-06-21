@@ -1125,7 +1125,7 @@ Review detected expenses before they become official expenses.
 
 # Phase 8.5 — MVP Stabilization and Manual QA
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -1155,7 +1155,7 @@ This phase focuses on stability, correctness, usability, and data integrity.
 
 [x] Expense Inbox
 
-[ ] Settings
+[x] Settings
 
 ---
 
