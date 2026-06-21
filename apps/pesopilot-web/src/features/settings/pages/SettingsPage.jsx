@@ -1,354 +1,431 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { StatusBadge } from '@/components/dashboard'
+import { SectionCard, StatusBadge } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
-import { Input } from '@/components/ui/Input.jsx'
+import { ErrorState } from '@/components/ui/ErrorState.jsx'
+import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
 
-const settingsSections = ['General', 'Appearance', 'Salary & Tax', 'Data Management']
+import { useSettings } from '../hooks/useSettings.js'
+import {
+  SETTINGS_OPTIONS,
+  settingsService,
+} from '../services/settingsService.js'
 
-function StaticSelect({ label, options, value }) {
+const settingsSections = ['General', 'Appearance', 'Data Management']
+
+function SettingsNavigation({ activeSection }) {
   return (
-    <label className="block space-y-2">
-      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-        {label}
-      </span>
-      <select
-        className="h-10 w-full rounded border border-outline-variant bg-surface-bright px-3 font-body-md text-body-md text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-80"
-        disabled
-        value={value}
-        onChange={() => {}}
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
-function StaticToggle({ checked = false }) {
-  return (
-    <span
-      className={[
-        'relative inline-flex h-6 w-11 rounded-full transition-colors',
-        checked ? 'bg-primary' : 'bg-outline-variant',
-      ].join(' ')}
-      aria-hidden="true"
-    >
-      <span
-        className={[
-          'absolute top-0.5 h-5 w-5 rounded-full border border-outline-variant bg-white transition-transform',
-          checked ? 'translate-x-5' : 'translate-x-0.5',
-        ].join(' ')}
-      />
-    </span>
-  )
-}
-
-function StaticSegmentedControl({ options, selected }) {
-  return (
-    <div className="flex rounded bg-surface-container p-1">
-      {options.map((option) => (
-        <span
-          key={option}
-          className={[
-            'rounded px-4 py-1.5 font-body-sm text-body-sm',
-            option === selected
-              ? 'bg-surface-container-lowest font-semibold text-on-surface shadow-sm'
-              : 'text-on-surface-variant',
-          ].join(' ')}
-        >
-          {option}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function SettingsNavigation() {
-  return (
-    <aside className="space-y-6 border-outline-variant bg-surface-container-lowest p-6 lg:w-64 lg:border-r">
+    <aside className="space-y-6 border-outline-variant bg-surface-container-lowest p-5 lg:w-64 lg:border-r">
       <div>
         <h2 className="mb-4 font-headline-sm text-headline-sm text-on-surface">
           Configuration
         </h2>
 
         <nav className="space-y-1" aria-label="Settings sections">
-          {settingsSections.map((section, index) => (
-            <button
-              key={section}
-              type="button"
-              disabled
-              className={[
-                'flex w-full items-center justify-between rounded px-3 py-2.5 text-left font-body-md text-body-md transition-colors',
-                index === 0
-                  ? 'border-r-2 border-primary bg-primary-container/10 font-semibold text-primary'
-                  : 'text-on-surface-variant',
-              ].join(' ')}
-            >
-              <span>{section}</span>
-              {index === 0 ? (
-                <span className="material-symbols-outlined text-sm">
-                  chevron_right
-                </span>
-              ) : null}
-            </button>
-          ))}
+          {settingsSections.map((section) => {
+            const sectionId = section.toLowerCase().replaceAll(' ', '-')
+            const isActive = activeSection === sectionId
+
+            return (
+              <a
+                key={section}
+                href={`#${sectionId}`}
+                className={[
+                  'flex w-full items-center justify-between rounded px-3 py-2.5 text-left font-body-md text-body-md transition-colors',
+                  isActive
+                    ? 'border-r-2 border-primary bg-primary-container/10 font-semibold text-primary'
+                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+                ].join(' ')}
+              >
+                <span>{section}</span>
+                {isActive ? (
+                  <span className="material-symbols-outlined text-sm">
+                    chevron_right
+                  </span>
+                ) : null}
+              </a>
+            )
+          })}
         </nav>
       </div>
 
-      <div className="border-t border-outline-variant pt-6">
-        <div className="rounded-xl bg-surface-container-low p-4">
+      <div className="border-t border-outline-variant pt-5">
+        <div className="rounded border border-outline-variant bg-surface p-4">
           <p className="mb-2 font-label-caps text-label-caps uppercase text-on-surface-variant">
-            Cloud Status
+            Storage Mode
           </p>
           <div className="flex items-center gap-2 font-body-sm text-body-sm font-semibold text-secondary">
-            <span className="material-symbols-outlined text-sm">cloud_done</span>
-            <span>Fully Synced</span>
+            <span className="material-symbols-outlined text-sm">database</span>
+            <span>Local IndexedDB</span>
           </div>
+          <p className="mt-2 text-body-sm text-on-surface-variant">
+            No cloud sync or backend persistence is active.
+          </p>
         </div>
       </div>
     </aside>
   )
 }
 
-function SectionIntro({ description, title }) {
+function FieldLabel({ children }) {
   return (
-    <header>
-      <h3 className="font-headline-md text-headline-md text-on-surface">
-        {title}
-      </h3>
-      <p className="font-body-md text-body-md text-on-surface-variant">
-        {description}
-      </p>
-    </header>
+    <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+      {children}
+    </span>
   )
 }
 
-function SettingsPanel({ children, className = '' }) {
+function SelectField({ label, onChange, options, value }) {
   return (
-    <div
-      className={[
-        'rounded border border-outline-variant bg-surface-container-lowest shadow-sm',
-        className,
-      ].join(' ')}
-    >
-      {children}
+    <label className="block space-y-2">
+      <FieldLabel>{label}</FieldLabel>
+      <select
+        className="h-9 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 font-body-sm text-body-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function SegmentedControl({ label, onChange, options, value }) {
+  return (
+    <div className="space-y-2">
+      <FieldLabel>{label}</FieldLabel>
+      <div className="flex flex-wrap rounded bg-surface-container p-1">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={[
+              'rounded px-4 py-1.5 font-body-sm text-body-sm transition-colors',
+              option.value === value
+                ? 'bg-surface-container-lowest font-semibold text-on-surface shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface',
+            ].join(' ')}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
 
-function GeneralSection() {
+function PreferenceRow({ children, description, title }) {
   return (
-    <section className="space-y-6" id="general">
-      <SectionIntro
+    <div className="flex flex-col justify-between gap-4 border-b border-outline-variant p-4 last:border-b-0 md:flex-row md:items-center">
+      <div className="max-w-xl space-y-1">
+        <p className="font-body-md text-body-md font-semibold text-on-surface">
+          {title}
+        </p>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">
+          {description}
+        </p>
+      </div>
+      <div className="w-full md:w-72">{children}</div>
+    </div>
+  )
+}
+
+function GeneralSection({ isSaving, onUpdate, settings }) {
+  return (
+    <section id="general">
+      <SectionCard
         title="General"
-        description="Regional and localization parameters for financial processing."
-      />
+        description="Regional preferences for PesoPilot displays and future localized behavior."
+      >
+        <div className="divide-y divide-outline-variant overflow-hidden rounded border border-outline-variant">
+          <PreferenceRow
+            title="Currency"
+            description="Controls the preferred display currency for settings-aware surfaces."
+          >
+            <SelectField
+              label="Currency"
+              options={SETTINGS_OPTIONS.currencies}
+              value={settings.currency}
+              onChange={(currency) => onUpdate({ currency })}
+              disabled={isSaving}
+            />
+          </PreferenceRow>
 
-      <SettingsPanel className="p-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <StaticSelect
-            label="Display Language"
-            value="English (US)"
-            options={['English (US)', 'Tagalog (PH)', 'Spanish (ES)']}
-          />
-          <StaticSelect
-            label="Base Currency"
-            value="PHP (Peso) - Philippine Peso"
-            options={[
-              'PHP (Peso) - Philippine Peso',
-              'USD ($) - US Dollar',
-              'EUR (Euro) - Euro',
-            ]}
-          />
-        </div>
+          <PreferenceRow
+            title="Language"
+            description="Stored for future localization. Full i18n is not part of this MVP pass."
+          >
+            <SelectField
+              label="Language"
+              options={SETTINGS_OPTIONS.languages}
+              value={settings.language}
+              onChange={(language) => onUpdate({ language })}
+              disabled={isSaving}
+            />
+          </PreferenceRow>
 
-        <div className="mt-6 flex items-center justify-between gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="flex gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded bg-secondary-container/20 text-secondary">
-              <span className="material-symbols-outlined">location_on</span>
-            </div>
-            <div>
-              <p className="font-body-md text-body-md font-semibold">
-                Local Lifestyle Mode (PH-Specific)
-              </p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Auto-calculate SSS, PhilHealth, and Pag-IBIG contributions.
-              </p>
-            </div>
-          </div>
-          <StaticToggle checked />
+          <PreferenceRow
+            title="Lifestyle Mode"
+            description="Supports future localized financial behavior without adding payroll or tax settings here."
+          >
+            <SelectField
+              label="Lifestyle Mode"
+              options={SETTINGS_OPTIONS.lifestyleModes}
+              value={settings.lifestyleMode}
+              onChange={(lifestyleMode) => onUpdate({ lifestyleMode })}
+              disabled={isSaving}
+            />
+          </PreferenceRow>
         </div>
-      </SettingsPanel>
+      </SectionCard>
     </section>
   )
 }
 
-function AppearanceSection() {
+function AppearanceSection({ isSaving, onUpdate, settings }) {
   return (
-    <section className="space-y-6" id="appearance">
-      <SectionIntro
+    <section id="appearance">
+      <SectionCard
         title="Appearance"
-        description="Customize the visual density and theme of your dashboard."
-      />
+        description="Local display preferences for the current browser."
+      >
+        <div className="divide-y divide-outline-variant overflow-hidden rounded border border-outline-variant">
+          <PreferenceRow
+            title="Theme"
+            description="Light and dark mode apply a root class. System follows your OS preference."
+          >
+            <SegmentedControl
+              label="Theme"
+              options={SETTINGS_OPTIONS.themes}
+              value={settings.theme}
+              onChange={(theme) => onUpdate({ theme })}
+              disabled={isSaving}
+            />
+          </PreferenceRow>
 
-      <SettingsPanel className="overflow-hidden">
-        <div className="flex flex-col justify-between gap-4 border-b border-outline-variant p-6 md:flex-row md:items-center">
-          <div className="space-y-1">
-            <p className="font-body-md text-body-md font-semibold">Color Mode</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Switch between Light and Dark interface variants.
-            </p>
-          </div>
-          <StaticSegmentedControl
-            options={['Light', 'Dark', 'System']}
-            selected="Light"
-          />
+          <PreferenceRow
+            title="Density"
+            description="Stored for MVP and exposed on the app root for future compact/comfortable refinements."
+          >
+            <SegmentedControl
+              label="Density"
+              options={SETTINGS_OPTIONS.densities}
+              value={settings.density}
+              onChange={(density) => onUpdate({ density })}
+              disabled={isSaving}
+            />
+          </PreferenceRow>
         </div>
-
-        <div className="flex flex-col justify-between gap-4 p-6 md:flex-row md:items-center">
-          <div className="space-y-1">
-            <p className="font-body-md text-body-md font-semibold">UI Density</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Control the spacing and information density.
-            </p>
-          </div>
-          <StaticSegmentedControl
-            options={['Comfortable', 'Compact']}
-            selected="Compact"
-          />
-        </div>
-      </SettingsPanel>
+      </SectionCard>
     </section>
   )
 }
 
-function SalaryTaxSection() {
+function DataActionRow({ actions, description, tone = 'neutral', title }) {
+  const toneClasses = {
+    critical: 'bg-error-container/10',
+    neutral: 'bg-surface-container-lowest',
+  }
+
   return (
-    <section className="space-y-6" id="salary">
-      <SectionIntro
-        title="Salary & Tax"
-        description="Core parameters for income forecasting and budget generation."
-      />
-
-      <SettingsPanel className="space-y-8 p-6">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <Input
-            disabled
-            id="settings-monthly-gross-salary"
-            label="Monthly Gross Salary"
-            readOnly
-            value="PHP 125,000.00"
-          />
-          <StaticSelect
-            label="Pay Schedule"
-            value="Bi-monthly (15th & 30th)"
-            options={[
-              'Bi-monthly (15th & 30th)',
-              'Monthly (End of month)',
-              'Weekly (Friday)',
-            ]}
-          />
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-body-md text-body-md font-semibold">Buffer Days</p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Days to delay recurring expenses after payday.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled
-                className="flex h-8 w-8 items-center justify-center rounded border border-outline-variant text-on-surface-variant"
-              >
-                -
-              </button>
-              <span className="w-4 text-center font-data-mono">3</span>
-              <button
-                type="button"
-                disabled
-                className="flex h-8 w-8 items-center justify-center rounded border border-outline-variant text-on-surface-variant"
-              >
-                +
-              </button>
-            </div>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-container">
-            <div className="h-full w-[30%] bg-primary" />
-          </div>
-        </div>
-      </SettingsPanel>
-    </section>
+    <div
+      className={[
+        'flex flex-col justify-between gap-4 border-b border-outline-variant p-4 last:border-b-0 md:flex-row md:items-center',
+        toneClasses[tone] ?? toneClasses.neutral,
+      ].join(' ')}
+    >
+      <div className="space-y-1">
+        <p
+          className={[
+            'font-body-md text-body-md font-semibold',
+            tone === 'critical' ? 'text-error' : 'text-on-surface',
+          ].join(' ')}
+        >
+          {title}
+        </p>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">
+          {description}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">{actions}</div>
+    </div>
   )
 }
 
-function DataManagementSection() {
+function DataManagementSection({
+  fileInputRef,
+  isSaving,
+  onExport,
+  onImportClick,
+  onResetClick,
+}) {
   return (
-    <section className="space-y-6" id="data">
-      <SectionIntro
+    <section id="data-management">
+      <SectionCard
         title="Data Management"
-        description="Export or reset your entire financial history."
-      />
+        description="Export, import, or reset local IndexedDB data with explicit safeguards."
+      >
+        <div className="overflow-hidden rounded border border-outline-variant">
+          <DataActionRow
+            title="Export Data"
+            description="Download a JSON backup containing current local PesoPilot records as-is."
+            actions={
+              <Button onClick={onExport} disabled={isSaving} variant="secondary">
+                <span className="material-symbols-outlined text-sm">download</span>
+                Export JSON
+              </Button>
+            }
+          />
 
-      <SettingsPanel className="divide-y divide-outline-variant overflow-hidden">
-        <div className="flex flex-col justify-between gap-4 p-6 md:flex-row md:items-center">
-          <div>
-            <p className="font-body-md text-body-md font-semibold">Export Ledger</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Download all transactions as a CSV or JSON file.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button disabled variant="secondary">
-              <span className="material-symbols-outlined text-sm">download</span>
-              CSV
-            </Button>
-            <Button disabled variant="secondary">
-              <span className="material-symbols-outlined text-sm">download</span>
-              JSON
-            </Button>
-          </div>
-        </div>
+          <DataActionRow
+            title="Import Data"
+            description="Importing replaces existing local PesoPilot data after typing IMPORT."
+            actions={
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={onImportClick}
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isSaving}
+                  variant="secondary"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    upload_file
+                  </span>
+                  Select Backup
+                </Button>
+              </>
+            }
+          />
 
-        <div className="flex flex-col justify-between gap-4 p-6 md:flex-row md:items-center">
-          <div>
-            <p className="font-body-md text-body-md font-semibold">Import History</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Merge data from external banking CSVs.
-            </p>
-          </div>
-          <Button disabled variant="secondary">
-            <span className="material-symbols-outlined text-sm">upload_file</span>
-            Select File
-          </Button>
+          <DataActionRow
+            title="Reset Local Data"
+            description="Deletes local PesoPilot IndexedDB data and reseeds defaults after typing RESET."
+            tone="critical"
+            actions={
+              <Button
+                onClick={onResetClick}
+                disabled={isSaving}
+                variant="ghost"
+                className="border-error/30 text-error hover:bg-error-container/20"
+              >
+                Reset Data
+              </Button>
+            }
+          />
         </div>
-
-        <div className="flex flex-col justify-between gap-4 bg-error-container/5 p-6 md:flex-row md:items-center">
-          <div>
-            <p className="font-body-md text-body-md font-semibold text-error">
-              Factory Reset
-            </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Permanently delete all accounts, transactions, and settings.
-            </p>
-          </div>
-          <Button disabled variant="ghost" className="text-error">
-            Reset All Data
-          </Button>
-        </div>
-      </SettingsPanel>
+      </SectionCard>
     </section>
   )
+}
+
+function ConfirmationModal({
+  confirmationPhrase,
+  description,
+  isOpen,
+  isSaving,
+  onClose,
+  onConfirm,
+  title,
+}) {
+  const [typedPhrase, setTypedPhrase] = useState('')
+  const canConfirm = typedPhrase === confirmationPhrase
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTypedPhrase('')
+    }
+  }, [isOpen])
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      description={description}
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            className="bg-error hover:bg-error/90"
+            onClick={onConfirm}
+            disabled={!canConfirm || isSaving}
+          >
+            Confirm {confirmationPhrase}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded border border-error/25 bg-error-container/30 p-3 text-body-sm text-error">
+          This action is destructive and cannot be undone from the app.
+        </div>
+
+        <label className="block space-y-2">
+          <FieldLabel>Type {confirmationPhrase} to continue</FieldLabel>
+          <input
+            className="h-9 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 font-data-mono text-body-sm text-on-surface focus:border-error focus:outline-none focus:ring-2 focus:ring-error/10"
+            value={typedPhrase}
+            onChange={(event) => setTypedPhrase(event.target.value)}
+            autoComplete="off"
+          />
+        </label>
+      </div>
+    </Modal>
+  )
+}
+
+function downloadJsonBackup(backupData, fileName) {
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+    type: 'application/json',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function readJsonFile(file) {
+  return JSON.parse(await file.text())
 }
 
 export function SettingsPage() {
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
+  const {
+    actionState,
+    error,
+    exportData,
+    importData,
+    isLoading,
+    isSaving,
+    resetData,
+    settings,
+    updateSetting,
+  } = useSettings()
+  const fileInputRef = useRef(null)
+  const [activeSection, setActiveSection] = useState('general')
+  const [pendingImportData, setPendingImportData] = useState(null)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false)
+  const [localError, setLocalError] = useState('')
 
   useEffect(() => {
     setHeaderConfig({
@@ -359,33 +436,161 @@ export function SettingsPage() {
     return () => resetHeaderConfig()
   }, [resetHeaderConfig, setHeaderConfig])
 
+  useEffect(() => {
+    const sections = settingsSections.map((section) =>
+      document.getElementById(section.toLowerCase().replaceAll(' ', '-')),
+    )
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries.find((entry) => entry.isIntersecting)
+        if (visibleEntry?.target?.id) {
+          setActiveSection(visibleEntry.target.id)
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    )
+
+    sections.forEach((section) => {
+      if (section) {
+        observer.observe(section)
+      }
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  async function handleExport() {
+    setLocalError('')
+    const { backupData, fileName } = await exportData()
+    downloadJsonBackup(backupData, fileName)
+  }
+
+  async function handleImportFile(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    try {
+      setLocalError('')
+      const backupData = await readJsonFile(file)
+      settingsService.validateBackupData(backupData)
+      setPendingImportData(backupData)
+      setIsImportModalOpen(true)
+    } catch (importError) {
+      setLocalError(importError.message || 'Unable to read backup file.')
+    }
+  }
+
+  async function handleConfirmImport() {
+    await importData(pendingImportData)
+    setPendingImportData(null)
+    setIsImportModalOpen(false)
+  }
+
+  async function handleConfirmReset() {
+    await resetData()
+    setIsResetModalOpen(false)
+  }
+
+  if (isLoading || !settings) {
+    return <LoadingState label="Loading settings" />
+  }
+
   return (
-    <div className="overflow-hidden rounded border border-outline-variant bg-surface-container-lowest">
-      <div className="grid min-h-[calc(100vh-8rem)] grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)]">
-        <SettingsNavigation />
+    <>
+      <div className="overflow-hidden rounded border border-outline-variant bg-surface-container-lowest">
+        <div className="grid min-h-[calc(100vh-8rem)] grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)]">
+          <SettingsNavigation activeSection={activeSection} />
 
-        <div className="settings-content overflow-y-auto bg-slate-50 p-5 md:p-10">
-          <div className="mx-auto max-w-3xl space-y-12 pb-20">
-            <GeneralSection />
-            <AppearanceSection />
-            <SalaryTaxSection />
-            <DataManagementSection />
+          <div className="settings-content overflow-y-auto bg-surface-container p-4 md:p-6">
+            <div className="mx-auto max-w-4xl space-y-5 pb-16">
+              <header className="flex flex-col justify-between gap-3 rounded border border-outline-variant bg-surface-container-lowest p-4 md:flex-row md:items-center">
+                <div>
+                  <h1 className="font-headline-md text-headline-md text-on-surface">
+                    Settings
+                  </h1>
+                  <p className="text-body-sm text-on-surface-variant">
+                    Manage local preferences, appearance, and backup controls.
+                  </p>
+                </div>
+                <StatusBadge tone="info">Local-first</StatusBadge>
+              </header>
 
-            <div className="flex justify-end gap-4 pt-4">
-              <Button disabled variant="ghost">
-                Discard Changes
-              </Button>
-              <Button disabled>
-                Save Changes
-              </Button>
-            </div>
+              {error || localError ? (
+                <ErrorState
+                  title="Settings action failed"
+                  message={localError || error}
+                />
+              ) : null}
 
-            <div className="flex justify-end">
-              <StatusBadge tone="neutral">Static preview only</StatusBadge>
+              {actionState.message ? (
+                <div className="rounded border border-outline-variant bg-surface-container-lowest p-3">
+                  <StatusBadge tone={actionState.tone}>
+                    {actionState.message}
+                  </StatusBadge>
+                </div>
+              ) : null}
+
+              <GeneralSection
+                isSaving={isSaving}
+                onUpdate={updateSetting}
+                settings={settings}
+              />
+              <AppearanceSection
+                isSaving={isSaving}
+                onUpdate={updateSetting}
+                settings={settings}
+              />
+              <DataManagementSection
+                fileInputRef={fileInputRef}
+                isSaving={isSaving}
+                onExport={handleExport}
+                onImportClick={handleImportFile}
+                onResetClick={() => setIsResetModalOpen(true)}
+              />
+
+              <div className="rounded border border-outline-variant bg-surface-container-lowest p-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+                      Unavailable in MVP Settings
+                    </p>
+                    <p className="text-body-sm text-on-surface-variant">
+                      Salary configuration remains in Salary Cutoff and Income.
+                      AI, tax, notifications, and cloud sync are not active here.
+                    </p>
+                  </div>
+                  <StatusBadge tone="neutral">No backend calls</StatusBadge>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <ConfirmationModal
+        confirmationPhrase="IMPORT"
+        description="Importing replaces existing local PesoPilot data."
+        isOpen={isImportModalOpen}
+        isSaving={isSaving}
+        onClose={() => setIsImportModalOpen(false)}
+        onConfirm={handleConfirmImport}
+        title="Import PesoPilot Backup"
+      />
+
+      <ConfirmationModal
+        confirmationPhrase="RESET"
+        description="Resetting clears local PesoPilot data and restores defaults."
+        isOpen={isResetModalOpen}
+        isSaving={isSaving}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={handleConfirmReset}
+        title="Reset Local Data"
+      />
+    </>
   )
 }
