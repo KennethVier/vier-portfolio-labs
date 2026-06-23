@@ -1,4 +1,10 @@
-export function DataGrid({ className = '', columns = [], rows = [] }) {
+export function DataGrid({
+  className = '',
+  columns = [],
+  getRowClassName,
+  onRowClick,
+  rows = [],
+}) {
   return (
     <div
       className={[
@@ -21,7 +27,15 @@ export function DataGrid({ className = '', columns = [], rows = [] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="hover:bg-surface-container-low">
+            <tr
+              key={row.id}
+              className={[
+                'hover:bg-surface-container-low',
+                onRowClick ? 'cursor-pointer' : '',
+                getRowClassName ? getRowClassName(row) : '',
+              ].join(' ')}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
               {columns.map((column) => (
                 <td
                   key={column.key}

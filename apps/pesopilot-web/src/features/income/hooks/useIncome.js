@@ -76,12 +76,12 @@ export function useIncome() {
     }
   }
 
-  function updateFilters(nextFilters) {
+  const updateFilters = useCallback((nextFilters) => {
     setFilters({
       ...EMPTY_INCOME_FILTERS,
       ...nextFilters,
     })
-  }
+  }, [])
 
   function clearEditingIncome() {
     setEditingIncome(null)

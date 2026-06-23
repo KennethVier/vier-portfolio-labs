@@ -17,11 +17,9 @@ function formatMoney(value) {
 export function CutoffCard({
   cutoff,
   isCurrent,
-  onAssignExpenses,
   onClose,
   onDelete,
   onEdit,
-  onMarkActive,
 }) {
   return (
     <Card className="p-4">
@@ -54,19 +52,11 @@ export function CutoffCard({
         <Button variant="secondary" onClick={() => onEdit(cutoff)}>
           Edit
         </Button>
-        {cutoff.status !== 'active' ? (
-          <Button variant="secondary" onClick={() => onMarkActive(cutoff.id)}>
-            Mark Active
-          </Button>
-        ) : null}
         {cutoff.status !== 'closed' ? (
           <Button variant="secondary" onClick={() => onClose(cutoff.id)}>
             Close
           </Button>
         ) : null}
-        <Button variant="secondary" onClick={() => onAssignExpenses(cutoff.id)}>
-          Assign Expenses
-        </Button>
         <Button variant="ghost" onClick={() => onDelete(cutoff.id)}>
           Delete
         </Button>

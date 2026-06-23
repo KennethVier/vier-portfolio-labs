@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
@@ -35,8 +35,6 @@ export function ExpenseInboxPage() {
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const [reviewRecord, setReviewRecord] = useState(null)
   const [reviewNotice, setReviewNotice] = useState('')
-  const [isPreviewHighlighted, setIsPreviewHighlighted] = useState(false)
-  const previewHighlightTimeoutRef = useRef(null)
 
   useEffect(() => {
     setHeaderConfig({
@@ -57,14 +55,6 @@ export function ExpenseInboxPage() {
     setReviewRecord(editingRecord)
   }, [editingRecord])
 
-  useEffect(() => {
-    return () => {
-      if (previewHighlightTimeoutRef.current) {
-        clearTimeout(previewHighlightTimeoutRef.current)
-      }
-    }
-  }, [])
-
   async function handleApprove(record) {
     if (!record.suggestedPaymentMethod) {
       setReviewNotice('Choose a payment method before approving this expense.')
@@ -83,19 +73,6 @@ export function ExpenseInboxPage() {
     }
 
     await rejectRecord(record.id)
-  }
-
-  function handleView(record) {
-    selectRecord(record)
-    setIsPreviewHighlighted(true)
-
-    if (previewHighlightTimeoutRef.current) {
-      clearTimeout(previewHighlightTimeoutRef.current)
-    }
-
-    previewHighlightTimeoutRef.current = setTimeout(() => {
-      setIsPreviewHighlighted(false)
-    }, 900)
   }
 
   async function handleSave(values) {
@@ -169,17 +146,10 @@ export function ExpenseInboxPage() {
             onEdit={editRecord}
             onReject={handleReject}
             onSelect={selectRecord}
-            onView={handleView}
           />
         </SectionCard>
 
         <SectionCard
-          className={[
-            'transition-all duration-300',
-            isPreviewHighlighted
-              ? 'border-primary shadow-[0_0_0_3px_rgba(0,85,204,0.14)]'
-              : '',
-          ].join(' ')}
           title="Preview Panel"
           description="Selected expense review details."
           actions={

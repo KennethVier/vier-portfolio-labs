@@ -140,7 +140,6 @@ function CutoffKpiGrid({ activeCutoff, daysRemaining }) {
 
 function CutoffManagementPanel({
   activeCutoff,
-  onAssignExpenses,
   onCreateNextCutoff,
   onEdit,
 }) {
@@ -169,13 +168,6 @@ function CutoffManagementPanel({
             onClick={() => activeCutoff && onCreateNextCutoff(activeCutoff.id)}
           >
             Create Next Cutoff
-          </Button>
-          <Button
-            type="button"
-            disabled={!activeCutoff}
-            onClick={() => activeCutoff && onAssignExpenses(activeCutoff.id)}
-          >
-            Quick Allocate
           </Button>
         </div>
       }
@@ -254,11 +246,9 @@ function HistoricalRecordsPanel({
   cutoffs,
   isLoading,
   onCreate,
-  onAssignExpenses,
   onClose,
   onDelete,
   onEdit,
-  onMarkActive,
 }) {
   return (
     <section className="border border-outline-variant bg-surface-container-lowest">
@@ -277,11 +267,9 @@ function HistoricalRecordsPanel({
           <CutoffList
             currentCutoff={currentCutoff}
             cutoffs={cutoffs}
-            onAssignExpenses={onAssignExpenses}
             onClose={onClose}
             onDelete={onDelete}
             onEdit={onEdit}
-            onMarkActive={onMarkActive}
           />
         )}
       </div>
@@ -293,7 +281,6 @@ export function SalaryCutoffSetupPage() {
   const [formError, setFormError] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const {
-    assignExpensesToCutoff,
     clearError,
     clearEditingCutoff,
     closeCutoff,
@@ -305,7 +292,6 @@ export function SalaryCutoffSetupPage() {
     error,
     isLoading,
     isSaving,
-    markCutoffActive,
     saveCutoff,
     setEditingCutoff,
   } = useSalaryCutoffs()
@@ -316,10 +302,6 @@ export function SalaryCutoffSetupPage() {
     if (window.confirm('Delete this salary cutoff?')) {
       await deleteCutoff(id)
     }
-  }
-
-  async function handleAssignExpenses(id) {
-    await assignExpensesToCutoff(id)
   }
 
   async function handleCreateNextCutoff(id) {
@@ -376,7 +358,6 @@ export function SalaryCutoffSetupPage() {
 
       <CutoffManagementPanel
         activeCutoff={activeCutoff}
-        onAssignExpenses={handleAssignExpenses}
         onCreateNextCutoff={handleCreateNextCutoff}
         onEdit={openEditForm}
       />
@@ -386,11 +367,9 @@ export function SalaryCutoffSetupPage() {
         cutoffs={cutoffs}
         isLoading={isLoading}
         onCreate={openCreateForm}
-        onAssignExpenses={handleAssignExpenses}
         onClose={closeCutoff}
         onDelete={handleDelete}
         onEdit={openEditForm}
-        onMarkActive={markCutoffActive}
       />
 
       <Modal

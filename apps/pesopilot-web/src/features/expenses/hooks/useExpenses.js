@@ -84,12 +84,12 @@ export function useExpenses() {
     }
   }
 
-  function updateFilters(nextFilters) {
+  const updateFilters = useCallback((nextFilters) => {
     setFilters({
       ...EMPTY_EXPENSE_FILTERS,
       ...nextFilters,
     })
-  }
+  }, [])
 
   function clearEditingExpense() {
     setEditingExpense(null)

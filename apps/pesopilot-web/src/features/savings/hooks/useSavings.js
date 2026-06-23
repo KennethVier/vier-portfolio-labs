@@ -75,12 +75,12 @@ export function useSavings() {
     }
   }
 
-  function updateFilters(nextFilters) {
+  const updateFilters = useCallback((nextFilters) => {
     setFilters({
       ...EMPTY_SAVINGS_FILTERS,
       ...nextFilters,
     })
-  }
+  }, [])
 
   function clearEditingSavings() {
     setEditingSavings(null)

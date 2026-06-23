@@ -44,6 +44,17 @@ export function HeaderProvider({ children }) {
     refreshHeaderStatus()
   }, [refreshHeaderStatus])
 
+  const setHeaderConfig = useCallback((nextConfig) => {
+    setConfig({
+      ...defaultHeaderConfig,
+      ...nextConfig,
+    })
+  }, [])
+
+  const resetHeaderConfig = useCallback(() => {
+    setConfig(defaultHeaderConfig)
+  }, [])
+
   const value = useMemo(
     () => ({
       config: {
@@ -51,19 +62,10 @@ export function HeaderProvider({ children }) {
         ...statusConfig,
       },
       refreshHeaderStatus,
-      setHeaderConfig: (nextConfig) =>
-        setConfig({
-          ...defaultHeaderConfig,
-          ...statusConfig,
-          ...nextConfig,
-        }),
-      resetHeaderConfig: () =>
-        setConfig({
-          ...defaultHeaderConfig,
-          ...statusConfig,
-        }),
+      setHeaderConfig,
+      resetHeaderConfig,
     }),
-    [config, refreshHeaderStatus, statusConfig],
+    [config, refreshHeaderStatus, resetHeaderConfig, setHeaderConfig, statusConfig],
   )
 
   return (

@@ -26,24 +26,29 @@ function getStatusTone(status) {
   return 'warning'
 }
 
-function InboxActions({ onApprove, onEdit, onReject, onView, record }) {
-  if (record.status !== INBOX_STATUS.pending) {
-    return (
-      <Button type="button" variant="secondary" onClick={() => onView(record)}>
-        View
-      </Button>
-    )
+function InboxActions({ onApprove, onEdit, onReject, record }) {
+  function handleAction(event, action) {
+    event.stopPropagation()
+    action(record)
   }
 
   return (
     <div className="flex flex-wrap justify-end gap-2">
-      <Button type="button" onClick={() => onApprove(record)}>
+      <Button type="button" onClick={(event) => handleAction(event, onApprove)}>
         Approve
       </Button>
-      <Button type="button" variant="secondary" onClick={() => onEdit(record)}>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={(event) => handleAction(event, onEdit)}
+      >
         Edit
       </Button>
-      <Button type="button" variant="ghost" onClick={() => onReject(record)}>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={(event) => handleAction(event, onReject)}
+      >
         Reject
       </Button>
     </div>
@@ -57,7 +62,6 @@ export function ExpenseInboxList({
   onEdit,
   onReject,
   onSelect,
-  onView,
 }) {
   if (records.length === 0) {
     return (
@@ -68,16 +72,37 @@ export function ExpenseInboxList({
     )
   }
 
+  const hasPendingRecords = records.some(
+    (record) => record.status === INBOX_STATUS.pending,
+  )
+
+  const columns = [
+    { key: 'merchant', label: 'Merchant' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'category', label: 'Category' },
+    { key: 'date', label: 'Date' },
+    { key: 'source', label: 'Source' },
+    { key: 'status', label: 'Status' },
+  ]
+
+  if (hasPendingRecords) {
+    columns.push({ key: 'actions', label: 'Actions' })
+  }
+
   const rows = records.map((record) => ({
-    actions: (
-      <InboxActions
-        record={record}
-        onApprove={onApprove}
-        onEdit={onEdit}
-        onReject={onReject}
-        onView={onView}
-      />
-    ),
+    ...(hasPendingRecords
+      ? {
+          actions:
+            record.status === INBOX_STATUS.pending ? (
+              <InboxActions
+                record={record}
+                onApprove={onApprove}
+                onEdit={onEdit}
+                onReject={onReject}
+              />
+            ) : null,
+        }
+      : {}),
     amount: (
       <span className="block text-right font-data-mono">
         {formatMoney(record.amount)}
@@ -86,15 +111,8 @@ export function ExpenseInboxList({
     category: record.categoryName,
     date: record.transactionDate,
     id: record.id,
-    merchant: (
-      <button
-        type="button"
-        className="text-left font-semibold text-on-surface hover:text-primary"
-        onClick={() => onSelect(record)}
-      >
-        {record.merchant}
-      </button>
-    ),
+    merchant: <span className="font-semibold text-on-surface">{record.merchant}</span>,
+    record,
     source: record.source,
     status: (
       <StatusBadge tone={getStatusTone(record.status)}>
@@ -107,15 +125,11 @@ export function ExpenseInboxList({
     <>
       <div className="hidden md:block">
         <DataGrid
-          columns={[
-            { key: 'merchant', label: 'Merchant' },
-            { key: 'amount', label: 'Amount' },
-            { key: 'category', label: 'Category' },
-            { key: 'date', label: 'Date' },
-            { key: 'source', label: 'Source' },
-            { key: 'status', label: 'Status' },
-            { key: 'actions', label: 'Actions' },
-          ]}
+          columns={columns}
+          getRowClassName={(row) =>
+            selectedRecord?.id === row.record.id ? 'bg-surface-container-low' : ''
+          }
+          onRowClick={(row) => onSelect(row.record)}
           rows={rows}
         />
       </div>
@@ -156,13 +170,14 @@ export function ExpenseInboxList({
               <StatusBadge>{record.categoryName}</StatusBadge>
             </div>
 
-            <InboxActions
-              record={record}
-              onApprove={onApprove}
-              onEdit={onEdit}
-              onReject={onReject}
-              onView={onView}
-            />
+            {record.status === INBOX_STATUS.pending ? (
+              <InboxActions
+                record={record}
+                onApprove={onApprove}
+                onEdit={onEdit}
+                onReject={onReject}
+              />
+            ) : null}
           </article>
         ))}
       </div>

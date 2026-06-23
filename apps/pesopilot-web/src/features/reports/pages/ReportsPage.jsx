@@ -58,9 +58,17 @@ function ChartFrame({ children, emptyMessage, hasData }) {
   }
 
   return (
-    <div className="h-72 min-w-0">
+    <div className="w-full min-w-[1px]">
       {children}
     </div>
+  )
+}
+
+function ResponsiveChartContainer({ children }) {
+  return (
+    <ResponsiveContainer width="100%" height={288} minWidth={1}>
+      {children}
+    </ResponsiveContainer>
   )
 }
 
@@ -70,14 +78,14 @@ function ExpenseTrendChart({ data }) {
       hasData={data.length > 0}
       emptyMessage="No expenses available for trend reporting."
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveChartContainer>
         <BarChart data={data}>
           <XAxis dataKey="month" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
           <Tooltip formatter={formatTooltipValue} />
           <Bar dataKey="expenses" fill={chartColors.error} radius={[2, 2, 0, 0]} />
         </BarChart>
-      </ResponsiveContainer>
+      </ResponsiveChartContainer>
     </ChartFrame>
   )
 }
@@ -88,7 +96,7 @@ function IncomeExpenseChart({ data }) {
       hasData={data.length > 0}
       emptyMessage="No income or expenses available for comparison."
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveChartContainer>
         <BarChart data={data}>
           <XAxis dataKey="month" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
@@ -97,7 +105,7 @@ function IncomeExpenseChart({ data }) {
           <Bar dataKey="income" fill={chartColors.secondary} radius={[2, 2, 0, 0]} />
           <Bar dataKey="expenses" fill={chartColors.error} radius={[2, 2, 0, 0]} />
         </BarChart>
-      </ResponsiveContainer>
+      </ResponsiveChartContainer>
     </ChartFrame>
   )
 }
@@ -109,8 +117,8 @@ function CategoryBreakdownChart({ data }) {
 
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(13rem,0.85fr)] lg:items-center">
-      <div className="h-72 min-w-0">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full min-w-[1px]">
+        <ResponsiveChartContainer>
           <PieChart>
             <Pie
               cx="50%"
@@ -134,7 +142,7 @@ function CategoryBreakdownChart({ data }) {
             </Pie>
             <Tooltip formatter={formatTooltipValue} />
           </PieChart>
-        </ResponsiveContainer>
+        </ResponsiveChartContainer>
       </div>
 
       <div className="space-y-2 border-t border-outline-variant pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
@@ -167,7 +175,7 @@ function SavingsTrendChart({ data }) {
       hasData={data.length > 0}
       emptyMessage="No savings history available."
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveChartContainer>
         <LineChart data={data}>
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
@@ -180,7 +188,7 @@ function SavingsTrendChart({ data }) {
             dot={{ r: 3 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      </ResponsiveChartContainer>
     </ChartFrame>
   )
 }
@@ -191,7 +199,7 @@ function CashflowTrendChart({ data }) {
       hasData={data.length > 0}
       emptyMessage="No cashflow data available."
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveChartContainer>
         <LineChart data={data}>
           <XAxis dataKey="month" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
@@ -204,7 +212,7 @@ function CashflowTrendChart({ data }) {
             dot={{ r: 3 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      </ResponsiveChartContainer>
     </ChartFrame>
   )
 }

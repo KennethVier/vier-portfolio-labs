@@ -19,11 +19,9 @@ function formatMoney(value) {
 export function CutoffList({
   currentCutoff,
   cutoffs,
-  onAssignExpenses,
   onClose,
   onDelete,
   onEdit,
-  onMarkActive,
 }) {
   if (cutoffs.length === 0) {
     return (
@@ -61,19 +59,11 @@ export function CutoffList({
         <Button variant="secondary" onClick={() => onEdit(cutoff)}>
           Edit
         </Button>
-        {cutoff.status !== 'active' ? (
-          <Button variant="secondary" onClick={() => onMarkActive(cutoff.id)}>
-            Mark Active
-          </Button>
-        ) : null}
         {cutoff.status !== 'closed' ? (
           <Button variant="secondary" onClick={() => onClose(cutoff.id)}>
             Close
           </Button>
         ) : null}
-        <Button variant="secondary" onClick={() => onAssignExpenses(cutoff.id)}>
-          Assign Expenses
-        </Button>
         <Button variant="ghost" onClick={() => onDelete(cutoff.id)}>
           Delete
         </Button>
@@ -86,7 +76,7 @@ export function CutoffList({
     { key: 'period', label: 'Period' },
     { key: 'status', label: 'Status' },
     { key: 'expectedIncome', label: 'Expected Income' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'actions', label: '' },
   ]
 
   return (
@@ -100,11 +90,9 @@ export function CutoffList({
             key={cutoff.id}
             cutoff={cutoff}
             isCurrent={currentCutoff?.id === cutoff.id}
-            onAssignExpenses={onAssignExpenses}
             onClose={onClose}
             onDelete={onDelete}
             onEdit={onEdit}
-            onMarkActive={onMarkActive}
           />
         ))}
       </div>

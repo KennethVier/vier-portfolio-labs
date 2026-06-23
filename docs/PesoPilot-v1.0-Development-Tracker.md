@@ -1805,29 +1805,310 @@ Deferred manual ExpenseForm merchant suggestions and runtime international Lifes
 
 ---
 
-# Phase 11 — Monthly/Cutoff AI Summary
+# Phase 11 — Financial Insights and AI Summary
 
 Status: ⬜
 
 Goal:
 
-Generate insights.
+Generate meaningful financial insights from user data and eventually provide AI-generated financial summaries.
+
+---
+
+# Phase 11A — Rule-Based Financial Insights
+
+Status: ⬜
+
+Goal:
+
+Generate accurate, deterministic, and testable financial insights using business rules.
+
+---
+
+## Insight Engine
+
+[ ] Financial insight service
+
+[ ] Insight generation engine
+
+[ ] Insight prioritization
+
+[ ] Insight severity levels
+
+[ ] Insight DTOs
+
+---
+
+## Income Insights
+
+[ ] Total income analysis
+
+[ ] Income trend detection
+
+[ ] Income growth/decline comparison
+
+[ ] Income source breakdown
+
+---
+
+## Expense Insights
+
+[ ] Top spending categories
+
+[ ] Largest expense detection
+
+[ ] Category trend comparison
+
+[ ] Spending increase detection
+
+[ ] Spending decrease detection
+
+[ ] Spending distribution analysis
+
+---
+
+## Savings Insights
+
+[ ] Savings rate calculation
+
+[ ] Savings trend comparison
+
+[ ] Savings growth detection
+
+[ ] Savings contribution analysis
+
+---
+
+## Cashflow Insights
+
+[ ] Remaining cash analysis
+
+[ ] Cashflow stability analysis
+
+[ ] Current cutoff spending pace
+
+[ ] Current cutoff utilization analysis
+
+---
+
+## Cutoff Comparisons
+
+[ ] Current vs Previous Cutoff
+
+[ ] Current vs Monthly Average
+
+[ ] Spending trend analysis
+
+[ ] Savings trend analysis
+
+[ ] Income trend analysis
+
+---
+
+## Financial Health
+
+[ ] Financial health score
+
+[ ] Financial health explanation
+
+[ ] Health status levels
+
+```txt
+Excellent
+Good
+Fair
+Needs Attention
+```
+
+---
+
+## Rule-Based Summary Generation
+
+Generate factual and explainable insights.
+
+Examples:
+
+```txt
+You saved 22% of your income this cutoff.
+
+Dining expenses increased by 15% compared to the previous cutoff.
+
+Groceries remain your largest spending category.
+
+You still have ₱4,500 remaining before your next payday.
+```
+
+[ ] Summary builder
+
+[ ] Insight ranking
+
+[ ] Insight grouping
+
+[ ] Insight formatting
+
+---
+
+## Dashboard Integration
+
+[ ] Dashboard Insight Card
+
+[ ] AI Financial Coach uses generated insights
+
+[ ] Current Cutoff Summary Card
+
+---
+
+## Insight Page
+
+[ ] Insight page
+
+[ ] Current cutoff insights
+
+[ ] Monthly insights
+
+[ ] Historical insights
+
+[ ] Insight timeline
+
+---
+
+## Summary History
+
+[ ] Save generated summaries
+
+[ ] Cutoff summary history
+
+[ ] Monthly summary history
+
+---
+
+## Testing
+
+[ ] Income insight tests
+
+[ ] Expense insight tests
+
+[ ] Savings insight tests
+
+[ ] Cashflow insight tests
+
+[ ] Health score tests
+
+[ ] Cutoff comparison tests
+
+[ ] Summary generation tests
+
+---
+
+## Verification
+
+[ ] npm.cmd run test
+
+[ ] npm.cmd run lint
+
+[ ] npm.cmd run build
+
+---
+
+# Phase 11B — AI Narrative Layer
+
+Status: ⬜
+
+Goal:
+
+Convert rule-based insights into natural-language financial summaries.
 
 ---
 
 ## Backend
 
-[ ] Summary service
+[ ] Spring Boot AI module
 
 [ ] Summary API
+
+[ ] Summary DTOs
+
+[ ] Prompt templates
+
+[ ] Ollama integration
+
+---
+
+## Narrative Generation
+
+[ ] Current cutoff narrative
+
+[ ] Monthly narrative
+
+[ ] Financial health narrative
+
+[ ] Savings narrative
+
+[ ] Spending narrative
+
+---
+
+## AI Summary Types
+
+[ ] Short summary
+
+[ ] Detailed summary
+
+[ ] Dashboard summary
+
+[ ] Monthly review summary
+
+---
+
+## Fallback Behavior
+
+[ ] Fallback to rule-based summary when AI unavailable
+
+[ ] AI failure handling
+
+[ ] Timeout handling
 
 ---
 
 ## Frontend
 
-[ ] Insight cards
+[ ] AI Summary Card
 
-[ ] Insight page
+[ ] AI Summary Page Section
+
+[ ] Regenerate Summary Action
+
+[ ] Summary Loading State
+
+---
+
+## Testing
+
+[ ] API tests
+
+[ ] Prompt generation tests
+
+[ ] AI fallback tests
+
+[ ] Narrative rendering tests
+
+---
+
+## Verification
+
+[ ] npm.cmd run test
+
+[ ] npm.cmd run lint
+
+[ ] npm.cmd run build
+
+---
+
+## Actions Taken
+
+```txt
+Pending.
+```
 
 ---
 

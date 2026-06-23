@@ -86,17 +86,6 @@ export function useSalaryCutoffs() {
     }
   }
 
-  async function markCutoffActive(id) {
-    setError(null)
-
-    try {
-      await cutoffService.markCutoffActive(id)
-      await loadCutoffs()
-    } catch (activeError) {
-      setError(activeError.message || 'Unable to mark cutoff active')
-    }
-  }
-
   async function closeCutoff(id) {
     setError(null)
 
@@ -105,19 +94,6 @@ export function useSalaryCutoffs() {
       await loadCutoffs()
     } catch (closeError) {
       setError(closeError.message || 'Unable to close salary cutoff')
-    }
-  }
-
-  async function assignExpensesToCutoff(id) {
-    setError(null)
-
-    try {
-      const assignedCount = await cutoffService.assignExpensesToCutoff(id)
-      await loadCutoffs()
-      return assignedCount
-    } catch (assignError) {
-      setError(assignError.message || 'Unable to assign expenses')
-      return 0
     }
   }
 
@@ -130,7 +106,6 @@ export function useSalaryCutoffs() {
   }
 
   return {
-    assignExpensesToCutoff,
     clearError,
     clearEditingCutoff,
     closeCutoff,
@@ -142,7 +117,6 @@ export function useSalaryCutoffs() {
     error,
     isLoading,
     isSaving,
-    markCutoffActive,
     saveCutoff,
     setEditingCutoff,
   }
