@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
@@ -34,6 +34,9 @@ export function ExpenseInboxPage() {
   } = useExpenseInbox()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const [reviewRecord, setReviewRecord] = useState(null)
+  const [reviewNotice, setReviewNotice] = useState('')
+  const [isPreviewHighlighted, setIsPreviewHighlighted] = useState(false)
+  const previewHighlightTimeoutRef = useRef(null)
 
   useEffect(() => {
     setHeaderConfig({
@@ -47,15 +50,31 @@ export function ExpenseInboxPage() {
   useEffect(() => {
     if (!editingRecord) {
       setReviewRecord(null)
+      setReviewNotice('')
       return
     }
 
     setReviewRecord(editingRecord)
   }, [editingRecord])
 
+  useEffect(() => {
+    return () => {
+      if (previewHighlightTimeoutRef.current) {
+        clearTimeout(previewHighlightTimeoutRef.current)
+      }
+    }
+  }, [])
+
   async function handleApprove(record) {
+    if (!record.suggestedPaymentMethod) {
+      setReviewNotice('Choose a payment method before approving this expense.')
+      editRecord(record)
+      return
+    }
+
     await approveRecord(record.id, record)
     setReviewRecord(null)
+    setReviewNotice('')
   }
 
   async function handleReject(record) {
@@ -66,6 +85,19 @@ export function ExpenseInboxPage() {
     await rejectRecord(record.id)
   }
 
+  function handleView(record) {
+    selectRecord(record)
+    setIsPreviewHighlighted(true)
+
+    if (previewHighlightTimeoutRef.current) {
+      clearTimeout(previewHighlightTimeoutRef.current)
+    }
+
+    previewHighlightTimeoutRef.current = setTimeout(() => {
+      setIsPreviewHighlighted(false)
+    }, 900)
+  }
+
   async function handleSave(values) {
     await updateRecord(reviewRecord.id, values)
   }
@@ -73,6 +105,7 @@ export function ExpenseInboxPage() {
   async function handleSaveAndApprove(values) {
     await approveRecord(reviewRecord.id, values)
     setReviewRecord(null)
+    setReviewNotice('')
   }
 
   if (isLoading) {
@@ -136,10 +169,17 @@ export function ExpenseInboxPage() {
             onEdit={editRecord}
             onReject={handleReject}
             onSelect={selectRecord}
+            onView={handleView}
           />
         </SectionCard>
 
         <SectionCard
+          className={[
+            'transition-all duration-300',
+            isPreviewHighlighted
+              ? 'border-primary shadow-[0_0_0_3px_rgba(0,85,204,0.14)]'
+              : '',
+          ].join(' ')}
           title="Preview Panel"
           description="Selected expense review details."
           actions={
@@ -166,16 +206,24 @@ export function ExpenseInboxPage() {
         size="xl"
       >
         {reviewRecord ? (
-          <ExpenseInboxForm
-            categories={categories}
-            isSaving={isSaving}
-            record={reviewRecord}
-            onApprove={handleSaveAndApprove}
-            onCancel={resetEditingRecord}
-            onSubmit={handleSave}
-          />
+          <>
+            {reviewNotice ? (
+              <div className="mb-4 border border-tertiary/30 bg-tertiary-container px-3 py-2 text-body-sm text-on-tertiary-container">
+                {reviewNotice}
+              </div>
+            ) : null}
+            <ExpenseInboxForm
+              categories={categories}
+              isSaving={isSaving}
+              record={reviewRecord}
+              onApprove={handleSaveAndApprove}
+              onCancel={resetEditingRecord}
+              onSubmit={handleSave}
+            />
+          </>
         ) : null}
       </Modal>
+
     </div>
   )
 }

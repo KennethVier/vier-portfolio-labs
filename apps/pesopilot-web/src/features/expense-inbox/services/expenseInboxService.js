@@ -2,6 +2,11 @@ import { categoryRepository } from '@/lib/db/repositories/categoryRepository.js'
 import { detectedExpenseRepository } from '@/lib/db/repositories/detectedExpenseRepository.js'
 
 import { expenseService } from '@/features/expenses/services/expenseService.js'
+import {
+  CATEGORY_SOURCES,
+} from '@/features/merchant-rules/services/merchantRuleMatcher.js'
+import { merchantRuleService } from '@/features/merchant-rules/services/merchantRuleService.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import {
   EMPTY_INBOX_FILTERS,
@@ -35,9 +40,14 @@ function normalizeInboxPayload(payload, existingRecord = null) {
 
   return {
     amount: parsed.amount,
+    categorySource:
+      parsed.categorySource ??
+      existingRecord?.categorySource ??
+      CATEGORY_SOURCES.unknown,
     confidence: existingRecord?.confidence ?? payload.confidence ?? null,
     createdAt: existingRecord?.createdAt ?? timestamp,
     merchant: parsed.merchant,
+    merchantRuleId: parsed.merchantRuleId ?? existingRecord?.merchantRuleId ?? null,
     note: parsed.note ?? null,
     rawText: parsed.rawText ?? null,
     reviewedAt: existingRecord?.reviewedAt ?? null,
@@ -50,15 +60,49 @@ function normalizeInboxPayload(payload, existingRecord = null) {
   }
 }
 
+function assertPaymentMethodForApproval(record) {
+  if (!record.suggestedPaymentMethod) {
+    throw new Error('Payment method is required before approving this expense')
+  }
+}
+
 function decorateRecord(record, categoriesById) {
   const categoryId = record.suggestedCategoryId ?? record.category ?? ''
 
   return {
     ...record,
     categoryName: categoriesById.get(categoryId)?.name ?? 'Uncategorized',
+    categorySource: record.categorySource ?? CATEGORY_SOURCES.unknown,
+    merchantRuleId: record.merchantRuleId ?? null,
     suggestedCategoryId: categoryId,
     transactionDate: getRecordDate(record),
   }
+}
+
+async function learnMerchantRuleIfNeeded(existingRecord, normalizedRecord, payload) {
+  const categoryChanged =
+    existingRecord.suggestedCategoryId !== normalizedRecord.suggestedCategoryId
+  const shouldRemember = payload.rememberMerchantRule !== false
+
+  if (!categoryChanged || !shouldRemember) {
+    return null
+  }
+
+  const learnResult = await merchantRuleService.learnCategoryCorrection({
+    categoryId: normalizedRecord.suggestedCategoryId,
+    merchant: normalizedRecord.merchant,
+  })
+
+  if (!learnResult.learned) {
+    return null
+  }
+
+  await detectedExpenseRepository.update(existingRecord.id, {
+    categorySource: CATEGORY_SOURCES.manualOverride,
+    merchantRuleId: learnResult.rule?.id ?? null,
+  })
+
+  return learnResult
 }
 
 function matchesFilters(record, filters) {
@@ -136,6 +180,12 @@ async function loadCategoriesById() {
   return { categories, categoriesById }
 }
 
+async function getCurrentCutoffId() {
+  const currentCutoff = await cutoffService.findCurrentCutoff()
+
+  return currentCutoff?.id ?? null
+}
+
 export const expenseInboxService = {
   async loadInbox(filters = EMPTY_INBOX_FILTERS) {
     const [records, categoryResult] = await Promise.all([
@@ -173,11 +223,12 @@ export const expenseInboxService = {
 
     const normalizedRecord = normalizeInboxPayload(payload, existingRecord)
     await detectedExpenseRepository.update(id, normalizedRecord)
+    await learnMerchantRuleIfNeeded(existingRecord, normalizedRecord, payload)
 
     return detectedExpenseRepository.findById(id)
   },
 
-  async approveInboxRecord(id, payload) {
+  async approveInboxRecord(id, payload = {}) {
     const existingRecord = await detectedExpenseRepository.findById(id)
 
     if (!existingRecord) {
@@ -196,10 +247,18 @@ export const expenseInboxService = {
       },
       existingRecord,
     )
+    const learnResult = await learnMerchantRuleIfNeeded(
+      existingRecord,
+      normalizedRecord,
+      payload,
+    )
+    assertPaymentMethodForApproval(normalizedRecord)
+    const currentCutoffId = await getCurrentCutoffId()
 
     const expense = await expenseService.createExpense({
       amount: normalizedRecord.amount,
       categoryId: normalizedRecord.suggestedCategoryId,
+      cutoffId: currentCutoffId,
       date: normalizedRecord.transactionDate,
       merchant: normalizedRecord.merchant,
       note: normalizedRecord.note ?? normalizedRecord.rawText ?? null,
@@ -211,6 +270,10 @@ export const expenseInboxService = {
 
     await detectedExpenseRepository.update(id, {
       ...normalizedRecord,
+      categorySource: learnResult?.learned
+        ? CATEGORY_SOURCES.manualOverride
+        : normalizedRecord.categorySource,
+      merchantRuleId: learnResult?.rule?.id ?? normalizedRecord.merchantRuleId,
       reviewedAt: timestamp,
       status: INBOX_STATUS.approved,
       updatedAt: timestamp,

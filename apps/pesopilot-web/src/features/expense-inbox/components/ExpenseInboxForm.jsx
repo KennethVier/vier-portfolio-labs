@@ -20,7 +20,9 @@ function mapRecordToFormValues(record) {
 
   return {
     amount: record.amount ?? '',
+    categorySource: record.categorySource ?? '',
     merchant: record.merchant ?? '',
+    merchantRuleId: record.merchantRuleId ?? '',
     note: record.note ?? '',
     rawText: record.rawText ?? '',
     source: record.source ?? 'manual_input',
@@ -31,6 +33,7 @@ function mapRecordToFormValues(record) {
       record.transactionDate ??
       record.createdAt?.slice(0, 10) ??
       expenseInboxFormDefaults.transactionDate,
+    rememberMerchantRule: true,
   }
 }
 
@@ -44,9 +47,11 @@ export function ExpenseInboxForm({
 }) {
   const {
     formState: { errors },
+    getValues,
     handleSubmit,
     register,
     reset,
+    setError,
   } = useForm({
     defaultValues: expenseInboxFormDefaults,
     resolver: zodResolver(expenseInboxSchema),
@@ -61,6 +66,16 @@ export function ExpenseInboxForm({
   }
 
   async function approveRecord() {
+    const paymentMethod = getValues('suggestedPaymentMethod')
+
+    if (!paymentMethod) {
+      setError('suggestedPaymentMethod', {
+        message: 'Payment method is required before approval',
+        type: 'manual',
+      })
+      return
+    }
+
     await handleSubmit(onApprove)()
   }
 
@@ -68,6 +83,8 @@ export function ExpenseInboxForm({
     <form className="space-y-4" onSubmit={handleSubmit(submitRecord)}>
       <input type="hidden" {...register('rawText')} />
       <input type="hidden" {...register('status')} />
+      <input type="hidden" {...register('categorySource')} />
+      <input type="hidden" {...register('merchantRuleId')} />
 
       <div className="grid gap-3 md:grid-cols-2">
         <Input
@@ -123,6 +140,11 @@ export function ExpenseInboxForm({
               </option>
             ))}
           </select>
+          {errors.suggestedPaymentMethod ? (
+            <span className="mt-1 block text-xs text-error">
+              {errors.suggestedPaymentMethod.message}
+            </span>
+          ) : null}
         </label>
 
         <Input
@@ -149,6 +171,28 @@ export function ExpenseInboxForm({
           />
         </label>
       </div>
+
+      {record?.status === INBOX_STATUS.pending &&
+      record?.merchant &&
+      !/^unknown merchant$/i.test(record.merchant) ? (
+        <label className="flex items-start gap-2 rounded border border-outline-variant bg-surface-container-lowest p-3 text-body-sm text-on-surface">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            defaultChecked
+            {...register('rememberMerchantRule')}
+          />
+          <span>
+            <span className="block font-medium">
+              Remember this merchant category
+            </span>
+            <span className="text-on-surface-variant">
+              If you change the category, PesoPilot will use it for future
+              {` ${record.merchant}`} entries.
+            </span>
+          </span>
+        </label>
+      ) : null}
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onCancel}>

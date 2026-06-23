@@ -33,6 +33,17 @@ function DetailRow({ label, value }) {
   )
 }
 
+function formatCategorySource(source) {
+  const labels = {
+    manual_override: 'Manual Override',
+    merchant_rule: 'Merchant Rule',
+    parser_guess: 'Parser Guess',
+    unknown: 'Unknown',
+  }
+
+  return labels[source] ?? source
+}
+
 export function ExpenseInboxPreview({ record }) {
   if (!record) {
     return (
@@ -70,6 +81,10 @@ export function ExpenseInboxPreview({ record }) {
 
       <dl>
         <DetailRow label="Category" value={record.categoryName} />
+        <DetailRow
+          label="Category Source"
+          value={formatCategorySource(record.categorySource)}
+        />
         <DetailRow label="Date" value={record.transactionDate} />
         <DetailRow label="Source" value={record.source} />
         <DetailRow label="Payment Method" value={record.suggestedPaymentMethod} />

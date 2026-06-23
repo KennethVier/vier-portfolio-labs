@@ -8,6 +8,10 @@ import {
   MANUAL_AI_DETECTED_SOURCE,
   parseExpenseText,
 } from '../utils/expenseTextParser.js'
+import {
+  CATEGORY_SOURCES,
+} from '@/features/merchant-rules/services/merchantRuleMatcher.js'
+import { merchantRuleService } from '@/features/merchant-rules/services/merchantRuleService.js'
 
 function nowIso() {
   return new Date().toISOString()
@@ -21,7 +25,9 @@ async function getCategoryName(categoryId) {
 function normalizePreviewPayload(payload) {
   return {
     amount: payload.amount,
+    categorySource: payload.categorySource ?? CATEGORY_SOURCES.parserGuess,
     merchant: payload.merchant,
+    merchantRuleId: payload.merchantRuleId ?? null,
     note: payload.note ?? '',
     rawText: payload.rawText,
     source: MANUAL_AI_DETECTED_SOURCE,
@@ -34,7 +40,33 @@ function normalizePreviewPayload(payload) {
 
 export const manualAiExpenseService = {
   parse(rawText, options = {}) {
-    return parseExpenseText(rawText, options)
+    const parsedResult = parseExpenseText(rawText, options)
+
+    return {
+      ...parsedResult,
+      categorySource: CATEGORY_SOURCES.parserGuess,
+      merchantRuleId: null,
+    }
+  },
+
+  async parseWithMerchantRules(rawText, options = {}) {
+    const parsedResult = this.parse(rawText, options)
+    const matchResult = await merchantRuleService.suggestCategoryForMerchant(
+      parsedResult.merchant,
+    )
+
+    if (!matchResult.matched) {
+      return parsedResult
+    }
+
+    return {
+      ...parsedResult,
+      categoryName: await getCategoryName(matchResult.categoryId),
+      categorySource: CATEGORY_SOURCES.merchantRule,
+      confidence: Math.max(parsedResult.confidence, matchResult.confidence),
+      merchantRuleId: matchResult.merchantRuleId,
+      suggestedCategoryId: matchResult.categoryId,
+    }
   },
 
   async loadCategories() {
@@ -49,9 +81,11 @@ export const manualAiExpenseService = {
 
     const inboxRecord = {
       amount: parsedPayload.amount,
+      categorySource: parsedPayload.categorySource ?? CATEGORY_SOURCES.parserGuess,
       confidence: previewPayload.confidence ?? null,
       createdAt: timestamp,
       merchant: parsedPayload.merchant,
+      merchantRuleId: parsedPayload.merchantRuleId ?? null,
       note: parsedPayload.note ?? null,
       rawText: parsedPayload.rawText ?? null,
       reviewedAt: null,

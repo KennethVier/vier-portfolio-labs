@@ -4,7 +4,9 @@ import { clearDatabase } from '@/lib/db/devTools.js'
 import { db } from '@/lib/db/dexie.js'
 import { detectedExpenseRepository } from '@/lib/db/repositories/detectedExpenseRepository.js'
 import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
+import { merchantRuleRepository } from '@/lib/db/repositories/merchantRuleRepository.js'
 import { seedDatabase } from '@/lib/db/seed.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { INBOX_STATUS } from '../constants/expenseInboxConstants.js'
 import { expenseInboxService } from './expenseInboxService.js'
@@ -78,6 +80,44 @@ describe('expenseInboxService', () => {
     expect(inboxRecord.reviewedAt).toBeTruthy()
   })
 
+  it('assigns approved expenses to the current cutoff when one exists', async () => {
+    const cutoff = await cutoffService.createCutoff({
+      endDate: '2026-06-24',
+      expectedIncome: 42000,
+      name: 'June current cycle',
+      startDate: '2026-06-01',
+      status: 'active',
+      type: 'custom',
+    })
+    const inboxId = await createDetectedExpense()
+
+    const result = await expenseInboxService.approveInboxRecord(inboxId)
+
+    expect(result.expense).toMatchObject({
+      cutoffId: cutoff.id,
+      source: 'expense_inbox',
+    })
+    await expect(expenseRepository.findAll()).resolves.toEqual([
+      expect.objectContaining({
+        cutoffId: cutoff.id,
+      }),
+    ])
+  })
+
+  it('requires a payment method before approving a record', async () => {
+    const inboxId = await createDetectedExpense({
+      suggestedPaymentMethod: null,
+    })
+
+    await expect(
+      expenseInboxService.approveInboxRecord(inboxId),
+    ).rejects.toThrow('Payment method is required before approving this expense')
+    await expect(expenseRepository.findAll()).resolves.toHaveLength(0)
+    await expect(detectedExpenseRepository.findById(inboxId)).resolves.toMatchObject({
+      status: INBOX_STATUS.pending,
+    })
+  })
+
   it('rejects a pending record without creating an expense', async () => {
     const inboxId = await createDetectedExpense()
 
@@ -114,6 +154,82 @@ describe('expenseInboxService', () => {
         paymentMethod: 'Bank Transfer',
       }),
     ])
+  })
+
+  it('preserves category source metadata when loading and approving records', async () => {
+    const inboxId = await createDetectedExpense({
+      categorySource: 'merchant_rule',
+      merchantRuleId: 42,
+    })
+
+    await expect(expenseInboxService.loadInbox()).resolves.toMatchObject({
+      records: [
+        expect.objectContaining({
+          categorySource: 'merchant_rule',
+          merchantRuleId: 42,
+        }),
+      ],
+    })
+
+    const result = await expenseInboxService.approveInboxRecord(inboxId)
+
+    expect(result.inboxRecord).toMatchObject({
+      categorySource: 'merchant_rule',
+      merchantRuleId: 42,
+      status: INBOX_STATUS.approved,
+    })
+  })
+
+  it('learns a user merchant rule when category is corrected before approval', async () => {
+    const inboxId = await createDetectedExpense({
+      merchant: 'Starbucks',
+      suggestedCategoryId: 'food',
+    })
+
+    await expenseInboxService.approveInboxRecord(inboxId, {
+      ...baseDetectedExpense,
+      merchant: 'Starbucks',
+      rememberMerchantRule: true,
+      suggestedCategoryId: 'shopping',
+    })
+
+    await expect(merchantRuleRepository.findAll()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          categoryId: 'shopping',
+          keyword: 'Starbucks',
+          source: 'user',
+        }),
+      ]),
+    )
+    await expect(detectedExpenseRepository.findById(inboxId)).resolves
+      .toMatchObject({
+        categorySource: 'manual_override',
+        status: INBOX_STATUS.approved,
+      })
+  })
+
+  it('does not learn merchant rules for unknown merchants', async () => {
+    const inboxId = await createDetectedExpense({
+      merchant: 'Unknown Merchant',
+      suggestedCategoryId: 'other',
+    })
+
+    await expenseInboxService.updateInboxRecord(inboxId, {
+      ...baseDetectedExpense,
+      merchant: 'Unknown Merchant',
+      rememberMerchantRule: true,
+      suggestedCategoryId: 'food',
+    })
+
+    await expect(merchantRuleRepository.findAll()).resolves.not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          keyword: 'Unknown Merchant',
+          source: 'user',
+        }),
+      ]),
+    )
   })
 
   it('prevents duplicate approval after a status transition', async () => {

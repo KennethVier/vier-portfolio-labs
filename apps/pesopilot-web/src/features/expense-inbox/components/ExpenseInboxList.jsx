@@ -26,10 +26,10 @@ function getStatusTone(status) {
   return 'warning'
 }
 
-function InboxActions({ onApprove, onEdit, onReject, onSelect, record }) {
+function InboxActions({ onApprove, onEdit, onReject, onView, record }) {
   if (record.status !== INBOX_STATUS.pending) {
     return (
-      <Button type="button" variant="secondary" onClick={() => onSelect(record)}>
+      <Button type="button" variant="secondary" onClick={() => onView(record)}>
         View
       </Button>
     )
@@ -57,6 +57,7 @@ export function ExpenseInboxList({
   onEdit,
   onReject,
   onSelect,
+  onView,
 }) {
   if (records.length === 0) {
     return (
@@ -74,7 +75,7 @@ export function ExpenseInboxList({
         onApprove={onApprove}
         onEdit={onEdit}
         onReject={onReject}
-        onSelect={onSelect}
+        onView={onView}
       />
     ),
     amount: (
@@ -160,7 +161,7 @@ export function ExpenseInboxList({
               onApprove={onApprove}
               onEdit={onEdit}
               onReject={onReject}
-              onSelect={onSelect}
+              onView={onView}
             />
           </article>
         ))}

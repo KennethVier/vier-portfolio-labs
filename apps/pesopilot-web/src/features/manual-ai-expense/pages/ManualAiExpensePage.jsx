@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 
 import { PAYMENT_METHODS } from '@/features/expenses/constants/expenseConstants.js'
+import { CATEGORY_SOURCES } from '@/features/merchant-rules/services/merchantRuleMatcher.js'
 
 import { useManualAiExpense } from '../hooks/useManualAiExpense.js'
 
@@ -31,6 +32,17 @@ function getConfidenceTone(confidence) {
   }
 
   return 'critical'
+}
+
+function formatCategorySource(source) {
+  const labels = {
+    manual_override: 'Manual Override',
+    merchant_rule: 'Merchant Rule',
+    parser_guess: 'Parser Guess',
+    unknown: 'Unknown',
+  }
+
+  return labels[source] ?? 'Parser Guess'
 }
 
 function ParserInputCard({ inputText, onExampleClick, onInputChange, onParse }) {
@@ -105,6 +117,8 @@ function ParsedPreview({
   function updateCategory(categoryId) {
     onUpdate({
       categoryName: categoryNameById.get(categoryId) ?? 'Other',
+      categorySource: CATEGORY_SOURCES.manualOverride,
+      merchantRuleId: null,
       suggestedCategoryId: categoryId,
     })
   }
@@ -201,6 +215,15 @@ function ParsedPreview({
             </select>
           </label>
 
+          <div className="rounded border border-outline-variant bg-surface-container p-3">
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              Category Source
+            </p>
+            <p className="mt-1 text-body-sm font-medium text-on-surface">
+              {formatCategorySource(parsedResult.categorySource)}
+            </p>
+          </div>
+
           <Input
             id="manual-ai-note"
             label="Note"
@@ -277,13 +300,13 @@ export function ManualAiExpensePage() {
     return () => resetHeaderConfig()
   }, [resetHeaderConfig, setHeaderConfig])
 
-  function handleParse() {
-    parseInput(inputText)
+  async function handleParse() {
+    await parseInput(inputText)
   }
 
-  function handleExampleClick(example) {
+  async function handleExampleClick(example) {
     setInputText(example)
-    parseInput(example)
+    await parseInput(example)
   }
 
   async function handleSubmit() {
@@ -299,7 +322,7 @@ export function ManualAiExpensePage() {
       <PageHeader
         eyebrow="Manual AI Input"
         title="AI Expense Input"
-        description="Type an expense naturally and send the parsed result to your review inbox."
+        description="Type an expense naturally and send the parsed result to your review inbox. Categories may be suggested from your saved merchant rules."
       />
 
       {error ? (

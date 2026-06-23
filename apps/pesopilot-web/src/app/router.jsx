@@ -7,6 +7,7 @@ import { ExpenseInboxPage } from '@/features/expense-inbox/pages/ExpenseInboxPag
 import { ExpensesPage } from '@/features/expenses/pages/ExpensesPage.jsx'
 import { IncomePage } from '@/features/income/pages/IncomePage.jsx'
 import { ManualAiExpensePage } from '@/features/manual-ai-expense/pages/ManualAiExpensePage.jsx'
+import { MerchantRulesPage } from '@/features/merchant-rules/pages/MerchantRulesPage.jsx'
 import { SalaryCutoffPage } from '@/features/salary-cutoff/pages/SalaryCutoffPage.jsx'
 import { SavingsPage } from '@/features/savings/pages/SavingsPage.jsx'
 import { CashflowPage } from '@/features/cashflow/pages/CashflowPage.jsx'
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'manual-ai-expense', element: <ManualAiExpensePage /> },
+      { path: 'merchant-rules', element: <MerchantRulesPage /> },
       { path: 'expense-inbox', element: <ExpenseInboxPage /> },
       { path: 'settings', element: <SettingsPage /> },
       ...devRoutes,

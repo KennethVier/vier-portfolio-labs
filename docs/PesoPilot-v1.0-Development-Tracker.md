@@ -83,7 +83,7 @@ Phase 6  ✅
 Phase 7  ⬜
 Phase 8  ⬜
 Phase 9  ⬜
-Phase 10 ⬜
+Phase 10 ✅
 Phase 11 ⬜
 Phase 12 ⬜
 Phase 13 ⬜
@@ -1598,31 +1598,210 @@ manual_ai_input is a detected-expense source/display label only.
 
 ---
 
-# Phase 10 — Local Lifestyle Categorization
+# Phase 10 - Local Lifestyle Categorization
 
-Status: ⬜
+Status: Complete
 
 Goal:
 
-Merchant-based categorization.
+Automatically categorize expenses using merchant recognition and user-defined merchant rules.
 
 ---
 
-## Features
+## Merchant Rules
 
-[ ] Merchant rules
+[x] Merchant rule model
 
-[ ] Rule matching
+[x] Create merchant rule
 
-[ ] Auto categorization
+[x] Edit merchant rule
+
+[x] Delete merchant rule
+
+[x] Merchant rule management UI
+
+---
+
+## Rule Matching Engine
+
+[x] Exact merchant matching
+
+[x] Contains merchant matching
+
+[x] Case-insensitive matching
+
+[x] Trim/normalize merchant names
+
+[x] Rule priority handling
+
+[x] Fallback category behavior
+
+---
+
+## Auto Categorization
+
+[x] Auto assign category from merchant rule
+
+[x] Auto assign category during AI Expense Input
+
+[x] Auto assign category during Expense Inbox review
+
+[ ] Auto assign category during manual expense creation
+
+[x] Display categorization source
+
+---
+
+## Default Philippine Merchant Library
+
+Pre-seed common merchant mappings using existing category ids only.
+
+### Dining
+
+[x] Jollibee
+[x] McDonalds
+[x] KFC
+[x] Chowking
+[x] Mang Inasal
+[x] Starbucks
+[x] Coffee Bean
+[x] Dunkin
+
+### Groceries
+
+[x] Puregold
+[x] SM Supermarket
+[x] Robinsons Supermarket
+[x] Landmark
+[x] WalterMart
+[x] Dali
+[x] S&R
+
+### Transportation
+
+[x] Grab
+[x] JoyRide
+[x] Angkas
+[x] Move It
+[x] Lalamove
+
+### Bills
+
+[x] Meralco
+[x] Maynilad
+[x] PLDT
+[x] Globe
+[x] Smart
+[x] Converge
+[x] Manila Water
+
+### Shopping
+
+[x] Shopee
+[x] Lazada
+[x] TikTok Shop
+[x] SM Store
+[x] Uniqlo
+[x] Watsons
+
+---
+
+## User Learning Rules
+
+[x] Remember user category corrections
+
+Example:
+
+Merchant:
+Starbucks
+
+User changes:
+Food -> Shopping
+
+Create or update rule:
+
+Starbucks -> Shopping
+
+Future entries automatically use the saved rule.
+
+---
+
+## Inbox Integration
+
+[x] Suggested category appears in parsed preview
+
+[x] Suggested category appears in Expense Inbox
+
+[x] User may override category before approval
+
+[x] Approved category correction updates merchant rule
+
+---
+
+## Settings Integration
+
+[x] Merchant Rules advanced settings access
+
+[ ] Lifestyle Mode awareness
+
+Note:
+
+```txt
+Phase 10 seeds the Philippine merchant library locally. Runtime Lifestyle Mode branching remains deferred because Phase 10 should not add international rule behavior.
+```
 
 ---
 
 ## Testing
 
-[ ] Rule accuracy
+[x] Rule accuracy
 
-[ ] Unknown merchant handling
+[x] Exact match
+
+[x] Contains match
+
+[x] Case-insensitive match
+
+[x] User override handling
+
+[x] Merchant learning behavior
+
+[x] Unknown merchant handling
+
+[x] Fallback category behavior
+
+[x] Inbox categorization
+
+[x] Manual AI expense categorization
+
+[ ] Manual expense categorization
+
+---
+
+## Verification
+
+[x] npm.cmd run test
+
+[x] npm.cmd run lint
+
+[x] npm.cmd run build
+
+---
+
+## Actions Taken
+
+```txt
+Implemented local merchant-rule categorization using the existing merchant_rules store.
+Added merchant rule matcher with exact, contains, case-insensitive, normalized matching and priority tie-breaking.
+Added Merchant Rules management page and /merchant-rules route.
+Moved Merchant Rules access out of the main sidebar and into Settings as an advanced categorization area.
+Added idempotent default Philippine merchant mappings using existing category ids only.
+Integrated merchant rules into Manual AI Expense Input category suggestions and preview category source display.
+Preserved categorySource and merchantRuleId as detected-expense metadata only.
+Added Expense Inbox category source display and user correction learning through Remember this merchant category.
+Kept official Expense records unchanged and did not add external AI, backend calls, new stores, or Dexie schema/index changes.
+Deferred manual ExpenseForm merchant suggestions and runtime international Lifestyle Mode branching.
+```
 
 ---
 
@@ -1802,3 +1981,4 @@ Next Major Version:
 ```txt
 PesoPilot v1.1
 ```
+

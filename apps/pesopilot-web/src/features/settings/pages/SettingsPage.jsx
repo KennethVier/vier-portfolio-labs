@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { SectionCard, StatusBadge } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
@@ -13,7 +14,7 @@ import {
   settingsService,
 } from '../services/settingsService.js'
 
-const settingsSections = ['General', 'Appearance', 'Data Management']
+const settingsSections = ['General', 'Appearance', 'Categorization', 'Data Management']
 
 function SettingsNavigation({ activeSection }) {
   return (
@@ -221,6 +222,31 @@ function AppearanceSection({ isSaving, onUpdate, settings }) {
               onChange={(density) => onUpdate({ density })}
               disabled={isSaving}
             />
+          </PreferenceRow>
+        </div>
+      </SectionCard>
+    </section>
+  )
+}
+
+function CategorizationSection() {
+  return (
+    <section id="categorization">
+      <SectionCard
+        title="Categorization"
+        description="Local rules help PesoPilot suggest expense categories without external AI."
+      >
+        <div className="overflow-hidden rounded border border-outline-variant">
+          <PreferenceRow
+            title="Merchant Rules"
+            description="Manage local merchant rules used for automatic categorization."
+          >
+            <Link to="/merchant-rules" className="inline-flex no-underline">
+              <Button variant="secondary">
+                <span className="material-symbols-outlined text-sm">rule</span>
+                Open Merchant Rules
+              </Button>
+            </Link>
           </PreferenceRow>
         </div>
       </SectionCard>
@@ -545,6 +571,7 @@ export function SettingsPage() {
                 onUpdate={updateSetting}
                 settings={settings}
               />
+              <CategorizationSection />
               <DataManagementSection
                 fileInputRef={fileInputRef}
                 isSaving={isSaving}

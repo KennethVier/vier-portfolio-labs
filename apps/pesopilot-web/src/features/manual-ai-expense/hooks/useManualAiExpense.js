@@ -40,12 +40,17 @@ export function useManualAiExpense() {
     }
   }, [])
 
-  const parseInput = useCallback((rawText) => {
-    setError('')
-    setSuccessRecord(null)
-    const result = manualAiExpenseService.parse(rawText)
-    setParsedResult(result)
-    return result
+  const parseInput = useCallback(async (rawText) => {
+    try {
+      setError('')
+      setSuccessRecord(null)
+      const result = await manualAiExpenseService.parseWithMerchantRules(rawText)
+      setParsedResult(result)
+      return result
+    } catch (parseError) {
+      setError(parseError.message || 'Unable to parse expense input.')
+      throw parseError
+    }
   }, [])
 
   const updateParsedResult = useCallback((changes) => {

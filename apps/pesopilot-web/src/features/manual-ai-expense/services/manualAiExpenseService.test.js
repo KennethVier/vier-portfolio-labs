@@ -7,6 +7,7 @@ import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
 import { seedDatabase } from '@/lib/db/seed.js'
 
 import { expenseInboxService } from '@/features/expense-inbox/services/expenseInboxService.js'
+import { merchantRuleService } from '@/features/merchant-rules/services/merchantRuleService.js'
 
 import { MANUAL_AI_DETECTED_SOURCE } from '../utils/expenseTextParser.js'
 import { manualAiExpenseService } from './manualAiExpenseService.js'
@@ -24,7 +25,7 @@ afterEach(async () => {
 
 describe('manualAiExpenseService', () => {
   it('creates a pending detected expense record from a parsed result', async () => {
-    const parsedResult = manualAiExpenseService.parse(
+    const parsedResult = await manualAiExpenseService.parseWithMerchantRules(
       'Bought Jollibee for 250 yesterday using GCash',
       { referenceDate: '2026-06-21' },
     )
@@ -39,11 +40,32 @@ describe('manualAiExpenseService', () => {
       rawText: 'Bought Jollibee for 250 yesterday using GCash',
       source: MANUAL_AI_DETECTED_SOURCE,
       status: 'PENDING',
+      categorySource: 'merchant_rule',
       suggestedCategoryId: 'food',
       suggestedPaymentMethod: 'GCash',
       transactionDate: '2026-06-20',
     })
+    expect(createdRecord.merchantRuleId).toBeTruthy()
     expect(records).toHaveLength(1)
+  })
+
+  it('uses merchant rules to override parser category guesses', async () => {
+    await merchantRuleService.learnCategoryCorrection({
+      categoryId: 'shopping',
+      merchant: 'Starbucks',
+    })
+
+    const parsedResult = await manualAiExpenseService.parseWithMerchantRules(
+      'Coffee at Starbucks 180 today cash',
+      { referenceDate: '2026-06-21' },
+    )
+
+    expect(parsedResult).toMatchObject({
+      categoryName: 'Shopping',
+      categorySource: 'merchant_rule',
+      suggestedCategoryId: 'shopping',
+    })
+    expect(parsedResult.merchantRuleId).toBeTruthy()
   })
 
   it('does not create an official expense when submitting to the inbox', async () => {
@@ -65,13 +87,17 @@ describe('manualAiExpenseService', () => {
     const createdRecord =
       await manualAiExpenseService.submitToInbox(parsedResult)
 
-    await expenseInboxService.approveInboxRecord(createdRecord.id)
+    await expenseInboxService.approveInboxRecord(createdRecord.id, {
+      ...createdRecord,
+      suggestedPaymentMethod: 'Cash',
+    })
 
     await expect(expenseRepository.findAll()).resolves.toEqual([
       expect.objectContaining({
         amount: 320,
         categoryId: 'transport',
         merchant: 'Grab',
+        paymentMethod: 'Cash',
         source: 'expense_inbox',
       }),
     ])
