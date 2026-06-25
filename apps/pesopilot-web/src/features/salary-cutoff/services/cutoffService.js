@@ -139,7 +139,12 @@ function buildNextCutoffPayload(cutoff) {
 
 function findCurrentCutoffFromList(cutoffs, date = todayIsoDate()) {
   const activeCutoffs = sortCutoffs(
-    cutoffs.filter((cutoff) => cutoff.status === 'active'),
+    cutoffs.filter(
+      (cutoff) =>
+        cutoff.status === 'active' &&
+        cutoff.startDate <= date &&
+        cutoff.endDate >= date,
+    ),
   )
 
   if (activeCutoffs.length > 0) {
@@ -158,13 +163,103 @@ function findCurrentCutoffFromList(cutoffs, date = todayIsoDate()) {
   return matchingCutoffs[0] ?? null
 }
 
-export const cutoffService = {
-  async loadCutoffs() {
-    const cutoffs = sortCutoffs(await salaryCutoffRepository.findAll())
+async function syncCutoffLifecycle(date = todayIsoDate()) {
+  const timestamp = nowIso()
+  const cutoffs = await salaryCutoffRepository.findAll()
+  let changed = false
+
+  await Promise.all(
+    cutoffs.map((cutoff) => {
+      if (cutoff.status !== 'closed' && cutoff.endDate < date) {
+        changed = true
+        return salaryCutoffRepository.update(cutoff.id, {
+          status: 'closed',
+          updatedAt: timestamp,
+        })
+      }
+
+      if (cutoff.status === 'active' && cutoff.startDate > date) {
+        changed = true
+        return salaryCutoffRepository.update(cutoff.id, {
+          status: 'planned',
+          updatedAt: timestamp,
+        })
+      }
+
+      return Promise.resolve()
+    }),
+  )
+
+  let refreshedCutoffs = await salaryCutoffRepository.findAll()
+  const activeCurrentCutoff = findCurrentCutoffFromList(
+    refreshedCutoffs.filter((cutoff) => cutoff.status === 'active'),
+    date,
+  )
+
+  if (activeCurrentCutoff) {
+    const extraActiveCutoffs = refreshedCutoffs.filter(
+      (cutoff) =>
+        cutoff.status === 'active' &&
+        cutoff.id !== activeCurrentCutoff.id,
+    )
+
+    await Promise.all(
+      extraActiveCutoffs.map((cutoff) => {
+        changed = true
+        return salaryCutoffRepository.update(cutoff.id, {
+          status: 'planned',
+          updatedAt: timestamp,
+        })
+      }),
+    )
+
+    refreshedCutoffs = await salaryCutoffRepository.findAll()
 
     return {
-      cutoffs,
-      currentCutoff: findCurrentCutoffFromList(cutoffs),
+      changed,
+      currentCutoff: activeCurrentCutoff,
+      cutoffs: sortCutoffs(refreshedCutoffs),
+    }
+  }
+
+  const plannedCurrentCutoff = sortCutoffs(
+    refreshedCutoffs.filter(
+      (cutoff) =>
+        cutoff.status === 'planned' &&
+        cutoff.startDate <= date &&
+        cutoff.endDate >= date,
+    ),
+  )[0]
+
+  if (plannedCurrentCutoff) {
+    changed = true
+    await salaryCutoffRepository.update(plannedCurrentCutoff.id, {
+      status: 'active',
+      updatedAt: timestamp,
+    })
+    refreshedCutoffs = await salaryCutoffRepository.findAll()
+
+    return {
+      changed,
+      currentCutoff: await salaryCutoffRepository.findById(plannedCurrentCutoff.id),
+      cutoffs: sortCutoffs(refreshedCutoffs),
+    }
+  }
+
+  return {
+    changed,
+    currentCutoff: null,
+    cutoffs: sortCutoffs(refreshedCutoffs),
+  }
+}
+
+export const cutoffService = {
+  async loadCutoffs() {
+    const result = await syncCutoffLifecycle()
+
+    return {
+      cutoffs: result.cutoffs,
+      currentCutoff: result.currentCutoff,
     }
   },
 
@@ -244,7 +339,11 @@ export const cutoffService = {
   },
 
   async findCurrentCutoff(date = todayIsoDate()) {
-    return findCurrentCutoffFromList(await salaryCutoffRepository.findAll(), date)
+    return (await syncCutoffLifecycle(date)).currentCutoff
+  },
+
+  async syncCutoffLifecycle(date = todayIsoDate()) {
+    return syncCutoffLifecycle(date)
   },
 
   async assignExpensesToCutoff(cutoffId) {
@@ -277,4 +376,5 @@ export const cutoffService = {
 export const cutoffServiceInternals = {
   buildNextCutoffPayload,
   findCurrentCutoffFromList,
+  syncCutoffLifecycle,
 }

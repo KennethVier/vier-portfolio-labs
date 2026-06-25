@@ -133,7 +133,7 @@ describe('cashflowService', () => {
     expect(result.cashflow.incomeVariance).toBe(6000)
   })
 
-  it('uses explicit active cutoff for current cashflow', async () => {
+  it('uses explicit active cutoff covering the requested date for current cashflow', async () => {
     await createCutoff({
       name: 'Date Matching Cutoff',
       startDate: '2026-06-01',
@@ -150,7 +150,7 @@ describe('cashflowService', () => {
     })
     await createIncome(activeCutoffId, 20000)
 
-    const result = await cashflowService.getCurrentCashflow('2026-06-10')
+    const result = await cashflowService.getCurrentCashflow('2026-06-20')
 
     expect(result.cashflow).toMatchObject({
       cutoffId: activeCutoffId,

@@ -85,6 +85,82 @@ describe('savingsService', () => {
     expect(await savingsRepository.findById(createdSavings.id)).toBeUndefined()
   })
 
+  it('defaults new savings to the current cutoff when cutoffId is empty', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdSavings = await savingsService.createSavings(validSavings)
+
+    expect(createdSavings.cutoffId).toBe(activeCutoffId)
+  })
+
+  it('does not override a user-selected cutoff when creating savings', async () => {
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const selectedCutoffId = await salaryCutoffRepository.create({
+      name: 'Selected Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdSavings = await savingsService.createSavings({
+      ...validSavings,
+      cutoffId: selectedCutoffId,
+    })
+
+    expect(createdSavings.cutoffId).toBe(selectedCutoffId)
+  })
+
+  it('does not auto-assign current cutoff during savings updates', async () => {
+    const selectedCutoffId = await createCutoff('Selected Cutoff')
+    const createdSavings = await savingsService.createSavings({
+      ...validSavings,
+      cutoffId: selectedCutoffId,
+    })
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const updatedSavings = await savingsService.updateSavings(createdSavings.id, {
+      ...validSavings,
+      amount: 7000,
+      cutoffId: '',
+    })
+
+    expect(updatedSavings).toMatchObject({
+      amount: 7000,
+      cutoffId: null,
+    })
+  })
+
   it('sorts savings by date, createdAt, and id descending', async () => {
     await savingsRepository.create({
       ...validSavings,
@@ -214,11 +290,14 @@ describe('savingsService', () => {
       cutoffId: deletedCutoffId,
       source: 'General Savings',
     })
-    await savingsService.createSavings({
-      ...validSavings,
+    await savingsRepository.create({
       amount: 1000,
-      cutoffId: '',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      cutoffId: null,
+      date: validSavings.date,
+      note: validSavings.note,
       source: 'Other',
+      updatedAt: '2026-06-01T00:00:00.000Z',
     })
     await salaryCutoffRepository.remove(deletedCutoffId)
 

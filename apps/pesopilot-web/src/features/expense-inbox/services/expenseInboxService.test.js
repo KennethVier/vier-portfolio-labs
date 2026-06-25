@@ -82,9 +82,9 @@ describe('expenseInboxService', () => {
 
   it('assigns approved expenses to the current cutoff when one exists', async () => {
     const cutoff = await cutoffService.createCutoff({
-      endDate: '2026-06-24',
       expectedIncome: 42000,
       name: 'June current cycle',
+      endDate: '2026-06-30',
       startDate: '2026-06-01',
       status: 'active',
       type: 'custom',

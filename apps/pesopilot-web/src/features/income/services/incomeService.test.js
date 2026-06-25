@@ -85,6 +85,82 @@ describe('incomeService', () => {
     expect(await incomeRepository.findById(createdIncome.id)).toBeUndefined()
   })
 
+  it('defaults new income to the current cutoff when cutoffId is empty', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdIncome = await incomeService.createIncome(validIncome)
+
+    expect(createdIncome.cutoffId).toBe(activeCutoffId)
+  })
+
+  it('does not override a user-selected cutoff when creating income', async () => {
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const selectedCutoffId = await salaryCutoffRepository.create({
+      name: 'Selected Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdIncome = await incomeService.createIncome({
+      ...validIncome,
+      cutoffId: selectedCutoffId,
+    })
+
+    expect(createdIncome.cutoffId).toBe(selectedCutoffId)
+  })
+
+  it('does not auto-assign current cutoff during income updates', async () => {
+    const selectedCutoffId = await createCutoff('Selected Cutoff')
+    const createdIncome = await incomeService.createIncome({
+      ...validIncome,
+      cutoffId: selectedCutoffId,
+    })
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const updatedIncome = await incomeService.updateIncome(createdIncome.id, {
+      ...validIncome,
+      amount: 30000,
+      cutoffId: '',
+    })
+
+    expect(updatedIncome).toMatchObject({
+      amount: 30000,
+      cutoffId: null,
+    })
+  })
+
   it('sorts income by date, createdAt, and id descending', async () => {
     await incomeRepository.create({
       ...validIncome,
@@ -214,11 +290,14 @@ describe('incomeService', () => {
       cutoffId: deletedCutoffId,
       source: 'Bonus',
     })
-    await incomeService.createIncome({
-      ...validIncome,
+    await incomeRepository.create({
       amount: 2000,
-      cutoffId: '',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      cutoffId: null,
+      date: validIncome.date,
+      note: validIncome.note,
       source: 'Gift',
+      updatedAt: '2026-06-01T00:00:00.000Z',
     })
     await salaryCutoffRepository.remove(deletedCutoffId)
 

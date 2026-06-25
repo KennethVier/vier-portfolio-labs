@@ -33,6 +33,15 @@ function normalizeExpensePayload(payload, existingExpense = null) {
   }
 }
 
+async function getDefaultCutoffId(payloadCutoffId) {
+  if (payloadCutoffId) {
+    return payloadCutoffId
+  }
+
+  const currentCutoff = await cutoffService.findCurrentCutoff()
+  return currentCutoff?.id ?? null
+}
+
 function isWithinDateRange(expense, filters) {
   if (filters.startDate && expense.date < filters.startDate) {
     return false
@@ -163,7 +172,10 @@ export const expenseService = {
   },
 
   async createExpense(payload) {
-    const expense = normalizeExpensePayload(payload)
+    const expense = normalizeExpensePayload({
+      ...payload,
+      cutoffId: await getDefaultCutoffId(payload.cutoffId),
+    })
     const id = await expenseRepository.create(expense)
     return expenseRepository.findById(id)
   },

@@ -27,6 +27,15 @@ function normalizeSavingsPayload(payload, existingSavings = null) {
   }
 }
 
+async function getDefaultCutoffId(payloadCutoffId) {
+  if (payloadCutoffId) {
+    return payloadCutoffId
+  }
+
+  const currentCutoff = await cutoffService.findCurrentCutoff()
+  return currentCutoff?.id ?? null
+}
+
 function normalizeSearchText(value) {
   return String(value ?? '').trim().toLowerCase()
 }
@@ -177,7 +186,10 @@ export const savingsService = {
   },
 
   async createSavings(payload) {
-    const savings = normalizeSavingsPayload(payload)
+    const savings = normalizeSavingsPayload({
+      ...payload,
+      cutoffId: await getDefaultCutoffId(payload.cutoffId),
+    })
     const id = await savingsRepository.create(savings)
     return savingsRepository.findById(id)
   },

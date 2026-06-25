@@ -44,14 +44,17 @@ export function useSalaryCutoffs() {
     setError(null)
 
     try {
+      let savedCutoff
+
       if (editingCutoff) {
-        await cutoffService.updateCutoff(editingCutoff.id, cutoff)
+        savedCutoff = await cutoffService.updateCutoff(editingCutoff.id, cutoff)
       } else {
-        await cutoffService.createCutoff(cutoff)
+        savedCutoff = await cutoffService.createCutoff(cutoff)
       }
 
       setEditingCutoff(null)
       await loadCutoffs()
+      return savedCutoff
     } catch (saveError) {
       const message = getCutoffErrorMessage(saveError, 'Unable to save salary cutoff')
       setError(message)

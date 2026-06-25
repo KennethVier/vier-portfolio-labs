@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/Input.jsx'
 import { SAVINGS_SOURCES } from '../constants/savingsConstants.js'
 import { savingsFormDefaults, savingsSchema } from '../schemas/savingsSchema.js'
 
-function mapSavingsToFormValues(savings) {
+function mapSavingsToFormValues(savings, currentCutoffId = null) {
   if (!savings) {
-    return savingsFormDefaults
+    return {
+      ...savingsFormDefaults,
+      cutoffId: currentCutoffId ?? savingsFormDefaults.cutoffId,
+    }
   }
 
   return {
@@ -24,6 +27,7 @@ function mapSavingsToFormValues(savings) {
 }
 
 export function SavingsForm({
+  currentCutoffId = null,
   editingSavings,
   framed = true,
   isSaving,
@@ -42,12 +46,12 @@ export function SavingsForm({
   })
 
   useEffect(() => {
-    reset(mapSavingsToFormValues(editingSavings))
-  }, [editingSavings, reset])
+    reset(mapSavingsToFormValues(editingSavings, currentCutoffId))
+  }, [currentCutoffId, editingSavings, reset])
 
   async function submitSavings(values) {
     await onSubmit(values)
-    reset(savingsFormDefaults)
+    reset(mapSavingsToFormValues(null, currentCutoffId))
   }
 
   const content = (
@@ -114,6 +118,11 @@ export function SavingsForm({
                 </option>
               ))}
             </select>
+            {!editingSavings && currentCutoffId ? (
+              <span className="mt-1 block text-xs text-content-muted">
+                Current cutoff is selected automatically for new records.
+              </span>
+            ) : null}
           </label>
           <label className="block md:col-span-2">
             <span className="mb-1 block text-xs font-semibold text-content">Note</span>

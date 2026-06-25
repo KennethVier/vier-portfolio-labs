@@ -245,7 +245,7 @@ describe('cutoffService', () => {
     ).resolves.toMatchObject({ status: 'active' })
   })
 
-  it('detects explicit active cutoff before date-matching cutoffs', async () => {
+  it('uses the active cutoff when it covers the requested date', async () => {
     const dateMatchingCutoff = await cutoffService.createCutoff(customCutoff)
     const activeCutoff = await cutoffService.createCutoff({
       ...customCutoff,
@@ -255,7 +255,7 @@ describe('cutoffService', () => {
       status: 'active',
     })
 
-    await expect(cutoffService.findCurrentCutoff('2026-06-10')).resolves.toMatchObject({
+    await expect(cutoffService.findCurrentCutoff('2026-06-20')).resolves.toMatchObject({
       id: activeCutoff.id,
     })
     expect(dateMatchingCutoff.id).not.toBe(activeCutoff.id)
@@ -279,7 +279,47 @@ describe('cutoffService', () => {
     await expect(cutoffService.findCurrentCutoff('2026-06-10')).resolves.toMatchObject({
       id: newerCutoffId,
       name: 'June Custom Window',
+      status: 'active',
     })
+  })
+
+  it('closes ended cutoffs and activates the planned cutoff matching the date', async () => {
+    const endedCutoff = await cutoffService.createCutoff({
+      ...customCutoff,
+      status: 'active',
+    })
+    const plannedCutoff = await cutoffService.createCutoff({
+      ...customCutoff,
+      name: 'June Second Half',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      status: 'planned',
+    })
+
+    await expect(cutoffService.syncCutoffLifecycle('2026-06-20')).resolves.toMatchObject({
+      currentCutoff: {
+        id: plannedCutoff.id,
+        status: 'active',
+      },
+    })
+    await expect(salaryCutoffRepository.findById(endedCutoff.id)).resolves.toMatchObject({
+      status: 'closed',
+    })
+    await expect(salaryCutoffRepository.findById(plannedCutoff.id)).resolves.toMatchObject({
+      status: 'active',
+    })
+  })
+
+  it('returns no current cutoff when no open period covers the date', async () => {
+    await cutoffService.createCutoff({
+      ...customCutoff,
+      status: 'active',
+    })
+
+    await expect(cutoffService.syncCutoffLifecycle('2026-07-01')).resolves.toMatchObject({
+      currentCutoff: null,
+    })
+    await expect(cutoffService.findCurrentCutoff('2026-07-01')).resolves.toBeNull()
   })
 
   it('closes a salary cutoff', async () => {

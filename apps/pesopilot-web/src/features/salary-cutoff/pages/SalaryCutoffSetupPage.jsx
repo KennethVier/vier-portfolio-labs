@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { SectionCard } from '@/components/dashboard'
 import { Button } from '@/components/ui/Button.jsx'
@@ -278,6 +279,8 @@ function HistoricalRecordsPanel({
 }
 
 export function SalaryCutoffSetupPage() {
+  const navigate = useNavigate()
+  const [createdCutoffGuidance, setCreatedCutoffGuidance] = useState(null)
   const [formError, setFormError] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const {
@@ -337,8 +340,13 @@ export function SalaryCutoffSetupPage() {
     setFormError(null)
 
     try {
-      await saveCutoff(values)
+      const wasEditing = Boolean(editingCutoff)
+      const savedCutoff = await saveCutoff(values)
       setIsFormOpen(false)
+
+      if (!wasEditing) {
+        setCreatedCutoffGuidance(savedCutoff)
+      }
     } catch (saveError) {
       setFormError(saveError.message || 'Unable to save salary cutoff')
       throw saveError
@@ -354,6 +362,37 @@ export function SalaryCutoffSetupPage() {
 
       {error && !isFormOpen ? (
         <ErrorState title="Unable to process salary cutoffs" message={error} />
+      ) : null}
+
+      {createdCutoffGuidance ? (
+        <section className="border border-secondary/25 bg-secondary-container/20 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-heading text-lg font-semibold text-content">
+                Cutoff created
+              </h2>
+              <p className="mt-1 text-sm text-content-muted">
+                Next step: record your income for this cutoff so PesoPilot can
+                calculate your cashflow accurately.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => navigate('/income')}
+              >
+                Record Income
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setCreatedCutoffGuidance(null)}
+              >
+                Later
+              </Button>
+            </div>
+          </div>
+        </section>
       ) : null}
 
       <CutoffManagementPanel

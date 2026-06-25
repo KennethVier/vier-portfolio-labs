@@ -13,9 +13,12 @@ import {
 } from '../constants/expenseConstants.js'
 import { expenseFormDefaults, expenseSchema } from '../schemas/expenseSchema.js'
 
-function mapExpenseToFormValues(expense) {
+function mapExpenseToFormValues(expense, currentCutoffId = null) {
   if (!expense) {
-    return expenseFormDefaults
+    return {
+      ...expenseFormDefaults,
+      cutoffId: currentCutoffId ?? expenseFormDefaults.cutoffId,
+    }
   }
 
   return {
@@ -33,6 +36,7 @@ function mapExpenseToFormValues(expense) {
 
 export function ExpenseForm({
   categories,
+  currentCutoffId = null,
   editingExpense,
   framed = true,
   isSaving,
@@ -51,15 +55,15 @@ export function ExpenseForm({
   })
 
   useEffect(() => {
-    reset(mapExpenseToFormValues(editingExpense))
-  }, [editingExpense, reset])
+    reset(mapExpenseToFormValues(editingExpense, currentCutoffId))
+  }, [currentCutoffId, editingExpense, reset])
 
   async function submitExpense(values) {
     await onSubmit({
       ...values,
       source: EXPENSE_SOURCE_MANUAL,
     })
-    reset(expenseFormDefaults)
+    reset(mapExpenseToFormValues(null, currentCutoffId))
   }
 
   const hasCategories = categories.length > 0
@@ -176,6 +180,11 @@ export function ExpenseForm({
                   </option>
                 ))}
               </select>
+              {!editingExpense && currentCutoffId ? (
+                <span className="mt-1 block text-xs text-content-muted">
+                  Current cutoff is selected automatically for new records.
+                </span>
+              ) : null}
             </label>
           ) : null}
           <label className="block md:col-span-2">

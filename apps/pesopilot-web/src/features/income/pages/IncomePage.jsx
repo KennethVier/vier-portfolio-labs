@@ -143,6 +143,7 @@ export function IncomePage() {
         }}
       >
         <IncomeForm
+          currentCutoffId={incomeKpis.currentCutoffId}
           editingIncome={editingIncome}
           isSaving={isSaving}
           salaryCutoffs={salaryCutoffs}

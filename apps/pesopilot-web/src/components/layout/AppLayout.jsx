@@ -1,12 +1,54 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import { Button } from '@/components/ui/Button.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { Header } from './Header.jsx'
 import { HeaderProvider } from './HeaderContent.jsx'
 import { PageContainer } from './PageContainer.jsx'
 import { Sidebar } from './Sidebar.jsx'
 
+const CUTOFF_NOTICE_SESSION_KEY = 'pesopilot:no-current-cutoff-notice-dismissed'
+
 export function AppLayout({ children }) {
+  const navigate = useNavigate()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const [isCutoffNoticeOpen, setIsCutoffNoticeOpen] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function checkCutoffLifecycle() {
+      try {
+        const result = await cutoffService.syncCutoffLifecycle()
+        const isDismissed = window.sessionStorage.getItem(CUTOFF_NOTICE_SESSION_KEY)
+
+        if (isMounted && !result.currentCutoff && !isDismissed) {
+          setIsCutoffNoticeOpen(true)
+        }
+      } catch {
+        // Cutoff guidance is helpful, but it should never block app startup.
+      }
+    }
+
+    checkCutoffLifecycle()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  function dismissCutoffNotice() {
+    window.sessionStorage.setItem(CUTOFF_NOTICE_SESSION_KEY, 'true')
+    setIsCutoffNoticeOpen(false)
+  }
+
+  function openSalaryCutoffPage() {
+    dismissCutoffNotice()
+    navigate('/salary-cutoff')
+  }
 
   return (
     <HeaderProvider>
@@ -16,6 +58,30 @@ export function AppLayout({ children }) {
       />
       <Header onMenuClick={() => setIsMobileNavOpen(true)} />
       <PageContainer>{children}</PageContainer>
+      <Modal
+        description="PesoPilot could not find a salary cutoff covering today. Create the current cycle so new income, expenses, savings, dashboard, and cashflow values have the right period."
+        footer={
+          <>
+            <Button variant="ghost" onClick={dismissCutoffNotice}>
+              Later
+            </Button>
+            <Button onClick={openSalaryCutoffPage}>
+              Create Cutoff
+            </Button>
+          </>
+        }
+        isOpen={isCutoffNoticeOpen}
+        onClose={dismissCutoffNotice}
+        size="md"
+        title="No Current Cutoff"
+      >
+        <div className="rounded border border-outline-variant bg-surface-container-low p-3 text-body-sm text-on-surface-variant">
+          Cutoffs are salary-funded cycles. When the current period ends,
+          PesoPilot closes it and activates the planned cutoff that covers today.
+          If none exists, you will need to create one before current-cycle
+          tracking can continue.
+        </div>
+      </Modal>
     </HeaderProvider>
   )
 }

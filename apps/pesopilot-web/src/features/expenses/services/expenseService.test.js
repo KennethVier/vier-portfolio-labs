@@ -69,6 +69,94 @@ describe('expenseService', () => {
     expect(await expenseRepository.findById(createdExpense.id)).toBeUndefined()
   })
 
+  it('defaults new expenses to the current cutoff when cutoffId is empty', async () => {
+    const activeCutoffId = await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdExpense = await expenseService.createExpense(validExpense)
+
+    expect(createdExpense).toMatchObject({
+      cutoffId: activeCutoffId,
+      merchant: 'Jollibee',
+    })
+  })
+
+  it('does not override a user-selected cutoff when creating expenses', async () => {
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const selectedCutoffId = await salaryCutoffRepository.create({
+      name: 'Selected Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const createdExpense = await expenseService.createExpense({
+      ...validExpense,
+      cutoffId: selectedCutoffId,
+    })
+
+    expect(createdExpense.cutoffId).toBe(selectedCutoffId)
+  })
+
+  it('does not auto-assign current cutoff during expense updates', async () => {
+    const selectedCutoffId = await salaryCutoffRepository.create({
+      name: 'Selected Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-07-01',
+      endDate: '2026-07-15',
+      expectedIncome: 40000,
+      status: 'planned',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+    const createdExpense = await expenseService.createExpense({
+      ...validExpense,
+      cutoffId: selectedCutoffId,
+    })
+    await salaryCutoffRepository.create({
+      name: 'Active Cutoff',
+      type: 'semi_monthly',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 40000,
+      status: 'active',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    })
+
+    const updatedExpense = await expenseService.updateExpense(createdExpense.id, {
+      ...validExpense,
+      amount: 725,
+      cutoffId: '',
+    })
+
+    expect(updatedExpense).toMatchObject({
+      amount: 725,
+      cutoffId: null,
+    })
+  })
+
   it('filters expenses by category, payment method, and date range', async () => {
     await expenseService.createExpense(validExpense)
     await expenseService.createExpense({
@@ -249,11 +337,18 @@ describe('expenseService', () => {
       cutoffId: deletedCutoffId,
       merchant: 'Shopee',
     })
-    await expenseService.createExpense({
-      ...validExpense,
+    await expenseRepository.create({
       amount: 300,
+      categoryId: 'food',
+      createdAt: '2026-06-01T00:00:00.000Z',
+      date: validExpense.date,
+      emotionTag: validExpense.emotionTag,
       cutoffId: null,
       merchant: 'Unlinked',
+      note: validExpense.note,
+      paymentMethod: validExpense.paymentMethod,
+      source: validExpense.source,
+      updatedAt: '2026-06-01T00:00:00.000Z',
     })
     await salaryCutoffRepository.remove(deletedCutoffId)
 

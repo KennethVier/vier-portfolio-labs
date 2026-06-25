@@ -8,9 +8,12 @@ import { Input } from '@/components/ui/Input.jsx'
 import { INCOME_SOURCES } from '../constants/incomeConstants.js'
 import { incomeFormDefaults, incomeSchema } from '../schemas/incomeSchema.js'
 
-function mapIncomeToFormValues(income) {
+function mapIncomeToFormValues(income, currentCutoffId = null) {
   if (!income) {
-    return incomeFormDefaults
+    return {
+      ...incomeFormDefaults,
+      cutoffId: currentCutoffId ?? incomeFormDefaults.cutoffId,
+    }
   }
 
   return {
@@ -23,6 +26,7 @@ function mapIncomeToFormValues(income) {
 }
 
 export function IncomeForm({
+  currentCutoffId = null,
   editingIncome,
   isSaving,
   onCancel,
@@ -40,12 +44,12 @@ export function IncomeForm({
   })
 
   useEffect(() => {
-    reset(mapIncomeToFormValues(editingIncome))
-  }, [editingIncome, reset])
+    reset(mapIncomeToFormValues(editingIncome, currentCutoffId))
+  }, [currentCutoffId, editingIncome, reset])
 
   async function submitIncome(values) {
     await onSubmit(values)
-    reset(incomeFormDefaults)
+    reset(mapIncomeToFormValues(null, currentCutoffId))
   }
 
   return (
@@ -112,6 +116,11 @@ export function IncomeForm({
                 </option>
               ))}
             </select>
+            {!editingIncome && currentCutoffId ? (
+              <span className="mt-1 block text-xs text-content-muted">
+                Current cutoff is selected automatically for new records.
+              </span>
+            ) : null}
           </label>
           <label className="block md:col-span-2">
             <span className="mb-1 block text-xs font-semibold text-content">Note</span>

@@ -27,6 +27,15 @@ function normalizeIncomePayload(payload, existingIncome = null) {
   }
 }
 
+async function getDefaultCutoffId(payloadCutoffId) {
+  if (payloadCutoffId) {
+    return payloadCutoffId
+  }
+
+  const currentCutoff = await cutoffService.findCurrentCutoff()
+  return currentCutoff?.id ?? null
+}
+
 function normalizeSearchText(value) {
   return String(value ?? '').trim().toLowerCase()
 }
@@ -165,7 +174,10 @@ export const incomeService = {
   },
 
   async createIncome(payload) {
-    const income = normalizeIncomePayload(payload)
+    const income = normalizeIncomePayload({
+      ...payload,
+      cutoffId: await getDefaultCutoffId(payload.cutoffId),
+    })
     const id = await incomeRepository.create(income)
     return incomeRepository.findById(id)
   },

@@ -68,31 +68,6 @@ function getCashflowStatus(remainingCash) {
   }
 }
 
-function PeriodSelector() {
-  return (
-    <div className="flex gap-1 rounded-lg bg-surface-container p-1">
-      <button
-        type="button"
-        className="rounded bg-surface-container-lowest px-3 py-1 text-body-sm font-semibold text-primary shadow-sm"
-      >
-        Last 6 Cycles
-      </button>
-      <button
-        type="button"
-        className="rounded px-3 py-1 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-lowest/60"
-      >
-        Quarterly
-      </button>
-      <button
-        type="button"
-        className="rounded px-3 py-1 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container-lowest/60"
-      >
-        YTD
-      </button>
-    </div>
-  )
-}
-
 function FlowComparisonCard() {
   const bars = [
     ['JUL', 60, 25],
@@ -380,7 +355,11 @@ export function CashflowPage() {
       <PageHeader
         title="Cashflow Management"
         description="Analyze liquidity cycles and transactional velocity."
-        actions={<PeriodSelector />}
+        actions={
+          <span className="rounded bg-surface-container px-3 py-1 text-body-sm font-semibold text-on-surface-variant">
+            Current Cutoff
+          </span>
+        }
       />
 
       {error ? <ErrorState title="Unable to load cashflow" message={error} /> : null}

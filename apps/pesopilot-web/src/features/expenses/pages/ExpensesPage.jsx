@@ -228,6 +228,7 @@ export function ExpensesPage() {
       >
         <ExpenseForm
           categories={categories}
+          currentCutoffId={expenseKpis.currentCutoffId}
           editingExpense={editingExpense}
           framed={false}
           isSaving={isSaving}

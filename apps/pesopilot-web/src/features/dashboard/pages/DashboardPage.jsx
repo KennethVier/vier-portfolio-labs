@@ -98,14 +98,9 @@ function SpendingOverview({ bars }) {
       title="Spending Overview"
       className="h-full lg:col-span-7"
       actions={
-        <select
-          className="rounded border-none bg-surface-container px-3 py-1 text-body-sm outline-none"
-          disabled
-          value="Current Cutoff"
-          onChange={() => {}}
-        >
-          <option>Current Cutoff</option>
-        </select>
+        <span className="rounded bg-surface-container px-3 py-1 text-body-sm font-semibold text-on-surface-variant">
+          Current Cycle Spending
+        </span>
       }
     >
       <div className="flex h-24 items-end justify-between gap-2 px-2">

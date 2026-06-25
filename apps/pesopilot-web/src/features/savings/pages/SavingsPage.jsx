@@ -367,6 +367,7 @@ export function SavingsPage() {
         onClose={closeForm}
       >
         <SavingsForm
+          currentCutoffId={savingsKpis.currentCutoffId}
           editingSavings={editingSavings}
           framed={false}
           isSaving={isSaving}

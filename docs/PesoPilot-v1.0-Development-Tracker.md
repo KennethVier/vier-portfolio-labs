@@ -1823,21 +1823,25 @@ These directly affect the cutoff-centric financial workflow.
 
 ## Cutoff Workflow
 
-[ ] Automatically assign current cutoff during CRUD operations when applicable
+[x] Automatically assign current cutoff during CRUD operations when applicable
 
-[ ] Verify cashflow cycle switching behavior
+[x] Verify cashflow cycle switching behavior
 
 [ ] Verify reports use cutoff-centric calculations
 
-[ ] Verify dashboard spending overview cutoff behavior
+[x] Verify dashboard spending overview cutoff behavior
 
 [ ] Enable cutoff selection where appropriate
+
+[x] Automatically close ended cutoffs and activate the planned cutoff that covers today
+
+[x] Show app-start guidance when no current cutoff exists
 
 ---
 
 ## Financial Guidance
 
-[ ] After creating a cutoff, guide users to create income records
+[x] After creating a cutoff, guide users to create income records
 
 [ ] Add cutoff-start reminder modal
 
@@ -1853,6 +1857,8 @@ Have you recorded your income for this cycle yet?
 ```
 
 [ ] Add allocation reminder for new cutoff periods
+
+[x] Prepare cutoff workflow reminder service for no-income and no-savings current-cycle checks
 
 Example:
 
@@ -1915,6 +1921,14 @@ Actions:
 Action note 2026-06-23:
 
 Improved primary navigation by removing AI Expense Input from the sidebar, adding AI Quick Add access through the Expenses and Dashboard modal flows, adding Dashboard Quick Actions, and wiring View All navigation actions to existing report destinations.
+
+Action note 2026-06-25:
+
+Hardened cutoff-centric workflows by auto-selecting the current cutoff for new manual expense, income, and savings records, adding post-cutoff creation income guidance, preparing no-income/no-savings reminder detection with per-cutoff dismissal support, and replacing misleading Dashboard/Cashflow disabled selectors with static current-cycle context.
+
+Action note 2026-06-25:
+
+Added cutoff lifecycle synchronization using existing statuses: ended planned/active cutoffs are closed, a planned cutoff covering today is promoted to active, future active cutoffs are demoted to planned, and the app shows a startup guidance modal when no cutoff covers the current date.
 
 ---
 
@@ -2154,6 +2168,13 @@ Added Dashboard Quick Actions for Expense, AI Quick Add modal access, Income, Sa
 Wired Dashboard and Cashflow View All actions to Reports.
 Disabled deferred page-level CSV export placeholders on Expenses and Income.
 No parser, approval workflow, repository, schema, cashflow, reports, cutoff, or settings import/export logic was changed.
+Implemented Phase 10.5B Cutoff Workflow Hardening.
+Added service-level current-cutoff defaults for new manual expenses, income, and savings while preserving explicit user-selected cutoff ids.
+Added create-form current-cutoff preselection helper text for Expenses, Income, and Savings.
+Added post-cutoff creation guidance that sends users to Income without forcing the action.
+Prepared cutoff workflow reminder detection for missing income and missing savings, with localStorage dismissal keys per cutoff.
+Removed misleading disabled Dashboard spending and Cashflow period selectors in favor of current-cycle labels.
+Deferred the Header notification popover to Phase 10.5F to avoid broad layout/service coupling.
 ```
 
 ---
