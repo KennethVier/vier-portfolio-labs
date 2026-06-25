@@ -267,16 +267,10 @@ export function SavingsPage() {
         title="Savings Strategy"
         description="Allocating intelligence to long-term wealth assets."
         actions={
-          <>
-            <Button type="button" variant="gray" disabled>
-              <span className="material-symbols-outlined text-lg">file_download</span>
-              Export Ledger
-            </Button>
-            <Button type="button" onClick={() => setIsFormOpen(true)}>
-              <span className="material-symbols-outlined text-lg">add</span>
-              Add Savings
-            </Button>
-          </>
+          <Button type="button" onClick={() => setIsFormOpen(true)}>
+            <span className="material-symbols-outlined text-lg">add</span>
+            Add Savings
+          </Button>
         }
       />
 

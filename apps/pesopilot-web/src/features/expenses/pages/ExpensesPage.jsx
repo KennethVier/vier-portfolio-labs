@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
+import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { ExpenseFilters } from '../components/ExpenseFilters.jsx'
 import { ExpenseForm } from '../components/ExpenseForm.jsx'
@@ -86,16 +87,17 @@ function ExpensesActionBar({
   categories,
   filters,
   onAddExpense,
+  onAiQuickAdd,
   onFilterChange,
 }) {
   return (
     <div className="sticky top-0 z-30 flex flex-col gap-2 bg-background py-2 xl:flex-row xl:items-center xl:justify-between">
       <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center sm:justify-end xl:order-2">
-        <Button variant="gray">
+        <Button variant="secondary" onClick={onAiQuickAdd}>
           <span className="material-symbols-outlined text-lg">
-            ios_share
+            auto_awesome
           </span>
-          Export
+          AI Quick Add
         </Button>
         <Button onClick={onAddExpense}>
           <span className="material-symbols-outlined text-lg">
@@ -144,6 +146,7 @@ function ExpenseLedgerPanel({
 }
 
 export function ExpensesPage() {
+  const [isAiQuickAddOpen, setIsAiQuickAddOpen] = useState(false)
   const [isExpensePanelOpen, setIsExpensePanelOpen] = useState(false)
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const {
@@ -208,6 +211,7 @@ export function ExpensesPage() {
         categories={categories}
         filters={filters}
         onAddExpense={openCreatePanel}
+        onAiQuickAdd={() => setIsAiQuickAddOpen(true)}
         onFilterChange={updateFilters}
       />
 
@@ -232,6 +236,13 @@ export function ExpensesPage() {
           onSubmit={submitExpense}
         />
       </Modal>
+
+      {isAiQuickAddOpen ? (
+        <AiQuickAddModal
+          isOpen={isAiQuickAddOpen}
+          onClose={() => setIsAiQuickAddOpen(false)}
+        />
+      ) : null}
 
       <ExpenseLedgerPanel
         categories={categories}

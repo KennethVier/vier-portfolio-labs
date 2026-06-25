@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import {
   KpiGrid,
@@ -10,6 +11,7 @@ import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { useDashboard } from '../hooks/useDashboard.js'
 
@@ -138,9 +140,9 @@ function AllocationMatrix({ rows }) {
             Top current-cutoff expense categories
           </p>
         </div>
-        <button type="button" className="text-body-sm font-semibold text-primary">
+        <Link to="/reports" className="text-body-sm font-semibold text-primary hover:underline">
           View All Categories
-        </button>
+        </Link>
       </div>
 
       {rows.length === 0 ? (
@@ -265,6 +267,54 @@ function NextCutoffCard({ currentCutoff, cutoffProgress }) {
   )
 }
 
+function QuickActions({ onAiQuickAdd }) {
+  const actions = [
+    { icon: 'add', label: 'Expense', to: '/expenses' },
+    { icon: 'add', label: 'Income', to: '/income' },
+    { icon: 'add', label: 'Savings', to: '/savings' },
+    { icon: 'inbox', label: 'Review Inbox', to: '/expense-inbox' },
+  ]
+
+  return (
+    <section className="border border-outline-variant bg-surface-container-lowest p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+            Quick Actions
+          </h3>
+          <p className="text-body-sm text-on-surface-variant">
+            Jump into common daily money workflows.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <button
+            type="button"
+            className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-body-sm font-semibold text-on-surface transition-colors hover:border-primary hover:text-primary"
+            onClick={onAiQuickAdd}
+          >
+            <span className="material-symbols-outlined text-base">
+              auto_awesome
+            </span>
+            AI Quick Add
+          </button>
+          {actions.map((action) => (
+            <Link
+              key={action.to}
+              to={action.to}
+              className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-body-sm font-semibold text-on-surface transition-colors hover:border-primary hover:text-primary"
+            >
+              <span className="material-symbols-outlined text-base">
+                {action.icon}
+              </span>
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function RecentTransactions({ className = '', transactions }) {
   return (
     <section
@@ -280,13 +330,13 @@ function RecentTransactions({ className = '', transactions }) {
             Latest 5 income, expense, and savings records
           </p>
         </div>
-        <button
-          type="button"
+        <Link
+          to="/reports"
           className="flex items-center gap-1 text-body-sm font-semibold text-primary hover:underline"
         >
           View All
           <span className="material-symbols-outlined text-sm">arrow_forward</span>
-        </button>
+        </Link>
       </div>
 
       {transactions.length === 0 ? (
@@ -340,6 +390,7 @@ function RecentTransactions({ className = '', transactions }) {
 }
 
 export function DashboardPage() {
+  const [isAiQuickAddOpen, setIsAiQuickAddOpen] = useState(false)
   const { data, error, isLoading } = useDashboard()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
 
@@ -395,6 +446,15 @@ export function DashboardPage() {
               icon={<span className="material-symbols-outlined text-lg">account_balance_wallet</span>}
             />
           </KpiGrid>
+
+          <QuickActions onAiQuickAdd={() => setIsAiQuickAddOpen(true)} />
+
+          {isAiQuickAddOpen ? (
+            <AiQuickAddModal
+              isOpen={isAiQuickAddOpen}
+              onClose={() => setIsAiQuickAddOpen(false)}
+            />
+          ) : null}
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             <BudgetShockAlert alert={data.budgetAlert} />

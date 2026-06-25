@@ -1805,6 +1805,359 @@ Deferred manual ExpenseForm merchant suggestions and runtime international Lifes
 
 ---
 
+# Phase 10.5 — UX and Workflow Hardening
+
+Status: ⬜
+
+Goal:
+
+Polish PesoPilot's user experience, strengthen cutoff-centric workflows, fix navigation gaps, and complete unfinished MVP interactions before Phase 11 Financial Insights.
+
+---
+
+# Group A — Core Workflow Fixes
+
+Priority: Critical
+
+These directly affect the cutoff-centric financial workflow.
+
+## Cutoff Workflow
+
+[ ] Automatically assign current cutoff during CRUD operations when applicable
+
+[ ] Verify cashflow cycle switching behavior
+
+[ ] Verify reports use cutoff-centric calculations
+
+[ ] Verify dashboard spending overview cutoff behavior
+
+[ ] Enable cutoff selection where appropriate
+
+---
+
+## Financial Guidance
+
+[ ] After creating a cutoff, guide users to create income records
+
+[ ] Add cutoff-start reminder modal
+
+Example:
+
+```txt
+New cutoff has started.
+
+Have you recorded your income for this cycle yet?
+
+[ Record Income ]
+[ Later ]
+```
+
+[ ] Add allocation reminder for new cutoff periods
+
+Example:
+
+```txt
+Consider allocating part of your income to savings before spending.
+```
+
+---
+
+# Group B — Navigation and Quick Actions
+
+Priority: High
+
+Reduce navigation friction.
+
+## AI Expense Input Integration
+
+[x] Remove AI Expense Input from sidebar
+
+[x] Add AI Quick Add entry inside Expenses page
+
+Example:
+
+```txt
++ Add Expense ▼
+
+• Manual Expense
+• AI Quick Add
+```
+
+[x] Preserve existing AI Expense Input functionality
+
+---
+
+## Dashboard Quick Actions
+
+[x] Add Quick Actions section
+
+Actions:
+
+```txt
++ Expense
+✨ AI Quick Add
++ Income
++ Savings
+```
+
+[x] Add navigation shortcuts
+
+---
+
+## Missing Navigation Actions
+
+[x] Cashflow View All
+
+[x] Dashboard Recent Transactions View All
+
+[x] Dashboard Allocation Matrix View All
+
+Action note 2026-06-23:
+
+Improved primary navigation by removing AI Expense Input from the sidebar, adding AI Quick Add access through the Expenses and Dashboard modal flows, adding Dashboard Quick Actions, and wiring View All navigation actions to existing report destinations.
+
+---
+
+# Group C — Reporting Improvements
+
+Priority: High
+
+Improve usability and data presentation.
+
+## Reports
+
+[ ] Remove "Local IndexedDB" wording
+
+[ ] Add cutoff selector
+
+[ ] Allow report generation by cutoff
+
+[ ] Verify all graphs respond to selected cutoff
+
+---
+
+## Graph Enhancements
+
+[ ] Improve single-point graph rendering
+
+Current issue:
+
+```txt
+One record
+↓
+Only a dot
+```
+
+Desired:
+
+```txt
+Line starts from zero
+↓
+Visible trend
+```
+
+[ ] Review savings trend graphs
+
+[ ] Review cashflow trend graphs
+
+---
+
+# Group D — Savings Module Cleanup
+
+Priority: Medium
+
+## Savings
+
+[ ] Fix New Savings Goal button
+
+[ ] Remove placeholder savings content
+
+[ ] Review KPI card icons
+
+[ ] Verify savings calculations
+
+---
+
+# Group E — Usability Improvements
+
+Priority: Medium
+
+Improve discoverability.
+
+## Tooltips
+
+[ ] Add helper tooltips for action buttons
+
+Examples:
+
+```txt
+View All
+Export
+Approve
+Reject
+```
+
+---
+
+## Page Guidance
+
+[ ] Add contextual page helper text
+
+Dashboard:
+
+* explain cutoff overview
+
+Expenses:
+
+* explain current cutoff tracking
+
+Reports:
+
+* explain historical analysis
+
+---
+
+# Group F — Ledger Scalability
+
+Priority: Medium
+
+## Pagination
+
+[ ] Add pagination for historical ledgers
+
+Income
+
+Expenses
+
+Savings
+
+Inbox history
+
+---
+
+# Group G — Notifications
+
+Priority: Low
+
+## Header
+
+[ ] Implement notification center
+
+[ ] Implement notification badge
+
+[ ] Connect cutoff reminders
+
+---
+
+## Help System
+
+[ ] Review Help icon behavior
+
+[ ] Create Help Center page
+
+Possible sections:
+
+```txt
+Getting Started
+
+Cutoffs
+
+Expenses
+
+AI Quick Add
+
+Reports
+
+FAQ
+```
+
+---
+
+# Group H — Product Decisions
+
+Priority: Review
+
+## Export Functionality
+
+Decision Needed:
+
+[ ] Keep only Settings Export/Import
+
+OR
+
+[ ] Add page-level CSV exports
+
+Expenses
+
+Income
+
+Savings
+
+---
+
+## Profile Page
+
+Decision Needed:
+
+[ ] Defer Profile Page
+
+Reason:
+
+Settings already covers:
+
+* Currency
+* Theme
+* Lifestyle Mode
+* Preferences
+
+No account/authentication exists yet.
+
+---
+
+# Verification
+
+[x] npm.cmd run test
+
+[x] npm.cmd run lint
+
+[x] npm.cmd run build
+
+[ ] Manual QA walkthrough
+
+Dashboard
+
+Expenses
+
+Income
+
+Savings
+
+Salary Cutoff
+
+Cashflow
+
+Reports
+
+Expense Inbox
+
+Settings
+
+---
+
+## Actions Taken
+
+```txt
+Implemented Phase 10.5A Navigation and Quick Actions.
+Removed AI Expense Input from primary sidebar navigation while preserving /manual-ai-expense.
+Added AI Quick Add modal access inside the Expenses page using the existing Manual AI parser and inbox submission flow.
+Added Dashboard Quick Actions for Expense, AI Quick Add modal access, Income, Savings, and Review Inbox.
+Wired Dashboard and Cashflow View All actions to Reports.
+Disabled deferred page-level CSV export placeholders on Expenses and Income.
+No parser, approval workflow, repository, schema, cashflow, reports, cutoff, or settings import/export logic was changed.
+```
+
+---
+
 # Phase 11 — Financial Insights and AI Summary
 
 Status: ⬜

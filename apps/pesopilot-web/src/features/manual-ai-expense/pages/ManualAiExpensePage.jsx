@@ -45,7 +45,12 @@ function formatCategorySource(source) {
   return labels[source] ?? 'Parser Guess'
 }
 
-function ParserInputCard({ inputText, onExampleClick, onInputChange, onParse }) {
+export function ParserInputCard({
+  inputText,
+  onExampleClick,
+  onInputChange,
+  onParse,
+}) {
   return (
     <SectionCard
       title="Natural Language Input"
@@ -88,7 +93,7 @@ function ParserInputCard({ inputText, onExampleClick, onInputChange, onParse }) 
   )
 }
 
-function ParsedPreview({
+export function ParsedPreview({
   categories,
   isSubmitting,
   onSubmit,
@@ -251,7 +256,7 @@ function ParsedPreview({
   )
 }
 
-function SuccessPanel({ record }) {
+export function SuccessPanel({ record }) {
   if (!record) {
     return null
   }

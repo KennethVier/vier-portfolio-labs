@@ -5,6 +5,7 @@ import {
   StatCard,
   StatusBadge,
 } from '@/components/dashboard'
+import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
@@ -314,13 +315,13 @@ function RecentCashflowsPreview() {
     <section className="overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
       <div className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
         <h3 className="font-headline-sm text-headline-sm">Recent Cashflows</h3>
-        <button
-          type="button"
+        <Link
+          to="/reports"
           className="flex items-center gap-1 text-body-sm font-semibold text-primary hover:underline"
         >
           View All
           <span className="material-symbols-outlined text-sm">arrow_forward</span>
-        </button>
+        </Link>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">

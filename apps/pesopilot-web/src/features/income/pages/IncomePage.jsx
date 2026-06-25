@@ -69,21 +69,12 @@ export function IncomePage() {
         title="Income Management"
         description="Track, verify, and project your financial inflows."
         actions={
-          <>
-            <Button variant="gray">
-              <span className="material-symbols-outlined text-lg">
-                ios_share
-              </span>
-              Export
-            </Button>
-
-            <Button onClick={() => setIsFormOpen(true)}>
-              <span className="material-symbols-outlined text-lg">
-                add
-              </span>
-              Add Income
-            </Button>
-          </>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <span className="material-symbols-outlined text-lg">
+              add
+            </span>
+            Add Income
+          </Button>
         }
       />
 
