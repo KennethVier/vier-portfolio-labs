@@ -3,6 +3,12 @@ const monthFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 })
 
+export const REPORT_SCOPES = {
+  all: 'all',
+  currentCutoff: 'current_cutoff',
+  specificCutoff: 'specific_cutoff',
+}
+
 function getAmount(record) {
   return Number(record?.amount) || 0
 }
@@ -41,8 +47,106 @@ function addToMonth(map, date, key, amount) {
   map.set(monthKey, current)
 }
 
+function getScopeCutoffId({ currentCutoff = null, scope, selectedCutoffId = null } = {}) {
+  if (scope === REPORT_SCOPES.currentCutoff) {
+    return currentCutoff?.id ?? null
+  }
+
+  if (scope === REPORT_SCOPES.specificCutoff) {
+    return selectedCutoffId ?? null
+  }
+
+  return null
+}
+
+function filterRecordsByCutoff(records = [], cutoffId) {
+  if (!cutoffId) {
+    return []
+  }
+
+  return records.filter(
+    (record) =>
+      record?.cutoffId &&
+      String(record.cutoffId) === String(cutoffId),
+  )
+}
+
+function sortCutoffsAscending(cutoffs = []) {
+  return [...cutoffs].sort((firstCutoff, secondCutoff) => {
+    const firstDate = String(firstCutoff.startDate ?? '')
+    const secondDate = String(secondCutoff.startDate ?? '')
+
+    if (firstDate === secondDate) {
+      return (firstCutoff.id ?? 0) - (secondCutoff.id ?? 0)
+    }
+
+    return firstDate.localeCompare(secondDate)
+  })
+}
+
 export function sumAmounts(records = []) {
   return records.reduce((total, record) => total + getAmount(record), 0)
+}
+
+export function filterRecordsForReportScope({
+  currentCutoff = null,
+  expenses = [],
+  income = [],
+  savings = [],
+  scope = REPORT_SCOPES.all,
+  selectedCutoffId = null,
+} = {}) {
+  if (scope === REPORT_SCOPES.all) {
+    return { expenses, income, savings }
+  }
+
+  const cutoffId = getScopeCutoffId({ currentCutoff, scope, selectedCutoffId })
+
+  return {
+    expenses: filterRecordsByCutoff(expenses, cutoffId),
+    income: filterRecordsByCutoff(income, cutoffId),
+    savings: filterRecordsByCutoff(savings, cutoffId),
+  }
+}
+
+export function selectCutoffsForReportScope({
+  currentCutoff = null,
+  cutoffs = [],
+  scope = REPORT_SCOPES.all,
+  selectedCutoffId = null,
+} = {}) {
+  if (scope === REPORT_SCOPES.all) {
+    return cutoffs
+  }
+
+  const cutoffId = getScopeCutoffId({ currentCutoff, scope, selectedCutoffId })
+
+  if (!cutoffId) {
+    return []
+  }
+
+  if (scope === REPORT_SCOPES.currentCutoff) {
+    return cutoffs.map((cutoff) => ({
+      ...cutoff,
+      isHighlighted: String(cutoff.id) === String(cutoffId),
+    }))
+  }
+
+  const sortedCutoffs = sortCutoffsAscending(cutoffs)
+  const selectedIndex = sortedCutoffs.findIndex(
+    (cutoff) => String(cutoff.id) === String(cutoffId),
+  )
+
+  if (selectedIndex === -1) {
+    return []
+  }
+
+  return sortedCutoffs
+    .slice(Math.max(0, selectedIndex - 1), selectedIndex + 2)
+    .map((cutoff) => ({
+      ...cutoff,
+      isHighlighted: String(cutoff.id) === String(cutoffId),
+    }))
 }
 
 export function buildReportKpis({ expenses = [], income = [], savings = [] } = {}) {
@@ -148,6 +252,17 @@ export function buildSavingsTrend(savings = []) {
     })
 }
 
+export function padSinglePointSavingsTrend(data = []) {
+  if (data.length !== 1) {
+    return data
+  }
+
+  return [
+    { date: 'Start', savings: 0 },
+    data[0],
+  ]
+}
+
 export function buildCashflowTrend({ expenses = [], income = [], savings = [] } = {}) {
   const monthTotals = new Map()
 
@@ -172,6 +287,17 @@ export function buildCashflowTrend({ expenses = [], income = [], savings = [] } 
         (monthRecord.savings ?? 0),
       month: monthRecord.month,
     }))
+}
+
+export function padSinglePointCashflowTrend(data = []) {
+  if (data.length !== 1) {
+    return data
+  }
+
+  return [
+    { month: 'Start', cashflow: 0 },
+    data[0],
+  ]
 }
 
 function sumByCutoff(records, cutoffId) {
@@ -201,6 +327,7 @@ export function buildCutoffComparison({
         actualIncome,
         cutoffId: cutoff.id,
         expectedIncome: Number(cutoff.expectedIncome) || 0,
+        isHighlighted: Boolean(cutoff.isHighlighted),
         name: cutoff.name,
         remainingCash: actualIncome - totalExpenses - totalSavings,
         totalExpenses,

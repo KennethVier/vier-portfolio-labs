@@ -8,15 +8,21 @@ const initialReportsState = {
   isLoading: true,
 }
 
-export function useReports() {
+export function useReports(options) {
   const [state, setState] = useState(initialReportsState)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadReports() {
+      setState((currentState) => ({
+        data: currentState.data,
+        error: null,
+        isLoading: true,
+      }))
+
       try {
-        const data = await reportService.loadReports()
+        const data = await reportService.loadReports(options)
 
         if (!isMounted) {
           return
@@ -45,7 +51,7 @@ export function useReports() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [options])
 
   return state
 }

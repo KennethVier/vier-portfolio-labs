@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -14,13 +14,27 @@ import {
   YAxis,
 } from 'recharts'
 
-import { KpiGrid, PageHeader, SectionCard, StatCard, StatusBadge } from '@/components/dashboard'
+import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 
 import { useReports } from '../hooks/useReports.js'
+import {
+  padSinglePointCashflowTrend,
+  padSinglePointSavingsTrend,
+  REPORT_SCOPES,
+} from '../utils/reportTransforms.js'
+
+const REPORT_SCOPE_STORAGE_KEY = 'pesopilot:reports:scope'
+const REPORT_CUTOFF_STORAGE_KEY = 'pesopilot:reports:selected-cutoff-id'
+
+const reportScopeOptions = [
+  { label: 'All Data', value: REPORT_SCOPES.all },
+  { label: 'Current Cutoff', value: REPORT_SCOPES.currentCutoff },
+  { label: 'Specific Cutoff', value: REPORT_SCOPES.specificCutoff },
+]
 
 const chartColors = {
   error: 'var(--color-error)',
@@ -50,6 +64,30 @@ function formatMoney(value) {
 
 function formatTooltipValue(value, name) {
   return [formatMoney(value), name]
+}
+
+function getStoredReportScope() {
+  if (typeof window === 'undefined') {
+    return REPORT_SCOPES.all
+  }
+
+  const storedScope = window.sessionStorage.getItem(REPORT_SCOPE_STORAGE_KEY)
+
+  return reportScopeOptions.some((option) => option.value === storedScope)
+    ? storedScope
+    : REPORT_SCOPES.all
+}
+
+function getStoredCutoffId() {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  return window.sessionStorage.getItem(REPORT_CUTOFF_STORAGE_KEY) ?? ''
+}
+
+function formatCutoffOption(cutoff) {
+  return `${cutoff.name} — ${cutoff.startDate} to ${cutoff.endDate}`
 }
 
 function ChartFrame({ children, emptyMessage, hasData }) {
@@ -170,13 +208,15 @@ function CategoryBreakdownChart({ data }) {
 }
 
 function SavingsTrendChart({ data }) {
+  const chartData = padSinglePointSavingsTrend(data)
+
   return (
     <ChartFrame
       hasData={data.length > 0}
       emptyMessage="No savings history available."
     >
       <ResponsiveChartContainer>
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
           <Tooltip formatter={formatTooltipValue} />
@@ -194,13 +234,15 @@ function SavingsTrendChart({ data }) {
 }
 
 function CashflowTrendChart({ data }) {
+  const chartData = padSinglePointCashflowTrend(data)
+
   return (
     <ChartFrame
       hasData={data.length > 0}
       emptyMessage="No cashflow data available."
     >
       <ResponsiveChartContainer>
-        <LineChart data={data}>
+        <LineChart data={chartData}>
           <XAxis dataKey="month" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={72} />
           <Tooltip formatter={formatTooltipValue} />
@@ -217,9 +259,9 @@ function CashflowTrendChart({ data }) {
   )
 }
 
-function CutoffComparisonTable({ data }) {
+function CutoffComparisonTable({ data, emptyMessage }) {
   if (data.length === 0) {
-    return <EmptyState title="No cutoff data available for comparison." />
+    return <EmptyState title={emptyMessage ?? 'No cutoff data available for comparison.'} />
   }
 
   return (
@@ -249,9 +291,22 @@ function CutoffComparisonTable({ data }) {
         </thead>
         <tbody className="divide-y divide-outline-variant">
           {data.map((cutoff) => (
-            <tr key={cutoff.cutoffId} className="hover:bg-surface-container-low">
+            <tr
+              key={cutoff.cutoffId}
+              className={[
+                'hover:bg-surface-container-low',
+                cutoff.isHighlighted ? 'bg-primary-fixed/70' : '',
+              ].join(' ')}
+            >
               <td className="px-3 py-2 font-semibold text-on-surface">
-                {cutoff.name}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>{cutoff.name}</span>
+                  {cutoff.isHighlighted ? (
+                    <span className="rounded border border-primary/30 bg-primary-fixed px-2 py-0.5 font-label-caps text-label-caps text-primary">
+                      Selected
+                    </span>
+                  ) : null}
+                </div>
               </td>
               <td className="px-3 py-2 text-right font-data-mono">
                 {formatMoney(cutoff.expectedIncome)}
@@ -279,7 +334,17 @@ function CutoffComparisonTable({ data }) {
 }
 
 export function ReportsPage() {
-  const { data, error, isLoading } = useReports()
+  const [reportScope, setReportScope] = useState(getStoredReportScope)
+  const [selectedCutoffId, setSelectedCutoffId] = useState(getStoredCutoffId)
+  const reportOptions = useMemo(
+    () => ({
+      scope: reportScope,
+      selectedCutoffId:
+        reportScope === REPORT_SCOPES.specificCutoff ? selectedCutoffId : null,
+    }),
+    [reportScope, selectedCutoffId],
+  )
+  const { data, error, isLoading } = useReports(reportOptions)
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
 
   useEffect(() => {
@@ -290,6 +355,26 @@ export function ReportsPage() {
 
     return () => resetHeaderConfig()
   }, [resetHeaderConfig, setHeaderConfig])
+
+  function handleScopeChange(nextScope) {
+    setReportScope(nextScope)
+    window.sessionStorage.setItem(REPORT_SCOPE_STORAGE_KEY, nextScope)
+
+    if (nextScope !== REPORT_SCOPES.specificCutoff) {
+      setSelectedCutoffId('')
+      window.sessionStorage.removeItem(REPORT_CUTOFF_STORAGE_KEY)
+    }
+  }
+
+  function handleCutoffChange(nextCutoffId) {
+    setSelectedCutoffId(nextCutoffId)
+
+    if (nextCutoffId) {
+      window.sessionStorage.setItem(REPORT_CUTOFF_STORAGE_KEY, nextCutoffId)
+    } else {
+      window.sessionStorage.removeItem(REPORT_CUTOFF_STORAGE_KEY)
+    }
+  }
 
   if (isLoading) {
     return <LoadingState label="Loading reports" />
@@ -302,26 +387,72 @@ export function ReportsPage() {
   const {
     datasets,
     kpis,
+    meta,
     records,
   } = data
   const hasAnyRecords =
-    records.expenses.length > 0 ||
-    records.income.length > 0 ||
-    records.savings.length > 0 ||
-    records.cutoffs.length > 0
+    records.scoped.expenses.length > 0 ||
+    records.scoped.income.length > 0 ||
+    records.scoped.savings.length > 0 ||
+    datasets.cutoffComparison.length > 0
+  const isSpecificCutoffScope = reportScope === REPORT_SCOPES.specificCutoff
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Reports and Graphs"
-        description="Visual reporting and financial trend analysis."
-        actions={<StatusBadge tone="info">Local IndexedDB</StatusBadge>}
+        description="Analyze income, expenses, savings, cashflow, and cutoffs across your financial history."
       />
+
+      <SectionCard
+        title="Report Scope"
+        description="Reports are historical by default. Narrow them to the current or selected salary cutoff when needed."
+      >
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {reportScopeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={[
+                  'rounded border px-3 py-2 text-left text-body-sm font-semibold transition-colors',
+                  reportScope === option.value
+                    ? 'border-primary bg-primary-fixed text-primary'
+                    : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-primary hover:text-primary',
+                ].join(' ')}
+                onClick={() => handleScopeChange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {isSpecificCutoffScope ? (
+            <label className="grid gap-1 md:min-w-80">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">
+                Select Cutoff
+              </span>
+              <select
+                className="min-h-9 rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+                value={selectedCutoffId}
+                onChange={(event) => handleCutoffChange(event.target.value)}
+              >
+                <option value="">Choose a cutoff</option>
+                {records.cutoffs.map((cutoff) => (
+                  <option key={cutoff.id} value={cutoff.id}>
+                    {formatCutoffOption(cutoff)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      </SectionCard>
 
       {!hasAnyRecords ? (
         <EmptyState
           title="No report data yet"
-          message="Add income, expenses, savings, or salary cutoffs to populate reports."
+          message={meta.emptyMessage}
         />
       ) : null}
 
@@ -386,7 +517,10 @@ export function ReportsPage() {
           title="Cutoff Comparison"
           description="Cutoff-level actual income, spending, savings, and remaining cash."
         >
-          <CutoffComparisonTable data={datasets.cutoffComparison} />
+          <CutoffComparisonTable
+            data={datasets.cutoffComparison}
+            emptyMessage={meta.emptyMessage}
+          />
         </SectionCard>
       </div>
     </div>

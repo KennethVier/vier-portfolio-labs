@@ -3,6 +3,7 @@ import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
 import { incomeRepository } from '@/lib/db/repositories/incomeRepository.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
+import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import {
   buildCashflowTrend,
@@ -12,42 +13,86 @@ import {
   buildIncomeExpenseComparison,
   buildReportKpis,
   buildSavingsTrend,
+  filterRecordsForReportScope,
+  REPORT_SCOPES,
+  selectCutoffsForReportScope,
 } from '../utils/reportTransforms.js'
 
+function getScopeEmptyMessage(scope) {
+  if (scope === REPORT_SCOPES.currentCutoff) {
+    return 'No records found for the current cutoff.'
+  }
+
+  if (scope === REPORT_SCOPES.specificCutoff) {
+    return 'No records found for the selected cutoff.'
+  }
+
+  return 'No records available for reports yet.'
+}
+
 export const reportService = {
-  async loadReports() {
-    const [categories, cutoffs, expenses, income, savings] = await Promise.all([
+  async loadReports({ scope = REPORT_SCOPES.all, selectedCutoffId = null } = {}) {
+    const [
+      categories,
+      cutoffs,
+      expenses,
+      income,
+      savings,
+      currentCutoff,
+    ] = await Promise.all([
       categoryRepository.findAll(),
       salaryCutoffRepository.findAll(),
       expenseRepository.findAll(),
       incomeRepository.findAll(),
       savingsRepository.findAll(),
+      cutoffService.findCurrentCutoff(),
     ])
+    const scopedRecords = filterRecordsForReportScope({
+      currentCutoff,
+      expenses,
+      income,
+      savings,
+      scope,
+      selectedCutoffId,
+    })
+    const scopedCutoffs = selectCutoffsForReportScope({
+      currentCutoff,
+      cutoffs,
+      scope,
+      selectedCutoffId,
+    })
 
     return {
       datasets: {
-        cashflowTrend: buildCashflowTrend({ expenses, income, savings }),
-        categoryBreakdown: buildCategoryBreakdown(expenses, categories),
+        cashflowTrend: buildCashflowTrend(scopedRecords),
+        categoryBreakdown: buildCategoryBreakdown(scopedRecords.expenses, categories),
         cutoffComparison: buildCutoffComparison({
-          cutoffs,
-          expenses,
-          income,
-          savings,
+          cutoffs: scopedCutoffs,
+          expenses: scopedRecords.expenses,
+          income: scopedRecords.income,
+          savings: scopedRecords.savings,
         }),
-        expenseTrend: buildExpenseTrend(expenses),
+        expenseTrend: buildExpenseTrend(scopedRecords.expenses),
         incomeExpenseComparison: buildIncomeExpenseComparison({
-          expenses,
-          income,
+          expenses: scopedRecords.expenses,
+          income: scopedRecords.income,
         }),
-        savingsTrend: buildSavingsTrend(savings),
+        savingsTrend: buildSavingsTrend(scopedRecords.savings),
       },
-      kpis: buildReportKpis({ expenses, income, savings }),
+      kpis: buildReportKpis(scopedRecords),
+      meta: {
+        currentCutoff,
+        emptyMessage: getScopeEmptyMessage(scope),
+        scope,
+        selectedCutoffId,
+      },
       records: {
         categories,
         cutoffs,
         expenses,
         income,
         savings,
+        scoped: scopedRecords,
       },
     }
   },

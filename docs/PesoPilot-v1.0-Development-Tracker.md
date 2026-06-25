@@ -1940,19 +1940,23 @@ Improve usability and data presentation.
 
 ## Reports
 
-[ ] Remove "Local IndexedDB" wording
+[x] Remove "Local IndexedDB" wording
 
-[ ] Add cutoff selector
+[x] Add cutoff selector
 
-[ ] Allow report generation by cutoff
+[x] Allow report generation by cutoff
 
-[ ] Verify all graphs respond to selected cutoff
+[x] Verify all graphs respond to selected cutoff
 
 ---
 
 ## Graph Enhancements
 
-[ ] Improve single-point graph rendering
+[x] Improve single-point graph rendering
+
+Action note 2026-06-25:
+
+Refined Reports by removing misleading local-storage copy, adding session-persistent report scope filtering for All Data / Current Cutoff / Specific Cutoff, preserving useful cutoff comparison context with highlighted rows, and improving single-point savings/cashflow line chart rendering.
 
 Current issue:
 
