@@ -133,7 +133,7 @@ date
 
 Purpose:
 
-Tracks savings transactions.
+Tracks savings contribution transactions.
 
 Fields:
 
@@ -143,6 +143,7 @@ amount
 source
 date
 cutoffId
+goalId
 note
 createdAt
 updatedAt
@@ -153,7 +154,39 @@ Indexes:
 ```txt
 id
 cutoffId
+goalId
 date
+```
+
+---
+
+# Store: savings_goals
+
+Purpose:
+
+Tracks lifetime savings objectives. Progress is derived from linked savings contributions and is not stored directly.
+
+Fields:
+
+```txt
+id
+name
+targetAmount
+targetDate
+priority
+status
+note
+createdAt
+updatedAt
+```
+
+Indexes:
+
+```txt
+id
+status
+priority
+targetDate
 ```
 
 ---
@@ -417,7 +450,8 @@ db.version(1).stores({
   categories: "id, name, type",
   income: "++id, cutoffId, date",
   expenses: "++id, cutoffId, categoryId, merchant, date",
-  savings: "++id, cutoffId, date",
+  savings: "++id, cutoffId, goalId, date",
+  savings_goals: "++id, status, priority, targetDate",
   salary_cutoffs: "++id, type, startDate, endDate",
   budgets: "++id, cutoffId, categoryId",
   detected_expenses: "++id, status, merchant",
@@ -446,6 +480,11 @@ SalaryCutoff
 ```txt
 Category
 └── Expense
+```
+
+```txt
+SavingsGoal
+└── Savings
 ```
 
 ```txt

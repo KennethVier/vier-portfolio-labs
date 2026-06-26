@@ -21,6 +21,18 @@ const optionalCutoffId = z.preprocess((value) => {
   return value
 }, z.union([z.string().trim(), z.number()]).nullable())
 
+const optionalGoalId = z.preprocess((value) => {
+  if (value === '' || value === undefined) {
+    return null
+  }
+
+  if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) {
+    return Number(value)
+  }
+
+  return value
+}, z.union([z.string().trim(), z.number()]).nullable())
+
 export const savingsSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than zero'),
   source: z.enum(SAVINGS_SOURCES, {
@@ -28,6 +40,7 @@ export const savingsSchema = z.object({
   }),
   date: z.string().trim().min(1, 'Date is required'),
   cutoffId: optionalCutoffId,
+  goalId: optionalGoalId,
   note: optionalString,
 })
 
@@ -36,5 +49,6 @@ export const savingsFormDefaults = {
   source: '',
   date: today(),
   cutoffId: '',
+  goalId: '',
   note: '',
 }

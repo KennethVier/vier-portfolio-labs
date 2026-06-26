@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/Input.jsx'
 import { SAVINGS_SOURCES } from '../constants/savingsConstants.js'
 import { savingsFormDefaults, savingsSchema } from '../schemas/savingsSchema.js'
 
-function mapSavingsToFormValues(savings, currentCutoffId = null) {
+function mapSavingsToFormValues(savings, currentCutoffId = null, selectedGoalId = null) {
   if (!savings) {
     return {
       ...savingsFormDefaults,
       cutoffId: currentCutoffId ?? savingsFormDefaults.cutoffId,
+      goalId: selectedGoalId ?? savingsFormDefaults.goalId,
     }
   }
 
@@ -22,6 +23,7 @@ function mapSavingsToFormValues(savings, currentCutoffId = null) {
     source: savings.source ?? '',
     date: savings.date ?? savingsFormDefaults.date,
     cutoffId: savings.cutoffId ?? '',
+    goalId: savings.goalId ?? '',
     note: savings.note ?? '',
   }
 }
@@ -34,6 +36,8 @@ export function SavingsForm({
   onCancel,
   onSubmit,
   salaryCutoffs,
+  savingsGoals = [],
+  selectedGoalId = null,
 }) {
   const {
     formState: { errors },
@@ -46,12 +50,12 @@ export function SavingsForm({
   })
 
   useEffect(() => {
-    reset(mapSavingsToFormValues(editingSavings, currentCutoffId))
-  }, [currentCutoffId, editingSavings, reset])
+    reset(mapSavingsToFormValues(editingSavings, currentCutoffId, selectedGoalId))
+  }, [currentCutoffId, editingSavings, reset, selectedGoalId])
 
   async function submitSavings(values) {
     await onSubmit(values)
-    reset(mapSavingsToFormValues(null, currentCutoffId))
+    reset(mapSavingsToFormValues(null, currentCutoffId, selectedGoalId))
   }
 
   const content = (
@@ -103,6 +107,27 @@ export function SavingsForm({
             error={errors.date?.message}
             {...register('date')}
           />
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-content">
+              Savings goal
+            </span>
+            <select
+              className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm"
+              {...register('goalId')}
+            >
+              <option value="">General Savings</option>
+              {savingsGoals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name}
+                </option>
+              ))}
+            </select>
+            {errors.goalId ? (
+              <span className="mt-1 block text-xs text-error">
+                {errors.goalId.message}
+              </span>
+            ) : null}
+          </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-content">
               Salary cutoff

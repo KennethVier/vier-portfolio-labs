@@ -1,9 +1,11 @@
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
+import { savingsGoalRepository } from '@/lib/db/repositories/savingsGoalRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
 import { filterRecordsByCurrentCutoff } from '@/features/shared/utils/currentCutoffFilters.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
 import { EMPTY_SAVINGS_FILTERS } from '../constants/savingsConstants.js'
+import { savingsGoalSchema } from '../schemas/savingsGoalSchema.js'
 import { savingsSchema } from '../schemas/savingsSchema.js'
 
 export const DELETED_CUTOFF_LABEL = 'Deleted Cutoff'
@@ -21,6 +23,7 @@ function normalizeSavingsPayload(payload, existingSavings = null) {
     source: parsedSavings.source,
     date: parsedSavings.date,
     cutoffId: parsedSavings.cutoffId,
+    goalId: parsedSavings.goalId,
     note: parsedSavings.note,
     createdAt: existingSavings?.createdAt ?? timestamp,
     updatedAt: timestamp,
@@ -67,6 +70,10 @@ function applySavingsFilters(savingsRecords, filters = EMPTY_SAVINGS_FILTERS) {
 
   return savingsRecords.filter((savings) => {
     if (filters.cutoffId && String(savings.cutoffId) !== String(filters.cutoffId)) {
+      return false
+    }
+
+    if (filters.goalId && String(savings.goalId) !== String(filters.goalId)) {
       return false
     }
 
@@ -123,6 +130,27 @@ function decorateSavingsWithCutoffs(savingsRecords, cutoffs) {
   }))
 }
 
+function buildGoalLookup(goals) {
+  return new Map(goals.map((goal) => [String(goal.id), goal]))
+}
+
+function getGoalLabel(goalsById, goalId) {
+  if (!goalId) {
+    return 'General Savings'
+  }
+
+  return goalsById.get(String(goalId))?.name ?? 'Deleted Goal'
+}
+
+function decorateSavingsWithGoals(savingsRecords, goals) {
+  const goalsById = buildGoalLookup(goals)
+
+  return savingsRecords.map((savings) => ({
+    ...savings,
+    goalName: getGoalLabel(goalsById, savings.goalId),
+  }))
+}
+
 function buildSavingsKpis(savingsRecords, currentCutoff) {
   const typeTotals = new Map()
   const currentSavings = filterRecordsByCurrentCutoff(savingsRecords, currentCutoff)
@@ -161,15 +189,120 @@ function buildSavingsKpis(savingsRecords, currentCutoff) {
   }
 }
 
+function normalizeGoalPayload(payload, existingGoal = null) {
+  const parsedGoal = savingsGoalSchema.parse(payload)
+  const timestamp = nowIso()
+
+  return {
+    name: parsedGoal.name,
+    targetAmount: parsedGoal.targetAmount,
+    targetDate: parsedGoal.targetDate,
+    priority: parsedGoal.priority,
+    status: parsedGoal.status,
+    note: parsedGoal.note,
+    createdAt: existingGoal?.createdAt ?? timestamp,
+    updatedAt: timestamp,
+  }
+}
+
+function priorityRank(priority) {
+  return {
+    high: 1,
+    medium: 2,
+    low: 3,
+  }[priority] ?? 4
+}
+
+function getCompletionPercent(totalSaved, targetAmount) {
+  if (!targetAmount) {
+    return null
+  }
+
+  return Math.min(100, Math.round((totalSaved / targetAmount) * 100))
+}
+
+function buildGoalSummaries(goals, savingsRecords) {
+  const savingsByGoalId = savingsRecords.reduce((groups, savings) => {
+    if (!savings.goalId) {
+      return groups
+    }
+
+    const key = String(savings.goalId)
+    groups.set(key, [...(groups.get(key) ?? []), savings])
+    return groups
+  }, new Map())
+
+  return goals
+    .map((goal) => {
+      const contributions = savingsByGoalId.get(String(goal.id)) ?? []
+      const totalSaved = contributions.reduce(
+        (sum, savings) => sum + (Number(savings.amount) || 0),
+        0,
+      )
+      const latestContributionDate =
+        contributions
+          .map((savings) => savings.date)
+          .filter(Boolean)
+          .sort((firstDate, secondDate) => secondDate.localeCompare(firstDate))[0] ??
+        null
+      const targetAmount = Number(goal.targetAmount) || null
+      const progress = getCompletionPercent(totalSaved, targetAmount)
+
+      return {
+        ...goal,
+        contributionCount: contributions.length,
+        goalMet: Boolean(targetAmount && totalSaved >= targetAmount),
+        latestContributionDate,
+        progress,
+        remainingAmount: targetAmount ? Math.max(0, targetAmount - totalSaved) : null,
+        totalSaved,
+      }
+    })
+    .sort((firstGoal, secondGoal) => {
+      if (firstGoal.status !== secondGoal.status) {
+        return firstGoal.status === 'active' ? -1 : 1
+      }
+
+      const priorityCompare =
+        priorityRank(firstGoal.priority) - priorityRank(secondGoal.priority)
+
+      if (priorityCompare !== 0) {
+        return priorityCompare
+      }
+
+      const firstTarget = firstGoal.targetDate ?? '9999-12-31'
+      const secondTarget = secondGoal.targetDate ?? '9999-12-31'
+      const targetCompare = firstTarget.localeCompare(secondTarget)
+
+      if (targetCompare !== 0) {
+        return targetCompare
+      }
+
+      const firstProgress = firstGoal.progress ?? -1
+      const secondProgress = secondGoal.progress ?? -1
+
+      if (secondProgress !== firstProgress) {
+        return secondProgress - firstProgress
+      }
+
+      return String(secondGoal.updatedAt ?? '').localeCompare(
+        String(firstGoal.updatedAt ?? ''),
+      )
+    })
+}
+
 export const savingsService = {
   async loadSavings(filters = EMPTY_SAVINGS_FILTERS) {
-    const [savingsRecords, cutoffs] = await Promise.all([
+    const [savingsRecords, cutoffs, goals] = await Promise.all([
       savingsRepository.findAll(),
       salaryCutoffRepository.findAll(),
+      savingsGoalRepository.findAll(),
     ])
 
     const filteredSavings = applySavingsFilters(savingsRecords, filters)
-    return sortSavings(decorateSavingsWithCutoffs(filteredSavings, cutoffs))
+    return sortSavings(
+      decorateSavingsWithGoals(decorateSavingsWithCutoffs(filteredSavings, cutoffs), goals),
+    )
   },
 
   async loadSalaryCutoffs() {
@@ -183,6 +316,61 @@ export const savingsService = {
     ])
 
     return buildSavingsKpis(savingsRecords, currentCutoff)
+  },
+
+  async loadSavingsGoals() {
+    const [goals, savingsRecords] = await Promise.all([
+      savingsGoalRepository.findAll(),
+      savingsRepository.findAll(),
+    ])
+
+    return buildGoalSummaries(
+      goals.filter((goal) => goal.status !== 'archived'),
+      savingsRecords,
+    )
+  },
+
+  async createSavingsGoal(payload) {
+    const goal = normalizeGoalPayload(payload)
+    const id = await savingsGoalRepository.create(goal)
+    return savingsGoalRepository.findById(id)
+  },
+
+  async updateSavingsGoal(id, payload) {
+    const existingGoal = await savingsGoalRepository.findById(id)
+
+    if (!existingGoal) {
+      throw new Error('Savings goal not found')
+    }
+
+    const goal = normalizeGoalPayload(payload, existingGoal)
+    await savingsGoalRepository.update(id, goal)
+    return savingsGoalRepository.findById(id)
+  },
+
+  async archiveSavingsGoal(id) {
+    const existingGoal = await savingsGoalRepository.findById(id)
+
+    if (!existingGoal) {
+      throw new Error('Savings goal not found')
+    }
+
+    await savingsGoalRepository.update(id, {
+      status: 'archived',
+      updatedAt: nowIso(),
+    })
+
+    return savingsGoalRepository.findById(id)
+  },
+
+  async deleteSavingsGoal(id) {
+    const contributions = await savingsRepository.findByGoal(id)
+
+    if (contributions.length > 0) {
+      throw new Error('Savings goals with contributions cannot be deleted. Archive the goal instead.')
+    }
+
+    await savingsGoalRepository.remove(id)
   },
 
   async createSavings(payload) {
@@ -213,7 +401,9 @@ export const savingsService = {
 
 export const savingsServiceInternals = {
   applySavingsFilters,
+  buildGoalSummaries,
   buildSavingsKpis,
+  decorateSavingsWithGoals,
   decorateSavingsWithCutoffs,
   sortSavings,
 }

@@ -9,6 +9,7 @@ describe('savingsSchema', () => {
       source: 'Emergency Fund',
       date: '2026-06-15',
       cutoffId: '',
+      goalId: '2',
       note: '',
     })
 
@@ -17,6 +18,7 @@ describe('savingsSchema', () => {
       source: 'Emergency Fund',
       date: '2026-06-15',
       cutoffId: null,
+      goalId: 2,
       note: null,
     })
   })

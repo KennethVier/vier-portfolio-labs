@@ -11,9 +11,11 @@ export function useSavings() {
     savingsRecords: 0,
     totalSavings: 0,
   })
+  const [savingsGoals, setSavingsGoals] = useState([])
   const [salaryCutoffs, setSalaryCutoffs] = useState([])
   const [filters, setFilters] = useState(EMPTY_SAVINGS_FILTERS)
   const [editingSavings, setEditingSavings] = useState(null)
+  const [editingGoal, setEditingGoal] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -23,14 +25,21 @@ export function useSavings() {
     setError(null)
 
     try {
-      const [nextSavings, nextSalaryCutoffs, nextSavingsKpis] = await Promise.all([
+      const [
+        nextSavings,
+        nextSalaryCutoffs,
+        nextSavingsKpis,
+        nextSavingsGoals,
+      ] = await Promise.all([
         savingsService.loadSavings(nextFilters),
         savingsService.loadSalaryCutoffs(),
         savingsService.loadSavingsKpis(),
+        savingsService.loadSavingsGoals(),
       ])
 
       setSavings(nextSavings)
       setSavingsKpis(nextSavingsKpis)
+      setSavingsGoals(nextSavingsGoals)
       setSalaryCutoffs(nextSalaryCutoffs)
     } catch (loadError) {
       setError(loadError.message || 'Unable to load savings')
@@ -64,6 +73,49 @@ export function useSavings() {
     }
   }
 
+  async function saveSavingsGoal(goal) {
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (editingGoal) {
+        await savingsService.updateSavingsGoal(editingGoal.id, goal)
+      } else {
+        await savingsService.createSavingsGoal(goal)
+      }
+
+      setEditingGoal(null)
+      await loadSavings(filters)
+    } catch (saveError) {
+      setError(saveError.message || 'Unable to save savings goal')
+      throw saveError
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function archiveSavingsGoal(id) {
+    setError(null)
+
+    try {
+      await savingsService.archiveSavingsGoal(id)
+      await loadSavings(filters)
+    } catch (archiveError) {
+      setError(archiveError.message || 'Unable to archive savings goal')
+    }
+  }
+
+  async function deleteSavingsGoal(id) {
+    setError(null)
+
+    try {
+      await savingsService.deleteSavingsGoal(id)
+      await loadSavings(filters)
+    } catch (deleteError) {
+      setError(deleteError.message || 'Unable to delete savings goal')
+    }
+  }
+
   async function deleteSavings(id) {
     setError(null)
 
@@ -86,9 +138,17 @@ export function useSavings() {
     setEditingSavings(null)
   }
 
+  function clearEditingGoal() {
+    setEditingGoal(null)
+  }
+
   return {
+    archiveSavingsGoal,
     clearEditingSavings,
+    clearEditingGoal,
     deleteSavings,
+    deleteSavingsGoal,
+    editingGoal,
     editingSavings,
     error,
     filters,
@@ -96,8 +156,11 @@ export function useSavings() {
     isSaving,
     salaryCutoffs,
     saveSavings,
+    saveSavingsGoal,
     savings,
+    savingsGoals,
     savingsKpis,
+    setEditingGoal,
     setEditingSavings,
     updateFilters,
   }

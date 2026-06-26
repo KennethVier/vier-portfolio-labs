@@ -6,7 +6,7 @@ import { migrations } from './migrations.js'
 import {
   APPROVED_STORE_NAMES,
   DEFAULT_SETTINGS_ID,
-  pesopilotSchemaV1,
+  pesopilotSchemaV2,
 } from './schema.js'
 import {
   defaultCategories,
@@ -44,7 +44,7 @@ describe('PesoPilot Dexie foundation', () => {
     expect(storeNames).toEqual([...APPROVED_STORE_NAMES].sort())
   })
 
-  it('keeps the schema indexes aligned with version 1 authority', async () => {
+  it('keeps the schema indexes aligned with the current authority', async () => {
     await db.open()
 
     const schemaByStore = Object.fromEntries(
@@ -57,11 +57,11 @@ describe('PesoPilot Dexie foundation', () => {
       ]),
     )
 
-    expect(Object.keys(pesopilotSchemaV1).sort()).toEqual(
+    expect(Object.keys(pesopilotSchemaV2).sort()).toEqual(
       [...APPROVED_STORE_NAMES].sort(),
     )
 
-    Object.entries(pesopilotSchemaV1).forEach(([storeName, schemaDefinition]) => {
+    Object.entries(pesopilotSchemaV2).forEach(([storeName, schemaDefinition]) => {
       expect(schemaByStore[storeName]).toEqual(
         parseSchemaDefinition(schemaDefinition),
       )

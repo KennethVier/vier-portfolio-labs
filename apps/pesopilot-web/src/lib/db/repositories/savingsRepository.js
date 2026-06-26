@@ -9,6 +9,9 @@ export const savingsRepository = {
   findByCutoff(cutoffId) {
     return db.savings.where('cutoffId').equals(cutoffId).toArray()
   },
+  findByGoal(goalId) {
+    return db.savings.where('goalId').equals(goalId).toArray()
+  },
   findByDateRange(startDate, endDate) {
     return db.savings.where('date').between(startDate, endDate, true, true).toArray()
   },

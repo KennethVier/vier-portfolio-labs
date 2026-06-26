@@ -1986,13 +1986,23 @@ Priority: Medium
 
 ## Savings
 
-[ ] Fix New Savings Goal button
+[x] Fix New Savings Goal button
 
-[ ] Remove placeholder savings content
+[x] Remove placeholder savings content
 
-[ ] Review KPI card icons
+[x] Review KPI card icons
 
-[ ] Verify savings calculations
+[x] Verify savings calculations
+
+[x] Add Savings Goals store and contribution linking
+
+[x] Add create, edit, archive, and protected delete behavior for goals
+
+[x] Add View Contributions filtering for goal contribution history
+
+Action note 2026-06-25:
+
+Redesigned the Savings module into a true Savings Goal and Contribution architecture. Goals now represent long-term financial objectives while contributions remain cutoff-based financial transactions. Lifetime goal progress is derived from linked savings contributions, while Savings KPIs continue to summarize the current cutoff only.
 
 ---
 

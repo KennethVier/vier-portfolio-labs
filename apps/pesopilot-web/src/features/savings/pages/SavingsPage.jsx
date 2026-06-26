@@ -15,6 +15,7 @@ import { Popover } from '@/components/ui/Popover.jsx'
 
 import { SavingsFilters } from '../components/SavingsFilters.jsx'
 import { SavingsForm } from '../components/SavingsForm.jsx'
+import { SavingsGoalForm } from '../components/SavingsGoalForm.jsx'
 import { SavingsList } from '../components/SavingsList.jsx'
 import { useSavings } from '../hooks/useSavings.js'
 
@@ -41,18 +42,48 @@ function ProgressBar({ tone = 'primary', value }) {
   )
 }
 
+const priorityLabel = {
+  high: 'High',
+  low: 'Low',
+  medium: 'Medium',
+}
+
+const statusTone = {
+  active: 'bg-secondary-container text-on-secondary-container',
+  archived: 'bg-surface-container-high text-on-surface-variant',
+  completed: 'bg-primary-container text-primary',
+  paused: 'bg-tertiary-container text-tertiary',
+}
+
+function getGoalIcon(goal) {
+  if (goal.priority === 'high') {
+    return 'flag'
+  }
+
+  if (goal.targetDate) {
+    return 'event_available'
+  }
+
+  return 'savings'
+}
+
 function SavingsGoalCard({
-  amount,
-  description,
-  icon,
+  goal,
   isPrimary = false,
-  progress,
-  status,
-  statusTone = 'bg-surface-container-high text-on-surface-variant',
-  title,
-  tone = 'primary',
-  target,
+  onAddContribution,
+  onArchive,
+  onDelete,
+  onEdit,
+  onViewContributions,
 }) {
+  const hasTarget = Boolean(goal.targetAmount)
+  const amount = currencyFormatter.format(goal.totalSaved)
+  const target = hasTarget ? currencyFormatter.format(goal.targetAmount) : null
+  const progress = goal.progress ?? 0
+  const remaining = goal.remainingAmount == null
+    ? null
+    : currencyFormatter.format(goal.remainingAmount)
+
   if (isPrimary) {
     return (
       <section className="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:col-span-8">
@@ -60,64 +91,91 @@ function SavingsGoalCard({
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-fixed-dim text-primary">
-                <span className="material-symbols-outlined text-2xl">{icon}</span>
+                <span className="material-symbols-outlined text-2xl">{getGoalIcon(goal)}</span>
               </div>
               <div>
                 <h4 className="font-headline-sm text-headline-sm text-on-surface">
-                  {title}
+                  {goal.name}
                 </h4>
                 <p className="text-body-sm text-on-surface-variant">
-                  {description}
+                  {goal.note || `${priorityLabel[goal.priority]} priority savings goal`}
                 </p>
               </div>
             </div>
-            <span className={['rounded px-2 py-1 text-[10px] font-bold uppercase', statusTone].join(' ')}>
-              {status}
+            <span className={['rounded px-2 py-1 text-[10px] font-bold uppercase', statusTone[goal.status]].join(' ')}>
+              {goal.goalMet ? 'Goal Met' : goal.status}
             </span>
           </div>
 
           <div>
-            <div className="mb-2 flex justify-between text-body-sm">
-              <span className="font-data-mono">{amount} / {target}</span>
-              <span className="font-bold text-primary">{progress}%</span>
-            </div>
-            <ProgressBar value={progress} tone={tone} />
+            {hasTarget ? (
+              <>
+                <div className="mb-2 flex justify-between text-body-sm">
+                  <span className="font-data-mono">{amount} / {target}</span>
+                  <span className="font-bold text-primary">{progress}%</span>
+                </div>
+                <ProgressBar value={progress} />
+              </>
+            ) : (
+              <div>
+                <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+                  Lifetime Saved
+                </p>
+                <p className="font-data-mono text-headline-sm text-on-surface">
+                  {amount}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 border-t border-outline-variant py-4 sm:grid-cols-3">
             <div>
               <p className="mb-1 text-label-caps uppercase text-on-surface-variant">
-                Monthly Yield
+                Contributions
               </p>
-              <p className="font-data-mono text-on-surface">PHP 245.12</p>
+              <p className="font-data-mono text-on-surface">{goal.contributionCount}</p>
             </div>
             <div>
               <p className="mb-1 text-label-caps uppercase text-on-surface-variant">
-                APY
+                Remaining
               </p>
-              <p className="font-data-mono text-on-surface">4.50%</p>
+              <p className="font-data-mono text-on-surface">{remaining ?? '-'}</p>
             </div>
             <div>
               <p className="mb-1 text-label-caps uppercase text-on-surface-variant">
-                Projected Completion
+                Latest
               </p>
-              <p className="font-data-mono text-on-surface">Oct 2025</p>
+              <p className="font-data-mono text-on-surface">
+                {goal.latestContributionDate ?? '-'}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col justify-between gap-3 border-t border-outline-variant bg-surface-container-low px-6 py-4 sm:flex-row sm:items-center">
           <span className="flex items-center gap-1 text-body-sm text-on-surface-variant">
-            <span className="material-symbols-outlined text-sm">update</span>
-            Auto-transfer: PHP 1,200/mo
+            <span className="material-symbols-outlined text-sm">event</span>
+            Target date: {goal.targetDate ?? 'No target date'}
           </span>
-          <button
-            type="button"
-            className="flex items-center gap-1 font-semibold text-primary hover:underline"
-          >
-            Manage Fund
-            <span className="material-symbols-outlined text-sm">chevron_right</span>
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => onAddContribution(goal)}>
+              Add Contribution
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => onViewContributions(goal)}>
+              View Contributions
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => onEdit(goal)}>
+              Edit
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
+              Archive
+            </Button>
+            {goal.contributionCount === 0 ? (
+              <Button type="button" variant="ghost" onClick={() => onDelete(goal.id)}>
+                Delete
+              </Button>
+            ) : null}
+          </div>
         </div>
       </section>
     )
@@ -127,90 +185,107 @@ function SavingsGoalCard({
     <section className="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm lg:col-span-4">
       <div className="mb-6 flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container text-primary">
-          <span className="material-symbols-outlined">{icon}</span>
+          <span className="material-symbols-outlined">{getGoalIcon(goal)}</span>
         </div>
-        <span className={['rounded px-2 py-1 text-[10px] font-bold uppercase', statusTone].join(' ')}>
-          {status}
+        <span className={['rounded px-2 py-1 text-[10px] font-bold uppercase', statusTone[goal.status]].join(' ')}>
+          {goal.goalMet ? 'Goal Met' : goal.status}
         </span>
       </div>
       <h4 className="font-headline-sm text-headline-sm text-on-surface">
-        {title}
+        {goal.name}
       </h4>
       <p className="mb-4 text-body-sm text-on-surface-variant">
-        {description}
+        {goal.note || `${priorityLabel[goal.priority]} priority savings goal`}
       </p>
       <div className="mb-4">
-        <div className="mb-2 flex justify-between text-body-sm">
-          <span className="font-data-mono">{amount} / {target}</span>
-          <span className="font-bold text-on-surface">{progress}%</span>
-        </div>
-        <ProgressBar value={progress} tone={tone} />
+        {hasTarget ? (
+          <>
+            <div className="mb-2 flex justify-between text-body-sm">
+              <span className="font-data-mono">{amount} / {target}</span>
+              <span className="font-bold text-on-surface">{progress}%</span>
+            </div>
+            <ProgressBar value={progress} />
+          </>
+        ) : (
+          <p className="font-data-mono text-headline-sm text-on-surface">
+            {amount}
+          </p>
+        )}
       </div>
-      <button
-        type="button"
-        className="mt-auto w-full rounded-lg border border-outline-variant py-2 font-semibold text-on-surface transition-colors hover:bg-surface-container"
-      >
-        Manage
-      </button>
+      <div className="mt-auto grid gap-2">
+        <Button type="button" onClick={() => onAddContribution(goal)}>
+          Add Contribution
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => onViewContributions(goal)}>
+          View Contributions
+        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="ghost" onClick={() => onEdit(goal)}>
+            Edit
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
+            Archive
+          </Button>
+        </div>
+      </div>
     </section>
   )
 }
 
-function SavingsGoalsSection() {
+function SavingsGoalsSection({
+  goals,
+  onAddContribution,
+  onArchive,
+  onCreateGoal,
+  onDelete,
+  onEdit,
+  onViewContributions,
+}) {
   return (
     <section>
-      <h3 className="mb-4 font-headline-sm text-headline-sm text-on-surface">
-        Active Savings Goals
-      </h3>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <SavingsGoalCard
-          isPrimary
-          amount="PHP 65,000"
-          description="Primary safety net (12 months expenses)"
-          icon="medical_services"
-          progress={65}
-          status="Stable"
-          statusTone="bg-secondary-container text-on-secondary-container"
-          target="PHP 100,000"
-          title="Emergency Fund"
-        />
-        <SavingsGoalCard
-          amount="PHP 8,400"
-          description="Tokyo, Kyoto & Osaka 2024"
-          icon="flight_takeoff"
-          progress={70}
-          status="Planning"
-          target="PHP 12,000"
-          title="Japan Trip"
-          tone="secondary"
-        />
-        <SavingsGoalCard
-          amount="PHP 42,000"
-          description="New primary residence"
-          icon="house"
-          progress={28}
-          status="Lagging"
-          statusTone="bg-error-container text-error"
-          target="PHP 150,000"
-          title="Down Payment"
-          tone="critical"
-        />
-        <SavingsGoalCard
-          amount="PHP 25,000"
-          description="Vehicle replacement fund"
-          icon="directions_car"
-          progress={41}
-          status="Stable"
-          statusTone="bg-secondary-container text-on-secondary-container"
-          target="PHP 60,000"
-          title="Next Vehicle"
-        />
-        <section className="flex min-h-48 cursor-default flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant p-6 text-on-surface-variant transition-all hover:border-primary hover:text-primary lg:col-span-4">
-          <span className="material-symbols-outlined mb-2 text-3xl">add_circle</span>
-          <span className="font-semibold">New Savings Goal</span>
-        </section>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-headline-sm text-headline-sm text-on-surface">
+            Active Savings Goals
+          </h3>
+          <p className="text-body-sm text-on-surface-variant">
+            Lifetime goals powered by real savings contributions.
+          </p>
+        </div>
+        <Button type="button" onClick={onCreateGoal}>
+          <span className="material-symbols-outlined text-lg">add</span>
+          Create Savings Goal
+        </Button>
       </div>
+
+      {goals.length === 0 ? (
+        <section className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-6">
+          <h4 className="font-heading text-base font-semibold text-on-surface">
+            No savings goals yet.
+          </h4>
+          <p className="mt-1 text-body-sm text-on-surface-variant">
+            Create your first savings goal and start contributing toward it.
+          </p>
+          <Button type="button" className="mt-4" onClick={onCreateGoal}>
+            Create Savings Goal
+          </Button>
+        </section>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {goals.map((goal, index) => (
+            <SavingsGoalCard
+              key={goal.id}
+              goal={goal}
+              isPrimary={index === 0}
+              onAddContribution={onAddContribution}
+              onArchive={onArchive}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              onViewContributions={onViewContributions}
+            />
+          ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -218,9 +293,15 @@ function SavingsGoalsSection() {
 export function SavingsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isGoalFormOpen, setIsGoalFormOpen] = useState(false)
+  const [selectedGoalId, setSelectedGoalId] = useState(null)
   const {
+    archiveSavingsGoal,
     clearEditingSavings,
+    clearEditingGoal,
     deleteSavings,
+    deleteSavingsGoal,
+    editingGoal,
     editingSavings,
     error,
     filters,
@@ -228,8 +309,11 @@ export function SavingsPage() {
     isSaving,
     salaryCutoffs,
     saveSavings,
+    saveSavingsGoal,
     savings,
+    savingsGoals,
     savingsKpis,
+    setEditingGoal,
     setEditingSavings,
     updateFilters,
   } = useSavings()
@@ -253,12 +337,44 @@ export function SavingsPage() {
 
   function closeForm() {
     clearEditingSavings()
+    setSelectedGoalId(null)
     setIsFormOpen(false)
+  }
+
+  function closeGoalForm() {
+    clearEditingGoal()
+    setIsGoalFormOpen(false)
   }
 
   async function submitSavings(values) {
     await saveSavings(values)
     setIsFormOpen(false)
+    setSelectedGoalId(null)
+  }
+
+  async function submitGoal(values) {
+    await saveSavingsGoal(values)
+    setIsGoalFormOpen(false)
+  }
+
+  function openContributionForm(goal) {
+    clearEditingSavings()
+    setSelectedGoalId(goal.id)
+    setIsFormOpen(true)
+  }
+
+  function viewContributions(goal) {
+    updateFilters({
+      ...filters,
+      goalId: goal.id,
+    })
+  }
+
+  function clearGoalFilter() {
+    updateFilters({
+      ...filters,
+      goalId: '',
+    })
   }
 
   return (
@@ -287,13 +403,13 @@ export function SavingsPage() {
           }}
         />
         <StatCard
-          label="Cutoff Savings"
+          label="Current Cutoff Savings"
           value={currencyFormatter.format(savingsKpis.totalSavings)}
           helperText={kpiHelperText}
           tone="success"
         />
         <StatCard
-          label="Largest Fund"
+          label="Largest Type"
           value={savingsKpis.largestSavingsType}
           helperText={kpiHelperText}
           tone="warning"
@@ -308,43 +424,71 @@ export function SavingsPage() {
 
       {error ? <ErrorState title="Unable to process savings" message={error} /> : null}
 
-      <SavingsGoalsSection />
+      <SavingsGoalsSection
+        goals={savingsGoals}
+        onAddContribution={openContributionForm}
+        onArchive={archiveSavingsGoal}
+        onCreateGoal={() => setIsGoalFormOpen(true)}
+        onDelete={deleteSavingsGoal}
+        onEdit={(goal) => {
+          setEditingGoal(goal)
+          setIsGoalFormOpen(true)
+        }}
+        onViewContributions={viewContributions}
+      />
 
       <SectionCard
-        title="Recent Savings Transfers"
+        title="Savings Contributions"
+        description={
+          filters.goalId
+            ? 'Filtered to the selected savings goal.'
+            : 'Historical savings contributions remain searchable and filterable.'
+        }
         className="overflow-visible"
         actions={
-          <Popover
-            isOpen={isFilterOpen}
-            anchor={
-              <button
-                type="button"
-                className="rounded p-1 text-outline transition-colors hover:bg-surface-container hover:text-primary"
-                onClick={() => setIsFilterOpen((value) => !value)}
-                aria-label="Open savings filters"
-                title="Filters"
-              >
-                <span className="material-symbols-outlined text-lg">filter_list</span>
-              </button>
-            }
-          >
-            <div className="p-3">
-              <SavingsFilters
-                compact
-                filters={filters}
-                framed={false}
-                showSearch={false}
-                salaryCutoffs={salaryCutoffs}
-                onChange={updateFilters}
-              />
-            </div>
-          </Popover>
+          <div className="flex items-center gap-2">
+            {filters.goalId ? (
+              <Button type="button" variant="ghost" onClick={clearGoalFilter}>
+                Clear Goal
+              </Button>
+            ) : null}
+            <Popover
+              isOpen={isFilterOpen}
+              anchor={
+                <button
+                  type="button"
+                  className="rounded p-1 text-outline transition-colors hover:bg-surface-container hover:text-primary"
+                  onClick={() => setIsFilterOpen((value) => !value)}
+                  aria-label="Open savings filters"
+                  title="Filters"
+                >
+                  <span className="material-symbols-outlined text-lg">filter_list</span>
+                </button>
+              }
+            >
+              <div className="p-3">
+                <SavingsFilters
+                  compact
+                  filters={filters}
+                  framed={false}
+                  showSearch={false}
+                  salaryCutoffs={salaryCutoffs}
+                  onChange={updateFilters}
+                />
+              </div>
+            </Popover>
+          </div>
         }
       >
         {isLoading ? (
           <LoadingState label="Loading savings" />
         ) : (
           <SavingsList
+            emptyAction={
+              <Button type="button" onClick={() => setIsFormOpen(true)}>
+                Add Savings
+              </Button>
+            }
             savings={savings}
             onDelete={deleteSavings}
             onEdit={(savingsRecord) => {
@@ -372,8 +516,25 @@ export function SavingsPage() {
           framed={false}
           isSaving={isSaving}
           salaryCutoffs={salaryCutoffs}
+          savingsGoals={savingsGoals}
+          selectedGoalId={selectedGoalId}
           onCancel={closeForm}
           onSubmit={submitSavings}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isGoalFormOpen || Boolean(editingGoal)}
+        title={editingGoal ? 'Edit Savings Goal' : 'Create Savings Goal'}
+        description="Define a lifetime savings objective and track contributions."
+        size="lg"
+        onClose={closeGoalForm}
+      >
+        <SavingsGoalForm
+          editingGoal={editingGoal}
+          isSaving={isSaving}
+          onCancel={closeGoalForm}
+          onSubmit={submitGoal}
         />
       </Modal>
     </div>

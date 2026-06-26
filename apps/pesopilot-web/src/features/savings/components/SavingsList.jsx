@@ -9,12 +9,13 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
 })
 
-export function SavingsList({ onDelete, onEdit, savings }) {
+export function SavingsList({ emptyAction, onDelete, onEdit, savings }) {
   if (savings.length === 0) {
     return (
       <EmptyState
-        title="No savings yet"
-        message="Add a savings record to start tracking money set aside."
+        title="No savings contributions yet"
+        message="Add a savings contribution to start tracking money set aside."
+        action={emptyAction}
       />
     )
   }
@@ -38,6 +39,9 @@ export function SavingsList({ onDelete, onEdit, savings }) {
                 Type
               </th>
               <th className="border-b border-outline-variant px-3 py-2 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
+                Goal
+              </th>
+              <th className="border-b border-outline-variant px-3 py-2 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
                 Cutoff
               </th>
               <th className="border-b border-outline-variant px-3 py-2 text-right text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
@@ -59,6 +63,9 @@ export function SavingsList({ onDelete, onEdit, savings }) {
                 </td>
                 <td className="border-b border-outline-variant px-3 py-2">
                   {savingsRecord.source}
+                </td>
+                <td className="border-b border-outline-variant px-3 py-2">
+                  <Badge>{savingsRecord.goalName}</Badge>
                 </td>
                 <td className="border-b border-outline-variant px-3 py-2">
                   <Badge>{savingsRecord.cutoffName}</Badge>

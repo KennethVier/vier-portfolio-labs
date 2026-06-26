@@ -16,6 +16,7 @@ export function SavingsCard({
             <h3 className="font-heading text-base font-semibold text-content">
               {savings.source}
             </h3>
+            <Badge>{savings.goalName}</Badge>
             <Badge>{savings.cutoffName}</Badge>
           </div>
           <p className="mt-1 font-mono text-xs text-content-muted">{savings.date}</p>

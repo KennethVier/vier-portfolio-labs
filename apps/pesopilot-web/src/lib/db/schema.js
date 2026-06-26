@@ -1,5 +1,5 @@
 export const PESOPILOT_DB_NAME = 'pesopilot'
-export const PESOPILOT_DB_VERSION = 1
+export const PESOPILOT_DB_VERSION = 2
 export const DEFAULT_SETTINGS_ID = 'user-settings'
 
 export const STORE_NAMES = {
@@ -7,6 +7,7 @@ export const STORE_NAMES = {
   income: 'income',
   expenses: 'expenses',
   savings: 'savings',
+  savingsGoals: 'savings_goals',
   salaryCutoffs: 'salary_cutoffs',
   budgets: 'budgets',
   detectedExpenses: 'detected_expenses',
@@ -32,4 +33,10 @@ export const pesopilotSchemaV1 = {
   [STORE_NAMES.cashflowSnapshots]: '++id, cutoffId',
   [STORE_NAMES.budgetShockAlerts]: '++id, cutoffId, level',
   [STORE_NAMES.settings]: 'id',
+}
+
+export const pesopilotSchemaV2 = {
+  ...pesopilotSchemaV1,
+  [STORE_NAMES.savings]: '++id, cutoffId, goalId, date',
+  [STORE_NAMES.savingsGoals]: '++id, status, priority, targetDate',
 }

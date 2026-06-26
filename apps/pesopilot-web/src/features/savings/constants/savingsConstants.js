@@ -12,6 +12,7 @@ export const SAVINGS_SOURCES = [
 export const EMPTY_SAVINGS_FILTERS = {
   search: '',
   cutoffId: '',
+  goalId: '',
   source: '',
   startDate: '',
   endDate: '',

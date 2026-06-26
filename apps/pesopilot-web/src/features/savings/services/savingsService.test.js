@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clearDatabase } from '@/lib/db/devTools.js'
 import { db } from '@/lib/db/dexie.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
+import { savingsGoalRepository } from '@/lib/db/repositories/savingsGoalRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
 import { seedDatabase } from '@/lib/db/seed.js'
 
@@ -41,6 +42,147 @@ afterEach(async () => {
 })
 
 describe('savingsService', () => {
+  it('creates, edits, archives, and deletes empty savings goals', async () => {
+    const createdGoal = await savingsService.createSavingsGoal({
+      name: 'Emergency Fund',
+      targetAmount: 100000,
+      targetDate: '2026-12-31',
+      priority: 'high',
+      status: 'active',
+      note: 'Safety net',
+    })
+
+    expect(createdGoal).toMatchObject({
+      name: 'Emergency Fund',
+      priority: 'high',
+      status: 'active',
+      targetAmount: 100000,
+    })
+
+    const updatedGoal = await savingsService.updateSavingsGoal(createdGoal.id, {
+      name: 'Emergency Buffer',
+      targetAmount: 120000,
+      targetDate: '',
+      priority: 'medium',
+      status: 'paused',
+      note: '',
+    })
+
+    expect(updatedGoal).toMatchObject({
+      createdAt: createdGoal.createdAt,
+      name: 'Emergency Buffer',
+      priority: 'medium',
+      status: 'paused',
+      targetAmount: 120000,
+      targetDate: null,
+    })
+
+    const archivedGoal = await savingsService.archiveSavingsGoal(createdGoal.id)
+    expect(archivedGoal.status).toBe('archived')
+
+    await savingsService.deleteSavingsGoal(createdGoal.id)
+    await expect(savingsGoalRepository.findById(createdGoal.id)).resolves.toBeUndefined()
+  })
+
+  it('blocks deleting savings goals with contributions', async () => {
+    const goal = await savingsService.createSavingsGoal({
+      name: 'Travel Fund',
+      targetAmount: 50000,
+      targetDate: '2026-10-01',
+      priority: 'low',
+      status: 'active',
+      note: '',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      goalId: goal.id,
+      source: 'Travel Fund',
+    })
+
+    await expect(savingsService.deleteSavingsGoal(goal.id)).rejects.toThrow(
+      'Archive the goal instead',
+    )
+    await expect(savingsGoalRepository.findById(goal.id)).resolves.toMatchObject({
+      id: goal.id,
+      status: 'active',
+    })
+  })
+
+  it('derives savings goal totals and goal met status from linked contributions', async () => {
+    const goal = await savingsService.createSavingsGoal({
+      name: 'House Fund',
+      targetAmount: 10000,
+      targetDate: '2026-09-01',
+      priority: 'high',
+      status: 'active',
+      note: '',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 4000,
+      date: '2026-06-10',
+      goalId: goal.id,
+      source: 'House Fund',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 6500,
+      date: '2026-06-20',
+      goalId: goal.id,
+      source: 'House Fund',
+    })
+
+    await expect(savingsService.loadSavingsGoals()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          contributionCount: 2,
+          goalMet: true,
+          latestContributionDate: '2026-06-20',
+          progress: 100,
+          remainingAmount: 0,
+          totalSaved: 10500,
+        }),
+      ]),
+    )
+  })
+
+  it('filters contributions by goal and labels legacy savings as General Savings', async () => {
+    const goal = await savingsService.createSavingsGoal({
+      name: 'Education',
+      targetAmount: '',
+      targetDate: '',
+      priority: 'medium',
+      status: 'active',
+      note: '',
+    })
+    const goalSavings = await savingsService.createSavings({
+      ...validSavings,
+      goalId: goal.id,
+      source: 'Education',
+    })
+    await savingsService.createSavings({
+      ...validSavings,
+      amount: 1000,
+      goalId: '',
+      source: 'General Savings',
+    })
+
+    await expect(savingsService.loadSavings({ goalId: goal.id })).resolves.toEqual([
+      expect.objectContaining({
+        id: goalSavings.id,
+        goalId: goal.id,
+        goalName: 'Education',
+      }),
+    ])
+
+    await expect(savingsService.loadSavings({ source: 'General Savings' })).resolves.toEqual([
+      expect.objectContaining({
+        goalId: null,
+        goalName: 'General Savings',
+      }),
+    ])
+  })
+
   it('loads salary cutoffs for association', async () => {
     const cutoffId = await createCutoff()
 
