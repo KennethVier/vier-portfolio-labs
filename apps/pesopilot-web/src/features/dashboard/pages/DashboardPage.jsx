@@ -7,6 +7,7 @@ import {
   StatCard,
   StatusBadge,
 } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
@@ -409,6 +410,27 @@ export function DashboardPage() {
         <LoadingState label="Loading dashboard" />
       ) : (
         <>
+          <DismissiblePageHelper
+            pageKey="dashboard"
+            title={data.currentCutoff ? 'Current cutoff dashboard' : 'Create your first salary cutoff'}
+            message={
+              data.currentCutoff
+                ? 'Dashboard summarizes your current salary cutoff. Historical analysis is available in Reports.'
+                : 'PesoPilot needs a salary cutoff before current-cycle dashboard widgets can show meaningful totals.'
+            }
+            action={
+              data.currentCutoff ? (
+                <Link to="/reports" className="text-body-sm font-semibold text-primary hover:underline">
+                  Open Reports
+                </Link>
+              ) : (
+                <Link to="/salary-cutoff" className="text-body-sm font-semibold text-primary hover:underline">
+                  Create Cutoff
+                </Link>
+              )
+            }
+          />
+
           <KpiGrid columns={4}>
             <StatCard
               label="Health Score"

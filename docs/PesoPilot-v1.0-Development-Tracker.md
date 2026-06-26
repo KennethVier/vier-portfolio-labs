@@ -2014,7 +2014,7 @@ Improve discoverability.
 
 ## Tooltips
 
-[ ] Add helper tooltips for action buttons
+[x] Add helper tooltips for action buttons
 
 Examples:
 
@@ -2029,7 +2029,7 @@ Reject
 
 ## Page Guidance
 
-[ ] Add contextual page helper text
+[x] Add contextual page helper text
 
 Dashboard:
 
@@ -2073,19 +2073,19 @@ Priority: Low
 
 ## Header
 
-[ ] Implement notification center
+[x] Implement notification center
 
-[ ] Implement notification badge
+[x] Implement notification badge
 
-[ ] Connect cutoff reminders
+[x] Connect cutoff reminders
 
 ---
 
 ## Help System
 
-[ ] Review Help icon behavior
+[x] Review Help icon behavior
 
-[ ] Create Help Center page
+[x] Create Help Center page
 
 Possible sections:
 
@@ -2102,6 +2102,10 @@ Reports
 
 FAQ
 ```
+
+Action note 2026-06-26:
+
+Completed Phase 10.5F guidance polish by adding a state-driven header notification center with priority-sorted cutoff and savings-goal reminders, a workflow-first Help Center, one-time welcome onboarding, dismissible contextual page helpers, reusable tooltips, and actionable empty-state support without adding browser notifications, scheduling, AI, schema changes, or financial logic changes.
 
 ---
 

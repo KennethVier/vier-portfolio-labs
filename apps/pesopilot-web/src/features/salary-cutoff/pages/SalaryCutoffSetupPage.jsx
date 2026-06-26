@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { SectionCard } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
@@ -358,6 +359,16 @@ export function SalaryCutoffSetupPage() {
       <CutoffKpiGrid
         activeCutoff={activeCutoff}
         daysRemaining={cutoffKpis.daysRemaining}
+      />
+
+      <DismissiblePageHelper
+        pageKey="salary-cutoff"
+        title={activeCutoff ? 'Salary-funded cycle tracking' : 'Create the current salary cycle'}
+        message={
+          activeCutoff
+            ? 'Current-cycle KPIs use the active cutoff. Planned cutoffs can prepare the next salary-funded period.'
+            : 'Start with a salary cutoff so income, expenses, savings, dashboard, and cashflow share the same period.'
+        }
       />
 
       {error && !isFormOpen ? (

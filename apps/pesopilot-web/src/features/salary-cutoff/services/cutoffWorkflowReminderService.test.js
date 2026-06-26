@@ -7,7 +7,10 @@ import { seedDatabase } from '@/lib/db/seed.js'
 import { incomeService } from '@/features/income/services/incomeService.js'
 import { savingsService } from '@/features/savings/services/savingsService.js'
 
-import { cutoffWorkflowReminderService } from './cutoffWorkflowReminderService.js'
+import {
+  cutoffWorkflowReminderService,
+  cutoffWorkflowReminderServiceInternals,
+} from './cutoffWorkflowReminderService.js'
 
 class MemoryStorage {
   constructor() {
@@ -48,12 +51,32 @@ afterEach(async () => {
 })
 
 describe('cutoffWorkflowReminderService', () => {
-  it('returns no reminders when there is no current cutoff', async () => {
+  it('sorts reminders by workflow priority', () => {
+    expect(
+      cutoffWorkflowReminderServiceInternals
+        .sortReminders([
+          { id: 'goal', priority: 4 },
+          { id: 'income', priority: 2 },
+          { id: 'cutoff', priority: 1 },
+          { id: 'savings', priority: 3 },
+        ])
+        .map((reminder) => reminder.id),
+    ).toEqual(['cutoff', 'income', 'savings', 'goal'])
+  })
+
+  it('shows top-priority guidance when there is no current cutoff', async () => {
     await expect(
       cutoffWorkflowReminderService.loadReminders({
         storage: new MemoryStorage(),
       }),
-    ).resolves.toEqual([])
+    ).resolves.toEqual([
+      expect.objectContaining({
+        actionLabel: 'Create Cutoff',
+        dismissible: false,
+        priority: 1,
+        type: 'no_current_cutoff',
+      }),
+    ])
   })
 
   it('shows no-income reminder when current cutoff has no income', async () => {
@@ -66,6 +89,7 @@ describe('cutoffWorkflowReminderService', () => {
     ).resolves.toEqual([
       expect.objectContaining({
         cutoffId,
+        priority: 2,
         title: 'New cutoff cycle started',
         type: 'no_income',
       }),
@@ -90,6 +114,7 @@ describe('cutoffWorkflowReminderService', () => {
       expect.objectContaining({
         actionLabel: 'Add Savings',
         cutoffId,
+        priority: 3,
         type: 'no_savings',
       }),
     ])
@@ -131,5 +156,41 @@ describe('cutoffWorkflowReminderService', () => {
         storage: new MemoryStorage(),
       }),
     ).resolves.toEqual([])
+  })
+
+  it('shows active savings goal reminders after cutoff workflow reminders', async () => {
+    const cutoffId = await createActiveCutoff()
+    await incomeService.createIncome({
+      amount: 40000,
+      cutoffId,
+      date: '2026-06-20',
+      note: 'Main pay',
+      source: 'Salary',
+    })
+    await savingsService.createSavingsGoal({
+      name: 'Emergency Fund',
+      note: '',
+      priority: 'high',
+      status: 'active',
+      targetAmount: 100000,
+      targetDate: '',
+    })
+
+    await expect(
+      cutoffWorkflowReminderService.loadReminders({
+        storage: new MemoryStorage(),
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        priority: 3,
+        type: 'no_savings',
+      }),
+      expect.objectContaining({
+        actionLabel: 'Add Contribution',
+        message: 'Emergency Fund has no contributions yet.',
+        priority: 4,
+        type: 'goal_no_contribution',
+      }),
+    ])
   })
 })

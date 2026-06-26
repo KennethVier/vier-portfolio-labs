@@ -5,6 +5,7 @@ import {
   StatCard,
   StatusBadge,
 } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
@@ -359,6 +360,23 @@ export function CashflowPage() {
           <span className="rounded bg-surface-container px-3 py-1 text-body-sm font-semibold text-on-surface-variant">
             Current Cutoff
           </span>
+        }
+      />
+
+      <DismissiblePageHelper
+        pageKey="cashflow"
+        title={hasCurrentCutoff ? 'Current-cutoff cashflow' : 'Create a cutoff to enable cashflow'}
+        message={
+          hasCurrentCutoff
+            ? 'Cashflow is read-only and calculated from current-cutoff income, expense, and savings records.'
+            : 'Cashflow needs a current salary cutoff before it can summarize your funded cycle.'
+        }
+        action={
+          hasCurrentCutoff ? null : (
+            <Link to="/salary-cutoff" className="text-body-sm font-semibold text-primary hover:underline">
+              Create Cutoff
+            </Link>
+          )
         }
       />
 

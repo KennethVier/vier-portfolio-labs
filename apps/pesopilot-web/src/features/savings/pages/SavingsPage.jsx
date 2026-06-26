@@ -6,6 +6,7 @@ import {
   SectionCard,
   StatCard,
 } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
 import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
@@ -14,6 +15,7 @@ import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
 import { Popover } from '@/components/ui/Popover.jsx'
+import { Tooltip } from '@/components/ui/Tooltip.jsx'
 
 import { SavingsFilters } from '../components/SavingsFilters.jsx'
 import { SavingsForm } from '../components/SavingsForm.jsx'
@@ -160,22 +162,28 @@ function SavingsGoalCard({
             Target date: {goal.targetDate ?? 'No target date'}
           </span>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => onAddContribution(goal)}>
-              Add Contribution
-            </Button>
+            <Tooltip text="Add a savings record linked to this goal">
+              <Button type="button" onClick={() => onAddContribution(goal)}>
+                Add Contribution
+              </Button>
+            </Tooltip>
             <Button type="button" variant="secondary" onClick={() => onViewContributions(goal)}>
               View Contributions
             </Button>
             <Button type="button" variant="ghost" onClick={() => onEdit(goal)}>
               Edit
             </Button>
-            <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
-              Archive
-            </Button>
-            {goal.contributionCount === 0 ? (
-              <Button type="button" variant="ghost" onClick={() => onDelete(goal.id)}>
-                Delete
+            <Tooltip text="Hide this goal without deleting contribution history">
+              <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
+                Archive
               </Button>
+            </Tooltip>
+            {goal.contributionCount === 0 ? (
+              <Tooltip text="Delete is available only when no contributions exist">
+                <Button type="button" variant="ghost" onClick={() => onDelete(goal.id)}>
+                  Delete
+                </Button>
+              </Tooltip>
             ) : null}
           </div>
         </div>
@@ -215,9 +223,11 @@ function SavingsGoalCard({
         )}
       </div>
       <div className="mt-auto grid gap-2">
-        <Button type="button" onClick={() => onAddContribution(goal)}>
-          Add Contribution
-        </Button>
+        <Tooltip text="Add a savings record linked to this goal">
+          <Button type="button" onClick={() => onAddContribution(goal)}>
+            Add Contribution
+          </Button>
+        </Tooltip>
         <Button type="button" variant="secondary" onClick={() => onViewContributions(goal)}>
           View Contributions
         </Button>
@@ -225,9 +235,11 @@ function SavingsGoalCard({
           <Button type="button" variant="ghost" onClick={() => onEdit(goal)}>
             Edit
           </Button>
-          <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
-            Archive
-          </Button>
+          <Tooltip text="Hide this goal without deleting contribution history">
+            <Button type="button" variant="ghost" onClick={() => onArchive(goal.id)}>
+              Archive
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </section>
@@ -430,6 +442,27 @@ export function SavingsPage() {
       </KpiGrid>
 
       {error ? <ErrorState title="Unable to process savings" message={error} /> : null}
+
+      <DismissiblePageHelper
+        pageKey="savings"
+        title={
+          savingsGoals.length === 0
+            ? 'Create your first savings goal'
+            : 'Savings goals and contributions'
+        }
+        message={
+          savingsGoals.length === 0
+            ? 'Savings goals organize long-term objectives. Contributions are the real amounts you add over time.'
+            : 'Savings Goals represent long-term objectives. Savings Contributions are the amounts you add during each cutoff.'
+        }
+        action={
+          savingsGoals.length === 0 ? (
+            <Button type="button" variant="secondary" onClick={() => setIsGoalFormOpen(true)}>
+              Create Savings Goal
+            </Button>
+          ) : null
+        }
+      />
 
       <SavingsGoalsSection
         goals={savingsGoals}

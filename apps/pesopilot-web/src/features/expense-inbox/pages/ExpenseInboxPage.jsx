@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
 import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
@@ -119,6 +120,12 @@ export function ExpenseInboxPage() {
       <PageHeader
         title="Expense Review Inbox"
         description="Review and approve detected expenses before posting."
+      />
+
+      <DismissiblePageHelper
+        pageKey="expense-inbox"
+        title="Review before posting"
+        message="Expense Inbox records are not official expenses until approved. Select a row to preview details, then approve or reject it."
       />
 
       {error ? (

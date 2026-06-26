@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { SectionCard, StatusBadge } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
@@ -560,6 +561,12 @@ export function SettingsPage() {
                   </StatusBadge>
                 </div>
               ) : null}
+
+              <DismissiblePageHelper
+                pageKey="settings"
+                title="Local-first settings"
+                message="Settings control local preferences, backups, and advanced categorization. Salary, AI, tax, notifications, and cloud sync are intentionally not active here yet."
+              />
 
               <GeneralSection
                 isSaving={isSaving}

@@ -12,6 +12,7 @@ import { SalaryCutoffPage } from '@/features/salary-cutoff/pages/SalaryCutoffPag
 import { SavingsPage } from '@/features/savings/pages/SavingsPage.jsx'
 import { CashflowPage } from '@/features/cashflow/pages/CashflowPage.jsx'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage.jsx'
+import { HelpPage } from '@/features/help/pages/HelpPage.jsx'
 
 const ReportsPage = lazy(() =>
   import('@/features/reports/pages/ReportsPage.jsx').then((module) => ({
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
       { path: 'merchant-rules', element: <MerchantRulesPage /> },
       { path: 'expense-inbox', element: <ExpenseInboxPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'help', element: <HelpPage /> },
       ...devRoutes,
     ],
   },

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 
 import { useHeader } from '@/components/layout/headerContext.js'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
+import { Tooltip } from '@/components/ui/Tooltip.jsx'
 import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
 import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
 import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
@@ -95,12 +97,14 @@ function ExpensesActionBar({
   return (
     <div className="sticky top-0 z-30 flex flex-col gap-2 bg-background py-2 xl:flex-row xl:items-center xl:justify-between">
       <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center sm:justify-end xl:order-2">
-        <Button variant="secondary" onClick={onAiQuickAdd}>
-          <span className="material-symbols-outlined text-lg">
-            auto_awesome
-          </span>
-          AI Quick Add
-        </Button>
+        <Tooltip text="Parse a natural-language expense and send it to Expense Inbox">
+          <Button variant="secondary" onClick={onAiQuickAdd}>
+            <span className="material-symbols-outlined text-lg">
+              auto_awesome
+            </span>
+            AI Quick Add
+          </Button>
+        </Tooltip>
         <Button onClick={onAddExpense}>
           <span className="material-symbols-outlined text-lg">
             add
@@ -223,6 +227,12 @@ export function ExpensesPage() {
   return (
     <div className="space-y-6">
       <ExpensesKpiGrid expenseKpis={expenseKpis} />
+
+      <DismissiblePageHelper
+        pageKey="expenses"
+        title="Official expense records"
+        message="Expenses are official financial records. Use AI Quick Add for natural-language entry, then approve detected items in Expense Inbox."
+      />
 
       {error ? <ErrorState title="Unable to process expenses" message={error} /> : null}
 

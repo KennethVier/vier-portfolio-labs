@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
 import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 
 import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
@@ -132,6 +133,12 @@ export function IncomePage() {
           }
         />
       </KpiGrid>
+
+      <DismissiblePageHelper
+        pageKey="income"
+        title="Record income first"
+        message="Income anchors your current cutoff. After recording income, PesoPilot can compare spending and savings against the funded cycle."
+      />
 
       {error ? <ErrorState title="Unable to process income" message={error} /> : null}
 

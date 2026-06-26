@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 
 import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
+import { DismissiblePageHelper } from '@/components/guidance/DismissiblePageHelper.jsx'
 import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
@@ -448,6 +449,16 @@ export function ReportsPage() {
           ) : null}
         </div>
       </SectionCard>
+
+      <DismissiblePageHelper
+        pageKey="reports"
+        title={hasAnyRecords ? 'Analyze cutoff periods' : 'Start building report data'}
+        message={
+          hasAnyRecords
+            ? 'Use the scope selector to analyze all history, the current cutoff, or one selected cutoff.'
+            : 'Start recording income and expenses to generate meaningful report charts.'
+        }
+      />
 
       {!hasAnyRecords ? (
         <EmptyState
