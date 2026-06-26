@@ -7,6 +7,8 @@ import {
   StatCard,
 } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
+import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
+import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
 import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
@@ -319,6 +321,11 @@ export function SavingsPage() {
   } = useSavings()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const kpiHelperText = savingsKpis.currentCutoffId ? 'Current Cutoff' : 'No Current Cutoff'
+  const pagination = useLedgerPagination({
+    items: savings,
+    resetKey: JSON.stringify(filters),
+    storageKey: 'pesopilot:savings',
+  })
 
   useEffect(() => {
     setHeaderConfig({
@@ -483,19 +490,30 @@ export function SavingsPage() {
         {isLoading ? (
           <LoadingState label="Loading savings" />
         ) : (
-          <SavingsList
-            emptyAction={
-              <Button type="button" onClick={() => setIsFormOpen(true)}>
-                Add Savings
-              </Button>
-            }
-            savings={savings}
-            onDelete={deleteSavings}
-            onEdit={(savingsRecord) => {
-              setEditingSavings(savingsRecord)
-              setIsFormOpen(true)
-            }}
-          />
+          <>
+            <SavingsList
+              emptyAction={
+                <Button type="button" onClick={() => setIsFormOpen(true)}>
+                  Add Savings
+                </Button>
+              }
+              savings={pagination.paginatedItems}
+              onDelete={deleteSavings}
+              onEdit={(savingsRecord) => {
+                setEditingSavings(savingsRecord)
+                setIsFormOpen(true)
+              }}
+            />
+            <PaginationControls
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              pageSize={pagination.pageSize}
+              rangeLabel={pagination.range.label}
+              total={pagination.total}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+            />
+          </>
         )}
       </SectionCard>
 

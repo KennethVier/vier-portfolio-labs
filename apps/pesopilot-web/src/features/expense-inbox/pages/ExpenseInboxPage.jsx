@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 
 import { KpiGrid, PageHeader, SectionCard, StatCard } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
+import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
+import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
 import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
@@ -35,6 +37,11 @@ export function ExpenseInboxPage() {
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const [reviewRecord, setReviewRecord] = useState(null)
   const [reviewNotice, setReviewNotice] = useState('')
+  const pagination = useLedgerPagination({
+    items: inboxRecords,
+    resetKey: JSON.stringify(filters),
+    storageKey: 'pesopilot:expenseInbox',
+  })
 
   useEffect(() => {
     setHeaderConfig({
@@ -54,6 +61,24 @@ export function ExpenseInboxPage() {
 
     setReviewRecord(editingRecord)
   }, [editingRecord])
+
+  useEffect(() => {
+    if (isLoading) {
+      return
+    }
+
+    if (pagination.paginatedItems.length === 0) {
+      selectRecord(null)
+      return
+    }
+
+    if (
+      !selectedRecord ||
+      !pagination.paginatedItems.some((record) => record.id === selectedRecord.id)
+    ) {
+      selectRecord(pagination.paginatedItems[0])
+    }
+  }, [isLoading, pagination.paginatedItems, selectedRecord, selectRecord])
 
   async function handleApprove(record) {
     if (!record.suggestedPaymentMethod) {
@@ -140,12 +165,21 @@ export function ExpenseInboxPage() {
             />
           </div>
           <ExpenseInboxList
-            records={inboxRecords}
+            records={pagination.paginatedItems}
             selectedRecord={selectedRecord}
             onApprove={handleApprove}
             onEdit={editRecord}
             onReject={handleReject}
             onSelect={selectRecord}
+          />
+          <PaginationControls
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            pageSize={pagination.pageSize}
+            rangeLabel={pagination.range.label}
+            total={pagination.total}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
           />
         </SectionCard>
 

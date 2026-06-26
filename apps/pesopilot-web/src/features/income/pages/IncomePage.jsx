@@ -7,6 +7,8 @@ import {
 } from '@/components/dashboard'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
+import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
 
 import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
@@ -41,6 +43,11 @@ export function IncomePage() {
   } = useIncome();
 
   const { setHeaderConfig, resetHeaderConfig } = useHeader()
+  const pagination = useLedgerPagination({
+    items: income,
+    resetKey: JSON.stringify(filters),
+    storageKey: 'pesopilot:income',
+  })
 
   useEffect(() => {
     setHeaderConfig({
@@ -274,14 +281,25 @@ export function IncomePage() {
           {isLoading ? (
             <LoadingState label="Loading income" />
           ) : (
-            <IncomeList
-              income={income}
-              onDelete={deleteIncome}
-              onEdit={(incomeRecord) => {
-                setEditingIncome(incomeRecord)
-                setIsFormOpen(true)
-              }}
-            />
+            <>
+              <IncomeList
+                income={pagination.paginatedItems}
+                onDelete={deleteIncome}
+                onEdit={(incomeRecord) => {
+                  setEditingIncome(incomeRecord)
+                  setIsFormOpen(true)
+                }}
+              />
+              <PaginationControls
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                rangeLabel={pagination.range.label}
+                total={pagination.total}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+              />
+            </>
           )}
         </SectionCard>
       </TwoColumnLayout>

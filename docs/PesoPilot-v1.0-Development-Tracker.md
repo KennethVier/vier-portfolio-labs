@@ -2051,7 +2051,7 @@ Priority: Medium
 
 ## Pagination
 
-[ ] Add pagination for historical ledgers
+[x] Add pagination for historical ledgers
 
 Income
 
@@ -2060,6 +2060,10 @@ Expenses
 Savings
 
 Inbox history
+
+Action note 2026-06-26:
+
+Implemented scalable ledger pagination across Expenses, Income, Savings Contributions, and Expense Inbox with reusable pagination controls, session-persistent page and page size, result summaries, and stable client-side page clamping after filtering and CRUD refreshes.
 
 ---
 

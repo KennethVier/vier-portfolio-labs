@@ -75,6 +75,17 @@ export function useExpenseInbox() {
     }
   }
 
+  const selectRecord = useCallback((record) => {
+    setSelectedRecordId(record?.id ?? null)
+  }, [])
+
+  const updateFilters = useCallback((nextFilters) => {
+    setFilters({
+      ...EMPTY_INBOX_FILTERS,
+      ...nextFilters,
+    })
+  }, [])
+
   return {
     approveRecord(id, payload) {
       return runMutation(() => expenseInboxService.approveInboxRecord(id, payload))
@@ -97,15 +108,8 @@ export function useExpenseInbox() {
       setEditingRecord(null)
     },
     selectedRecord,
-    selectRecord(record) {
-      setSelectedRecordId(record?.id ?? null)
-    },
-    updateFilters(nextFilters) {
-      setFilters({
-        ...EMPTY_INBOX_FILTERS,
-        ...nextFilters,
-      })
-    },
+    selectRecord,
+    updateFilters,
     updateRecord(id, payload) {
       return runMutation(() => expenseInboxService.updateInboxRecord(id, payload))
     },

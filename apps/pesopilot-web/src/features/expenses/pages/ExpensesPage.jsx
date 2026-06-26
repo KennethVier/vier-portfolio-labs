@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
+import { PaginationControls } from '@/components/pagination/PaginationControls.jsx'
+import { useLedgerPagination } from '@/components/pagination/useLedgerPagination.js'
 import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { ExpenseFilters } from '../components/ExpenseFilters.jsx'
@@ -126,6 +128,7 @@ function ExpenseLedgerPanel({
   isLoading,
   onDelete,
   onEdit,
+  pagination,
 }) {
   return (
     <div className="overflow-hidden border border-outline-variant bg-surface-container-lowest">
@@ -141,6 +144,17 @@ function ExpenseLedgerPanel({
           onEdit={onEdit}
         />
       )}
+      {!isLoading ? (
+        <PaginationControls
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          pageSize={pagination.pageSize}
+          rangeLabel={pagination.range.label}
+          total={pagination.total}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
+      ) : null}
     </div>
   )
 }
@@ -165,6 +179,11 @@ export function ExpensesPage() {
     setEditingExpense,
     updateFilters,
   } = useExpenses()
+  const pagination = useLedgerPagination({
+    items: expenses,
+    resetKey: JSON.stringify(filters),
+    storageKey: 'pesopilot:expenses',
+  })
 
   useEffect(() => {
     setHeaderConfig({
@@ -247,10 +266,11 @@ export function ExpensesPage() {
 
       <ExpenseLedgerPanel
         categories={categories}
-        expenses={expenses}
+        expenses={pagination.paginatedItems}
         isLoading={isLoading}
         onDelete={deleteExpense}
         onEdit={openEditPanel}
+        pagination={pagination}
       />
     </div>
   )
