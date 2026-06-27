@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/Button.jsx'
+import { ErrorState } from '@/components/ui/ErrorState.jsx'
+import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
+import { ensureApplicationDefaults } from '@/lib/db/seed.js'
 import {
   FIRST_USE_WELCOME_KEY,
   isStorageFlagSet,
@@ -22,8 +25,45 @@ export function AppLayout({ children }) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [isCutoffNoticeOpen, setIsCutoffNoticeOpen] = useState(false)
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false)
+  const [startupError, setStartupError] = useState(null)
+  const [startupRetryKey, setStartupRetryKey] = useState(0)
+  const [startupStatus, setStartupStatus] = useState('loading')
 
   useEffect(() => {
+    let isMounted = true
+
+    async function prepareApplicationDefaults() {
+      setStartupStatus('loading')
+      setStartupError(null)
+
+      try {
+        await ensureApplicationDefaults()
+
+        if (isMounted) {
+          setStartupStatus('ready')
+        }
+      } catch (defaultsError) {
+        if (isMounted) {
+          setStartupError(
+            defaultsError.message || 'Unable to prepare local PesoPilot data.',
+          )
+          setStartupStatus('error')
+        }
+      }
+    }
+
+    prepareApplicationDefaults()
+
+    return () => {
+      isMounted = false
+    }
+  }, [startupRetryKey])
+
+  useEffect(() => {
+    if (startupStatus !== 'ready') {
+      return undefined
+    }
+
     let isMounted = true
 
     async function checkCutoffLifecycle() {
@@ -48,7 +88,7 @@ export function AppLayout({ children }) {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [startupStatus])
 
   function dismissWelcome() {
     setStorageFlag(FIRST_USE_WELCOME_KEY)
@@ -77,7 +117,28 @@ export function AppLayout({ children }) {
         onClose={() => setIsMobileNavOpen(false)}
       />
       <Header onMenuClick={() => setIsMobileNavOpen(true)} />
-      <PageContainer>{children}</PageContainer>
+      <PageContainer>
+        {startupStatus === 'loading' ? (
+          <LoadingState label="Preparing local data" />
+        ) : null}
+
+        {startupStatus === 'error' ? (
+          <div className="space-y-3">
+            <ErrorState
+              title="Unable to prepare local data"
+              message={startupError}
+            />
+            <Button
+              type="button"
+              onClick={() => setStartupRetryKey((value) => value + 1)}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
+        {startupStatus === 'ready' ? children : null}
+      </PageContainer>
       <Modal
         description="PesoPilot is built around salary-funded spending cycles."
         footer={

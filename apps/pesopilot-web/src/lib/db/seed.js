@@ -71,17 +71,32 @@ export const defaultSettings = {
   cloudAiConsent: false,
 }
 
+function withSystemMetadata(record, timestamp, existingRecord = null) {
+  return {
+    ...record,
+    isSystem: true,
+    createdAt: existingRecord?.createdAt ?? timestamp,
+    updatedAt: timestamp,
+  }
+}
+
+function normalizeDefaultMerchantRule(rule, timestamp, existingRule = null) {
+  return {
+    ...rule,
+    paymentMethod: null,
+    confidence: 1,
+    createdBy: 'system',
+    createdAt: existingRule?.createdAt ?? timestamp,
+    updatedAt: timestamp,
+  }
+}
+
 export async function seedDatabase() {
   const timestamp = nowIso()
 
   await db.transaction('rw', db.categories, db.merchant_rules, db.settings, async () => {
     await db.categories.bulkPut(
-      defaultCategories.map((category) => ({
-        ...category,
-        isSystem: true,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      })),
+      defaultCategories.map((category) => withSystemMetadata(category, timestamp)),
     )
 
     await Promise.all(
@@ -92,23 +107,13 @@ export async function seedDatabase() {
           .first()
 
         if (existingRule) {
-          return db.merchant_rules.update(existingRule.id, {
-            ...rule,
-            paymentMethod: null,
-            confidence: 1,
-            createdBy: 'system',
-            updatedAt: timestamp,
-          })
+          return db.merchant_rules.update(
+            existingRule.id,
+            normalizeDefaultMerchantRule(rule, timestamp, existingRule),
+          )
         }
 
-        return db.merchant_rules.add({
-          ...rule,
-          paymentMethod: null,
-          confidence: 1,
-          createdBy: 'system',
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        })
+        return db.merchant_rules.add(normalizeDefaultMerchantRule(rule, timestamp))
       }),
     )
 
@@ -119,4 +124,62 @@ export async function seedDatabase() {
       updatedAt: timestamp,
     })
   })
+}
+
+export async function ensureApplicationDefaults() {
+  const timestamp = nowIso()
+  const result = {
+    categoriesSeeded: false,
+    merchantRulesSeeded: false,
+    settingsSeeded: false,
+  }
+
+  await db.transaction('rw', db.categories, db.merchant_rules, db.settings, async () => {
+    const existingCategories = await db.categories.toArray()
+    const categoriesById = new Map(
+      existingCategories.map((category) => [category.id, category]),
+    )
+    const missingCategories = defaultCategories.filter(
+      (category) => !categoriesById.has(category.id),
+    )
+
+    if (missingCategories.length > 0) {
+      await db.categories.bulkPut(
+        missingCategories.map((category) =>
+          withSystemMetadata(category, timestamp, categoriesById.get(category.id)),
+        ),
+      )
+      result.categoriesSeeded = true
+    }
+
+    const existingSettings = await db.settings.get(DEFAULT_SETTINGS_ID)
+
+    if (!existingSettings) {
+      await db.settings.put({
+        ...defaultSettings,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+      result.settingsSeeded = true
+    }
+
+    const existingRules = await db.merchant_rules.toArray()
+
+    await Promise.all(
+      defaultMerchantRules.map(async (rule) => {
+        const existingRule = existingRules.find(
+          (candidate) => candidate.keyword === rule.keyword,
+        )
+
+        if (existingRule) {
+          return
+        }
+
+        await db.merchant_rules.add(normalizeDefaultMerchantRule(rule, timestamp))
+        result.merchantRulesSeeded = true
+      }),
+    )
+  })
+
+  return result
 }

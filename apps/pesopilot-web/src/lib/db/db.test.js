@@ -11,6 +11,8 @@ import {
 import {
   defaultCategories,
   defaultMerchantRules,
+  defaultSettings,
+  ensureApplicationDefaults,
   seedDatabase,
 } from './seed.js'
 import {
@@ -91,6 +93,63 @@ describe('PesoPilot Dexie foundation', () => {
       keyword: 'Jollibee',
       categoryId: 'food',
       createdBy: 'system',
+    })
+  })
+
+  it('ensures application defaults on fresh production-like startup', async () => {
+    await ensureApplicationDefaults()
+    await ensureApplicationDefaults()
+
+    const settings = await settingsRepository.getSettings()
+    const categories = await categoryRepository.findAll()
+    const merchantRules = await db.merchant_rules.toArray()
+
+    expect(settings).toMatchObject({
+      id: DEFAULT_SETTINGS_ID,
+      currency: 'PHP',
+    })
+    expect(categories).toHaveLength(defaultCategories.length)
+    expect(categories.map((category) => category.id).sort()).toEqual(
+      defaultCategories.map((category) => category.id).sort(),
+    )
+    expect(merchantRules).toHaveLength(defaultMerchantRules.length)
+  })
+
+  it('repairs missing default categories while preserving existing user data', async () => {
+    await seedDatabase()
+    await db.categories.delete('food')
+    await settingsRepository.upsertSettings({
+      ...defaultSettings,
+      currency: 'USD',
+      theme: 'dark',
+    })
+    await expenseRepository.create({
+      amount: 250,
+      merchant: 'Existing Expense',
+      categoryId: 'other',
+      paymentMethod: 'cash',
+      date: '2026-06-11',
+      cutoffId: 1,
+      source: 'manual',
+      createdAt: '2026-06-11T00:00:00.000Z',
+      updatedAt: '2026-06-11T00:00:00.000Z',
+    })
+
+    const result = await ensureApplicationDefaults()
+
+    expect(result).toMatchObject({
+      categoriesSeeded: true,
+      settingsSeeded: false,
+    })
+    expect(await db.categories.get('food')).toMatchObject({
+      id: 'food',
+      type: 'expense',
+    })
+    expect(await categoryRepository.findAll()).toHaveLength(defaultCategories.length)
+    expect(await expenseRepository.findAll()).toHaveLength(1)
+    expect(await settingsRepository.getSettings()).toMatchObject({
+      currency: 'USD',
+      theme: 'dark',
     })
   })
 
