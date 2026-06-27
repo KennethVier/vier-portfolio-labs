@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   KpiGrid,
   PageHeader,
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
 
 import { useCashflow } from '../hooks/useCashflow.js'
 
@@ -70,63 +72,32 @@ function getCashflowStatus(remainingCash) {
 }
 
 function FlowComparisonCard() {
-  const bars = [
-    ['JUL', 60, 25],
-    ['AUG', 75, 30],
-    ['SEP', 65, 35],
-    ['OCT', 90, 40],
-    ['NOV', 70, 20],
-    ['DEC', 85, 28],
-  ]
-
   return (
     <SectionCard
       title="Flow Comparison"
-      description="Inflow vs Outflow velocity per cycle"
+      description="Inflow vs outflow velocity per cycle"
       className="lg:col-span-2"
-      actions={
-        <div className="hidden gap-4 sm:flex">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-primary" />
-            <span className="text-label-caps font-label-caps">Inflow</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-outline-variant" />
-            <span className="text-label-caps font-label-caps">Outflow</span>
-          </div>
-        </div>
-      }
     >
-      <div className="relative flex h-64 w-full items-end gap-2">
-        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between opacity-20">
-          <div className="border-t border-outline" />
-          <div className="border-t border-outline" />
-          <div className="border-t border-outline" />
-          <div className="border-t border-outline" />
-          <div className="border-t border-outline" />
+      <div className="flex min-h-64 items-center justify-center rounded border border-dashed border-outline-variant bg-surface-container-low p-6 text-center">
+        <div>
+          <span className="material-symbols-outlined text-3xl text-primary">
+            stacked_line_chart
+          </span>
+          <p className="mt-2 font-semibold text-on-surface">
+            Cycle comparison analytics are underway.
+          </p>
+          <p className="mt-1 max-w-xl text-body-sm leading-relaxed text-on-surface-variant">
+            Future cashflow reports will compare inflow and outflow movement
+            across cutoff periods. This MVP keeps cashflow totals read-only and
+            current-cutoff based.
+          </p>
         </div>
-
-        {bars.map(([label, inflow, outflow]) => (
-          <div key={label} className="group flex h-full flex-1 flex-col justify-end gap-1">
-            <div
-              className="w-full rounded-t-sm bg-primary opacity-80 transition-all group-hover:opacity-100"
-              style={{ height: `${inflow}%` }}
-            />
-            <div
-              className="w-full rounded-b-sm bg-outline-variant opacity-80 transition-all group-hover:opacity-100"
-              style={{ height: `${outflow}%` }}
-            />
-            <span className="mt-2 text-center text-[10px] font-label-caps text-on-surface-variant">
-              {label}
-            </span>
-          </div>
-        ))}
       </div>
     </SectionCard>
   )
 }
 
-function HealthStatusPanel({ cashflowStatus }) {
+function HealthStatusPanel({ cashflowStatus, onDeepDive }) {
   return (
     <section className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-6">
       <div className="mb-4 flex items-center gap-2">
@@ -142,7 +113,7 @@ function HealthStatusPanel({ cashflowStatus }) {
           </div>
           <p className="text-body-sm italic leading-relaxed text-on-surface-variant">
             Current cash position is evaluated from the active cutoff totals.
-            Runway and projection details are placeholders until forecasting exists.
+            Runway and projection details are still underway.
           </p>
         </div>
 
@@ -151,9 +122,9 @@ function HealthStatusPanel({ cashflowStatus }) {
             <span className="text-label-caps font-label-caps">AI Commentary</span>
           </div>
           <p className="text-body-sm leading-relaxed text-on-surface-variant">
-            <span className="font-semibold text-primary">Optimization Alert:</span>{' '}
-            Cashflow insights are static in this phase. No AI, forecasting,
-            burn rate, or safe spend calculation is running here.
+            AI commentary, forecasting, burn rate, and safe spend calculations
+            are still underway. No generated cashflow recommendation is running
+            in this MVP release.
           </p>
         </div>
 
@@ -161,6 +132,7 @@ function HealthStatusPanel({ cashflowStatus }) {
           <button
             type="button"
             className="flex w-full items-center justify-center gap-2 rounded bg-on-primary-fixed py-2 text-body-sm font-semibold text-white transition-colors hover:bg-on-primary-fixed-variant"
+            onClick={onDeepDive}
           >
             <span className="material-symbols-outlined text-sm">auto_awesome</span>
             Deep Dive Report
@@ -168,6 +140,38 @@ function HealthStatusPanel({ cashflowStatus }) {
         </div>
       </div>
     </section>
+  )
+}
+
+function AiUnderwayModal({ isOpen, onClose }) {
+  return (
+    <Modal
+      title="AI Features Are Underway"
+      description="Cashflow deep dives and AI-generated reports are planned for a future phase."
+      isOpen={isOpen}
+      onClose={onClose}
+      size="sm"
+      footer={
+        <button
+          type="button"
+          className="rounded bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
+          onClick={onClose}
+        >
+          Got it
+        </button>
+      }
+    >
+      <div className="space-y-3 text-body-sm text-on-surface-variant">
+        <p>
+          PesoPilot currently calculates cashflow from your local current-cutoff
+          income, expense, and savings records.
+        </p>
+        <p>
+          AI deep dives, forecasting, and report generation are not active in
+          this MVP release.
+        </p>
+      </div>
+    </Modal>
   )
 }
 
@@ -227,14 +231,14 @@ function MetricsGrid({ cashflow }) {
         icon="shopping_cart"
         label="Expense Rate"
         value={formatPercent(cashflow.expenseRate)}
-        tag="-2.4% vs Avg"
+        tag="Current cutoff"
         tone="primary"
       />
       <MetricPanel
         icon="savings"
         label="Savings Rate"
         value={formatPercent(cashflow.savingsRate)}
-        tag="Target Met"
+        tag="Current cutoff"
         tone="secondary"
       />
       <MetricPanel
@@ -281,12 +285,6 @@ function CurrentCutoffSummary({ cashflow, cashflowStatus }) {
 }
 
 function RecentCashflowsPreview() {
-  const rows = [
-    ['Dec 24, 2023', 'Income record total', 'Income', '+PHP 4,200.00', 'Cleared', 'text-secondary'],
-    ['Dec 22, 2023', 'Expense record total', 'Expense', '-PHP 850.24', 'Cleared', 'text-on-surface'],
-    ['Dec 20, 2023', 'Savings allocation', 'Savings', '-PHP 500.00', 'Pending', 'text-tertiary'],
-  ]
-
   return (
     <section className="overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
       <div className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
@@ -299,50 +297,18 @@ function RecentCashflowsPreview() {
           <span className="material-symbols-outlined text-sm">arrow_forward</span>
         </Link>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead className="bg-surface-container-low text-label-caps font-label-caps text-on-surface-variant">
-            <tr>
-              <th className="border-b border-outline-variant px-6 py-3">Date</th>
-              <th className="border-b border-outline-variant px-6 py-3">Entity</th>
-              <th className="border-b border-outline-variant px-6 py-3">Category</th>
-              <th className="border-b border-outline-variant px-6 py-3 text-right">Amount</th>
-              <th className="border-b border-outline-variant px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="text-body-sm">
-            {rows.map(([date, entity, category, amount, status, amountClassName]) => (
-              <tr key={`${date}-${category}`} className="transition-colors hover:bg-background">
-                <td className="border-b border-outline-variant px-6 py-4 font-data-mono">
-                  {date}
-                </td>
-                <td className="border-b border-outline-variant px-6 py-4 font-semibold">
-                  {entity}
-                </td>
-                <td className="border-b border-outline-variant px-6 py-4">
-                  <span className="rounded bg-primary-container/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
-                    {category}
-                  </span>
-                </td>
-                <td className={['border-b border-outline-variant px-6 py-4 text-right font-data-mono', amountClassName].join(' ')}>
-                  {amount}
-                </td>
-                <td className="border-b border-outline-variant px-6 py-4">
-                  <span className="flex items-center gap-1.5 text-secondary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                    {status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="p-6">
+        <EmptyState
+          title="Cashflow history preview is underway"
+          message="Use Reports for historical analysis. This cashflow page currently focuses on the active cutoff summary."
+        />
       </div>
     </section>
   )
 }
 
 export function CashflowPage() {
+  const [isAiUnderwayOpen, setIsAiUnderwayOpen] = useState(false)
   const {
     cashflow,
     error,
@@ -428,7 +394,10 @@ export function CashflowPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <FlowComparisonCard />
-            <HealthStatusPanel cashflowStatus={cashflowStatus} />
+            <HealthStatusPanel
+              cashflowStatus={cashflowStatus}
+              onDeepDive={() => setIsAiUnderwayOpen(true)}
+            />
           </div>
 
           <MetricsGrid cashflow={cashflow} />
@@ -439,6 +408,11 @@ export function CashflowPage() {
           />
 
           <RecentCashflowsPreview />
+
+          <AiUnderwayModal
+            isOpen={isAiUnderwayOpen}
+            onClose={() => setIsAiUnderwayOpen(false)}
+          />
         </>
       ) : null}
     </div>

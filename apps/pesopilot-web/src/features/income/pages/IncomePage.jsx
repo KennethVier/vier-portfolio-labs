@@ -173,39 +173,21 @@ export function IncomePage() {
       </Modal>
 
       <TwoColumnLayout
-        // sidebar={
-        //   <div className="space-y-gutter">
-        //     <IncomeStabilityCard />
-        //     <QuickMetrics />
-        //     <InsightCard />
-        //   </div>
-        // }
-        // placeholder sidebar content while we work on the actual cards
         sidebar={
           <div className="space-y-gutter">
             <SectionCard title="Income Stability">
-              <div className="h-48 flex items-end gap-2">
-                <div className="h-20 flex-1 bg-primary/20" />
-                <div className="h-24 flex-1 bg-primary/20" />
-                <div className="h-16 flex-1 bg-primary/20" />
-                <div className="h-32 flex-1 bg-primary/60" />
-                <div className="h-24 flex-1 bg-primary/20" />
-                <div className="h-40 flex-1 bg-primary" />
-              </div>
-
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Confidence Score</span>
-                  <span className="font-mono font-semibold text-secondary">
-                    High (98%)
+              <div className="flex min-h-48 items-center justify-center rounded border border-dashed border-outline-variant bg-surface-container-low p-4 text-center">
+                <div>
+                  <span className="material-symbols-outlined text-3xl text-primary">
+                    auto_awesome
                   </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Est. Q4 Total</span>
-                  <span className="font-mono font-semibold">
-                    PHP 38,200
-                  </span>
+                  <p className="mt-2 font-semibold text-content">
+                    AI income stability analysis is underway.
+                  </p>
+                  <p className="mt-1 text-sm text-content-muted">
+                    Forecast confidence and projected income summaries are not
+                    active in this MVP release.
+                  </p>
                 </div>
               </div>
             </SectionCard>
@@ -213,11 +195,11 @@ export function IncomePage() {
             <div className="grid grid-cols-2 gap-3">
               <SectionCard>
                 <p className="text-[10px] font-bold uppercase text-primary">
-                  Quick Ratio
+                  Income Ratio
                 </p>
 
-                <p className="mt-2 font-mono text-2xl font-semibold text-primary">
-                  4.2
+                <p className="mt-2 text-sm leading-relaxed text-content-muted">
+                  Ratio analysis is still underway.
                 </p>
               </SectionCard>
 
@@ -226,8 +208,8 @@ export function IncomePage() {
                   Burn Offset
                 </p>
 
-                <p className="mt-2 font-mono text-2xl font-semibold text-secondary">
-                  180%
+                <p className="mt-2 text-sm leading-relaxed text-content-muted">
+                  Offset analytics are still underway.
                 </p>
               </SectionCard>
             </div>
@@ -240,12 +222,13 @@ export function IncomePage() {
 
                 <div>
                   <p className="font-semibold text-tertiary">
-                    Diversification Insight
+                    Income Insight
                   </p>
 
                   <p className="mt-1 text-sm text-content-muted">
-                    68% of income originates from one source.
-                    Consider expanding additional income streams.
+                    AI-generated income diversification guidance is still
+                    underway. Current income records remain available in the
+                    transaction history.
                   </p>
                 </div>
               </div>

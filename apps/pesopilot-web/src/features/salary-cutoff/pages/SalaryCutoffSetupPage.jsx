@@ -46,6 +46,34 @@ function getDaysRemaining(endDate) {
   return Math.max(0, daysRemaining)
 }
 
+function getCycleProgress(cutoff) {
+  if (!cutoff?.startDate || !cutoff?.endDate) {
+    return 0
+  }
+
+  const startDate = new Date(`${cutoff.startDate}T00:00:00`)
+  const endDate = new Date(`${cutoff.endDate}T00:00:00`)
+  const today = new Date()
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  )
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    Number.isNaN(endDate.getTime()) ||
+    endDate < startDate
+  ) {
+    return 0
+  }
+
+  const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1
+  const elapsedDays = Math.floor((todayStart.getTime() - startDate.getTime()) / 86400000) + 1
+
+  return Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
+}
+
 function formatDays(days) {
   return `${days} ${days === 1 ? 'Day' : 'Days'}`
 }
@@ -145,14 +173,14 @@ function CutoffManagementPanel({
   onCreateNextCutoff,
   onEdit,
 }) {
-  const progress = activeCutoff ? 80 : 0
+  const progress = getCycleProgress(activeCutoff)
   const canCreateNextCutoff = ['monthly', 'semi_monthly'].includes(activeCutoff?.type)
 
   return (
     <SectionCard
       title="Cutoff Management"
       titleClassName="font-heading text-lg font-bold normal-case tracking-normal text-content"
-      description="Cycle progress vs. algorithmic spending velocity."
+      description="Current cycle timeline and future AI cutoff insights."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -179,19 +207,18 @@ function CutoffManagementPanel({
           <div>
             <div className="mb-2 flex justify-between">
               <span className="text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Cycle Progression (Day 12 of 15)
+                Cycle Progression
               </span>
               <span className="font-mono text-sm">{progress.toFixed(1)}%</span>
             </div>
             <div className="relative h-6 overflow-hidden rounded border border-outline-variant bg-surface-container">
               <div className="h-full bg-primary-container" style={{ width: `${progress}%` }} />
-              <div className="absolute left-[65%] top-0 z-10 h-full w-0.5 bg-error" />
             </div>
             <div className="mt-1 flex justify-between">
               <span className="text-[10px] font-medium text-content-muted">
                 {activeCutoff?.startDate ?? 'START'}
               </span>
-              <span className="text-[10px] font-bold text-error">BUDGET LIMIT (80%)</span>
+              <span className="text-[10px] font-bold text-primary">CURRENT CYCLE</span>
               <span className="text-[10px] font-medium text-content-muted">
                 {activeCutoff?.endDate ?? 'END'}
               </span>
@@ -201,19 +228,19 @@ function CutoffManagementPanel({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="rounded border border-outline-variant bg-surface p-3">
               <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Current Velocity
+                Velocity Analysis
               </div>
-              <div className="font-mono text-lg font-semibold text-content">
-                PHP 142.50 <span className="text-sm font-normal">/ day</span>
-              </div>
+              <p className="text-sm leading-relaxed text-content-muted">
+                Spending velocity insights are still underway.
+              </p>
             </div>
             <div className="rounded border border-outline-variant bg-surface p-3">
               <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-content-muted">
-                Target Velocity
+                Budget Guidance
               </div>
-              <div className="font-mono text-lg font-semibold text-secondary">
-                PHP 115.00 <span className="text-sm font-normal">/ day</span>
-              </div>
+              <p className="text-sm leading-relaxed text-content-muted">
+                Target velocity and budget recommendations are not active yet.
+              </p>
             </div>
           </div>
         </div>
@@ -226,16 +253,14 @@ function CutoffManagementPanel({
             </span>
           </div>
           <p className="text-sm leading-relaxed text-content">
-            Your spending velocity is <span className="font-bold text-error">24% higher</span>{' '}
-            than the projected budget. To maintain a Grade A rating this cutoff,
-            reduce discretionary spending by <span className="font-mono">PHP 27.50</span>{' '}
-            daily for the next 3 days.
+            AI insights for spending velocity, projected grades, and budget
+            recommendations are still underway. Current cutoff dates and actions
+            remain available.
           </p>
           <div className="border-t border-outline-variant pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Predicted Grade:</span>
-              <span className="font-bold text-tertiary">B+</span>
-            </div>
+            <p className="text-sm text-content-muted">
+              No AI-generated cutoff grade is calculated in this MVP release.
+            </p>
           </div>
         </div>
       </div>
