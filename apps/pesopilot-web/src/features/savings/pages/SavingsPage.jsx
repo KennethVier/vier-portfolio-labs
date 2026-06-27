@@ -22,6 +22,7 @@ import { SavingsForm } from '../components/SavingsForm.jsx'
 import { SavingsGoalForm } from '../components/SavingsGoalForm.jsx'
 import { SavingsList } from '../components/SavingsList.jsx'
 import { useSavings } from '../hooks/useSavings.js'
+import { SAVINGS_FORM_MODE } from '../utils/savingsContributionForm.js'
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   currency: 'PHP',
@@ -338,6 +339,13 @@ export function SavingsPage() {
     resetKey: JSON.stringify(filters),
     storageKey: 'pesopilot:savings',
   })
+  const selectedGoal = selectedGoalId
+    ? savingsGoals.find((goal) => String(goal.id) === String(selectedGoalId)) ?? null
+    : null
+  const savingsFormMode =
+    selectedGoal && !editingSavings
+      ? SAVINGS_FORM_MODE.goalContribution
+      : SAVINGS_FORM_MODE.general
 
   useEffect(() => {
     setHeaderConfig({
@@ -376,6 +384,12 @@ export function SavingsPage() {
     setIsGoalFormOpen(false)
   }
 
+  function openGeneralSavingsForm() {
+    clearEditingSavings()
+    setSelectedGoalId(null)
+    setIsFormOpen(true)
+  }
+
   function openContributionForm(goal) {
     clearEditingSavings()
     setSelectedGoalId(goal.id)
@@ -402,7 +416,7 @@ export function SavingsPage() {
         title="Savings Strategy"
         description="Allocating intelligence to long-term wealth assets."
         actions={
-          <Button type="button" onClick={() => setIsFormOpen(true)}>
+          <Button type="button" onClick={openGeneralSavingsForm}>
             <span className="material-symbols-outlined text-lg">add</span>
             Add Savings
           </Button>
@@ -526,7 +540,7 @@ export function SavingsPage() {
           <>
             <SavingsList
               emptyAction={
-                <Button type="button" onClick={() => setIsFormOpen(true)}>
+                <Button type="button" onClick={openGeneralSavingsForm}>
                   Add Savings
                 </Button>
               }
@@ -552,11 +566,19 @@ export function SavingsPage() {
 
       <Modal
         isOpen={isFormOpen || Boolean(editingSavings)}
-        title={editingSavings ? 'Edit Savings' : 'Add Savings'}
+        title={
+          editingSavings
+            ? 'Edit Savings'
+            : savingsFormMode === SAVINGS_FORM_MODE.goalContribution
+              ? 'Add Contribution'
+              : 'Add Savings'
+        }
         description={
           editingSavings
             ? 'Update an existing savings transfer.'
-            : 'Track money set aside from available cash.'
+            : savingsFormMode === SAVINGS_FORM_MODE.goalContribution
+              ? `Add money toward ${selectedGoal?.name}.`
+              : 'Track money set aside from available cash.'
         }
         size="lg"
         onClose={closeForm}
@@ -566,8 +588,10 @@ export function SavingsPage() {
           editingSavings={editingSavings}
           framed={false}
           isSaving={isSaving}
+          mode={savingsFormMode}
           salaryCutoffs={salaryCutoffs}
           savingsGoals={savingsGoals}
+          selectedGoal={selectedGoal}
           selectedGoalId={selectedGoalId}
           onCancel={closeForm}
           onSubmit={submitSavings}
