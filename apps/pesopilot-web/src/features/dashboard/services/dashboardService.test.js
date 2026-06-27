@@ -182,7 +182,7 @@ describe('dashboardService derivations', () => {
   })
 
   it('handles empty/default cashflow values', () => {
-    expect(calculateHealthScore(null)).toBe(90)
+    expect(calculateHealthScore(null)).toBeNull()
     expect(deriveBudgetAlert(null)).toMatchObject({
       title: 'Cashflow Stable',
       tone: 'stable',

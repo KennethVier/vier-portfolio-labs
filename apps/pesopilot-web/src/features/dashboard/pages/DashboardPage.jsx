@@ -12,6 +12,7 @@ import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
+import { Modal } from '@/components/ui/Modal.jsx'
 import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { useDashboard } from '../hooks/useDashboard.js'
@@ -200,7 +201,39 @@ function AllocationMatrix({ rows }) {
   )
 }
 
-function AIFinancialCoach({ messages }) {
+function AiUnavailableModal({ isOpen, onClose }) {
+  return (
+    <Modal
+      title="AI Features Are Underway"
+      description="PesoPilot v1.0 keeps your financial workflow local and review-first."
+      isOpen={isOpen}
+      onClose={onClose}
+      size="sm"
+      footer={
+        <button
+          type="button"
+          className="rounded bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
+          onClick={onClose}
+        >
+          Got it
+        </button>
+      }
+    >
+      <div className="space-y-3 text-body-sm text-on-surface-variant">
+        <p>
+          AI coaching, generated reports, and deeper financial insights are still
+          being prepared for a future phase.
+        </p>
+        <p>
+          For now, the dashboard uses local deterministic summaries from your
+          current cutoff, income, expenses, and savings records.
+        </p>
+      </div>
+    </Modal>
+  )
+}
+
+function AIFinancialCoach({ messages, onGenerateReport }) {
   return (
     <section className="h-full rounded-lg bg-primary p-4 text-on-primary shadow-sm lg:col-span-4">
       <div className="mb-3 flex items-center gap-2">
@@ -224,6 +257,7 @@ function AIFinancialCoach({ messages }) {
         <button
           type="button"
           className="mt-2 w-full rounded border border-white/30 py-2 font-body-md transition-colors hover:bg-white/10"
+          onClick={onGenerateReport}
         >
           Generate Weekly Report
         </button>
@@ -387,6 +421,7 @@ function RecentTransactions({ className = '', transactions }) {
 
 export function DashboardPage() {
   const [isAiQuickAddOpen, setIsAiQuickAddOpen] = useState(false)
+  const [isAiUnavailableOpen, setIsAiUnavailableOpen] = useState(false)
   const { data, error, isLoading } = useDashboard()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
 
@@ -434,12 +469,12 @@ export function DashboardPage() {
           <KpiGrid columns={4}>
             <StatCard
               label="Health Score"
-              value={data.healthScore}
+              value={data.healthScore ?? '--'}
               tone="info"
               valueSize="display"
               icon={<span className="material-symbols-outlined text-lg">monitoring</span>}
-              progress={data.healthScore}
-              helperText="Current cycle score"
+              progress={data.healthScore ?? undefined}
+              helperText={data.healthScore === null ? 'No current cutoff data' : 'Current cycle score'}
             />
             <StatCard
               label="Expected Income"
@@ -473,6 +508,11 @@ export function DashboardPage() {
             />
           ) : null}
 
+          <AiUnavailableModal
+            isOpen={isAiUnavailableOpen}
+            onClose={() => setIsAiUnavailableOpen(false)}
+          />
+
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             <BudgetShockAlert alert={data.budgetAlert} />
             <SpendingOverview bars={data.spendingOverview} />
@@ -483,7 +523,10 @@ export function DashboardPage() {
               className="lg:col-span-8"
               transactions={data.recentTransactions}
             />
-            <AIFinancialCoach messages={data.coachMessages} />
+            <AIFinancialCoach
+              messages={data.coachMessages}
+              onGenerateReport={() => setIsAiUnavailableOpen(true)}
+            />
           </div>
 
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">

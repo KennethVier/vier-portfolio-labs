@@ -64,6 +64,10 @@ function buildCategoryLookup(categories) {
 }
 
 export function calculateHealthScore(cashflow) {
+  if (!cashflow) {
+    return null
+  }
+
   let score = 100
 
   if (getCashflowValue(cashflow, 'remainingCash') < 0) {
