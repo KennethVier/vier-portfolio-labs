@@ -6,9 +6,9 @@ import { Modal } from '@/components/ui/Modal.jsx'
 
 import { useManualAiExpense } from '../hooks/useManualAiExpense.js'
 import {
+  CompletionScreen,
   ParsedPreview,
   ParserInputCard,
-  SuccessPanel,
 } from '../pages/ManualAiExpensePage.jsx'
 
 export function AiQuickAddModal({ isOpen, onClose }) {
@@ -20,6 +20,7 @@ export function AiQuickAddModal({ isOpen, onClose }) {
     isSubmitting,
     parseInput,
     parsedResult,
+    resetForAnother,
     resetParser,
     submitParsedResult,
     successRecord,
@@ -43,6 +44,12 @@ export function AiQuickAddModal({ isOpen, onClose }) {
 
   async function handleSubmit() {
     await submitParsedResult()
+    setInputText('')
+  }
+
+  function handleAddAnother() {
+    resetForAnother()
+    setInputText('')
   }
 
   return (
@@ -60,22 +67,29 @@ export function AiQuickAddModal({ isOpen, onClose }) {
           {error ? (
             <ErrorState title="Unable to process expense input" message={error} />
           ) : null}
-          <SuccessPanel record={successRecord} />
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <ParserInputCard
-              inputText={inputText}
-              onExampleClick={handleExampleClick}
-              onInputChange={setInputText}
-              onParse={handleParse}
+          {successRecord ? (
+            <CompletionScreen
+              record={successRecord}
+              onAddAnother={handleAddAnother}
+              onClose={handleClose}
             />
-            <ParsedPreview
-              categories={categories}
-              isSubmitting={isSubmitting}
-              parsedResult={parsedResult}
-              onSubmit={handleSubmit}
-              onUpdate={updateParsedResult}
-            />
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <ParserInputCard
+                inputText={inputText}
+                onExampleClick={handleExampleClick}
+                onInputChange={setInputText}
+                onParse={handleParse}
+              />
+              <ParsedPreview
+                categories={categories}
+                isSubmitting={isSubmitting}
+                parsedResult={parsedResult}
+                onSubmit={handleSubmit}
+                onUpdate={updateParsedResult}
+              />
+            </div>
+          )}
         </div>
       )}
     </Modal>

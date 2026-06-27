@@ -3,14 +3,18 @@ import { useNavigate } from 'react-router-dom'
 
 import { useHeader } from '@/components/layout/headerContext.js'
 import { Button } from '@/components/ui/Button.jsx'
-import { cutoffWorkflowReminderService } from '@/features/salary-cutoff/services/cutoffWorkflowReminderService.js'
+import { notificationCenterService } from '@/features/notifications/services/notificationCenterService.js'
 
 export function Header({ onMenuClick }) {
   const navigate = useNavigate()
   const { config } = useHeader()
   const notificationRef = useRef(null)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
-  const [reminders, setReminders] = useState([])
+  const [notificationState, setNotificationState] = useState({
+    activeCount: 0,
+    badgeLabel: '',
+    notifications: [],
+  })
 
   const {
     searchPlaceholder,
@@ -28,10 +32,14 @@ export function Header({ onMenuClick }) {
 
   async function loadReminders() {
     try {
-      const nextReminders = await cutoffWorkflowReminderService.loadReminders()
-      setReminders(nextReminders)
+      const nextNotifications = await notificationCenterService.loadNotifications()
+      setNotificationState(nextNotifications)
     } catch {
-      setReminders([])
+      setNotificationState({
+        activeCount: 0,
+        badgeLabel: '',
+        notifications: [],
+      })
     }
   }
 
@@ -76,7 +84,7 @@ export function Header({ onMenuClick }) {
   }
 
   async function dismissReminder(reminder) {
-    cutoffWorkflowReminderService.dismissReminder(reminder)
+    notificationCenterService.dismissNotification(reminder)
     await loadReminders()
   }
 
@@ -138,9 +146,9 @@ export function Header({ onMenuClick }) {
           onClick={() => setIsNotificationOpen((isOpen) => !isOpen)}
         >
           <span className="material-symbols-outlined">notifications</span>
-          {reminders.length > 0 ? (
+          {notificationState.activeCount > 0 ? (
             <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[9px] font-bold leading-none text-white">
-              {reminders.length}
+              {notificationState.badgeLabel}
             </span>
           ) : null}
         </button>
@@ -157,7 +165,7 @@ export function Header({ onMenuClick }) {
               </p>
             </div>
             <div className="max-h-[70vh] overflow-y-auto p-2">
-              {reminders.length === 0 ? (
+              {notificationState.notifications.length === 0 ? (
                 <div className="flex items-start gap-3 rounded bg-surface-container-low p-3">
                   <span className="material-symbols-outlined text-secondary">
                     check_circle
@@ -173,7 +181,7 @@ export function Header({ onMenuClick }) {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {reminders.map((reminder) => (
+                  {notificationState.notifications.map((reminder) => (
                     <article
                       key={reminder.id}
                       className="rounded border border-outline-variant bg-surface p-3"

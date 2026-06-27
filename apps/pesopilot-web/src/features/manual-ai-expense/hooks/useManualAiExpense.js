@@ -71,6 +71,7 @@ export function useManualAiExpense() {
       const createdRecord =
         await manualAiExpenseService.submitToInbox(parsedResult)
       setSuccessRecord(createdRecord)
+      setParsedResult(null)
       return createdRecord
     } catch (submitError) {
       setError(submitError.message || 'Unable to submit parsed expense.')
@@ -86,6 +87,12 @@ export function useManualAiExpense() {
     setSuccessRecord(null)
   }, [])
 
+  const resetForAnother = useCallback(() => {
+    setError('')
+    setParsedResult(null)
+    setSuccessRecord(null)
+  }, [])
+
   return {
     categories,
     error,
@@ -93,6 +100,7 @@ export function useManualAiExpense() {
     isSubmitting,
     parseInput,
     parsedResult,
+    resetForAnother,
     resetParser,
     submitParsedResult,
     successRecord,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { PageHeader, SectionCard, StatusBadge } from '@/components/dashboard'
 import { useHeader } from '@/components/layout/headerContext.js'
@@ -21,6 +21,11 @@ const examplePrompts = [
   'Coffee at Starbucks 180',
   'Shopee order 999 on 2026-06-20',
 ]
+
+const currencyFormatter = new Intl.NumberFormat('en-PH', {
+  currency: 'PHP',
+  style: 'currency',
+})
 
 function getConfidenceTone(confidence) {
   if (confidence >= 0.8) {
@@ -281,7 +286,94 @@ export function SuccessPanel({ record }) {
   )
 }
 
+export function CompletionScreen({
+  onAddAnother,
+  onClose,
+  record,
+}) {
+  if (!record) {
+    return null
+  }
+
+  return (
+    <SectionCard
+      title="Expense Submitted"
+      description="This expense is pending review before it becomes official."
+      actions={<StatusBadge tone="warning">Pending Approval</StatusBadge>}
+    >
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded border border-secondary/25 bg-secondary-container/25 p-4">
+          <span className="material-symbols-outlined text-2xl text-secondary">
+            check_circle
+          </span>
+          <div>
+            <h2 className="font-heading text-lg font-semibold text-on-surface">
+              Expense Submitted
+            </h2>
+            <p className="mt-1 text-body-sm text-on-surface-variant">
+              This expense has been sent to your Expense Inbox. It will become
+              an official expense after you review and approve it.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded border border-outline-variant bg-surface p-3">
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              Merchant
+            </p>
+            <p className="mt-1 font-body-md text-body-md font-semibold text-on-surface">
+              {record.merchant}
+            </p>
+          </div>
+          <div className="rounded border border-outline-variant bg-surface p-3">
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              Amount
+            </p>
+            <p className="mt-1 font-data-mono text-body-md font-semibold text-on-surface">
+              {currencyFormatter.format(record.amount ?? 0)}
+            </p>
+          </div>
+          <div className="rounded border border-outline-variant bg-surface p-3">
+            <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+              Status
+            </p>
+            <p className="mt-1 font-body-md text-body-md font-semibold text-tertiary">
+              Pending Approval
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded border border-outline-variant bg-surface-container-low p-3">
+          <p className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+            Next Step
+          </p>
+          <p className="mt-1 text-body-sm text-on-surface-variant">
+            Review your pending expenses inside Expense Inbox before they become
+            official financial records.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" onClick={onAddAnother}>
+            Add Another Expense
+          </Button>
+          <Link to="/expense-inbox" className="no-underline">
+            <Button type="button" className="w-full sm:w-auto">
+              Open Expense Inbox
+            </Button>
+          </Link>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
 export function ManualAiExpensePage() {
+  const navigate = useNavigate()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
   const [inputText, setInputText] = useState('')
   const {
@@ -291,6 +383,7 @@ export function ManualAiExpensePage() {
     isSubmitting,
     parseInput,
     parsedResult,
+    resetForAnother,
     submitParsedResult,
     successRecord,
     updateParsedResult,
@@ -316,6 +409,17 @@ export function ManualAiExpensePage() {
 
   async function handleSubmit() {
     await submitParsedResult()
+    setInputText('')
+  }
+
+  function handleAddAnother() {
+    resetForAnother()
+    setInputText('')
+  }
+
+  function handleCloseCompletion() {
+    handleAddAnother()
+    navigate('/manual-ai-expense')
   }
 
   if (isLoading) {
@@ -334,23 +438,29 @@ export function ManualAiExpensePage() {
         <ErrorState title="Unable to process expense input" message={error} />
       ) : null}
 
-      <SuccessPanel record={successRecord} />
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <ParserInputCard
-          inputText={inputText}
-          onExampleClick={handleExampleClick}
-          onInputChange={setInputText}
-          onParse={handleParse}
+      {successRecord ? (
+        <CompletionScreen
+          record={successRecord}
+          onAddAnother={handleAddAnother}
+          onClose={handleCloseCompletion}
         />
-        <ParsedPreview
-          categories={categories}
-          isSubmitting={isSubmitting}
-          onSubmit={handleSubmit}
-          onUpdate={updateParsedResult}
-          parsedResult={parsedResult}
-        />
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <ParserInputCard
+            inputText={inputText}
+            onExampleClick={handleExampleClick}
+            onInputChange={setInputText}
+            onParse={handleParse}
+          />
+          <ParsedPreview
+            categories={categories}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSubmit}
+            onUpdate={updateParsedResult}
+            parsedResult={parsedResult}
+          />
+        </div>
+      )}
     </div>
   )
 }

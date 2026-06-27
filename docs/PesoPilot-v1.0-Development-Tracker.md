@@ -1827,11 +1827,11 @@ These directly affect the cutoff-centric financial workflow.
 
 [x] Verify cashflow cycle switching behavior
 
-[ ] Verify reports use cutoff-centric calculations
+[x] Verify reports use cutoff-centric calculations
 
 [x] Verify dashboard spending overview cutoff behavior
 
-[ ] Enable cutoff selection where appropriate
+[x] Enable cutoff selection where appropriate
 
 [x] Automatically close ended cutoffs and activate the planned cutoff that covers today
 
@@ -1843,7 +1843,7 @@ These directly affect the cutoff-centric financial workflow.
 
 [x] After creating a cutoff, guide users to create income records
 
-[ ] Add cutoff-start reminder modal
+[x] Add cutoff-start reminder modal
 
 Example:
 
@@ -1856,7 +1856,7 @@ Have you recorded your income for this cycle yet?
 [ Later ]
 ```
 
-[ ] Add allocation reminder for new cutoff periods
+[x] Add allocation reminder for new cutoff periods
 
 [x] Prepare cutoff workflow reminder service for no-income and no-savings current-cycle checks
 
@@ -1974,9 +1974,9 @@ Line starts from zero
 Visible trend
 ```
 
-[ ] Review savings trend graphs
+[x] Review savings trend graphs
 
-[ ] Review cashflow trend graphs
+[x] Review cashflow trend graphs
 
 ---
 
@@ -2117,7 +2117,7 @@ Priority: Review
 
 Decision Needed:
 
-[ ] Keep only Settings Export/Import
+[x] Keep only Settings Export/Import
 
 OR
 
@@ -2135,7 +2135,7 @@ Savings
 
 Decision Needed:
 
-[ ] Defer Profile Page
+[x] Defer Profile Page
 
 Reason:
 
@@ -2197,6 +2197,8 @@ Added post-cutoff creation guidance that sends users to Income without forcing t
 Prepared cutoff workflow reminder detection for missing income and missing savings, with localStorage dismissal keys per cutoff.
 Removed misleading disabled Dashboard spending and Cashflow period selectors in favor of current-cycle labels.
 Deferred the Header notification popover to Phase 10.5F to avoid broad layout/service coupling.
+Completed Phase 10.5 checklist confirmations for cutoff/scoped Reports behavior, applicable cutoff selection, allocation reminders, savings/cashflow trend graph review, Settings-only export/import direction, and Profile Page deferral.
+Marked cutoff-start reminder complete as notification-based guidance through the dynamic notification center and app guidance instead of a blocking modal.
 ```
 
 ---
