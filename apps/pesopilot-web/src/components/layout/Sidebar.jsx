@@ -19,11 +19,13 @@ const navItems = [
 function Brand({ compact = false }) {
   return (
     <div className={['flex items-center gap-3 px-2', compact ? 'mb-0' : 'mb-8'].join(' ')}>
-      <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-        <span className="material-symbols-outlined text-lg text-white">
-          account_balance_wallet
-        </span>
-      </div>
+      <img
+        src="/images/pesopilot-mark.svg"
+        alt="PesoPilot"
+        className="h-9 w-9 shrink-0 rounded"
+        width="36"
+        height="36"
+      />
       <div>
         <h1 className="font-display-lg text-display-lg font-semibold text-primary">
           PesoPilot
