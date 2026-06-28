@@ -1,4 +1,13 @@
 export { createInsightBundle } from './models/insightBundle.js'
+export {
+  createEmptyExpenseMetrics,
+  createExpenseInsight,
+  EXPENSE_TREND,
+} from './models/expenseInsight.js'
+export {
+  createExpenseRuleResult,
+  EXPENSE_RULE_STATUS,
+} from './models/expenseRuleResult.js'
 export { createHealthInsight, HEALTH_STATUS } from './models/healthInsight.js'
 export {
   createHealthRuleResult,
@@ -7,6 +16,12 @@ export {
 export { INSIGHT_TYPES } from './models/insightTypes.js'
 export { useInsights } from './hooks/useInsights.js'
 export { insightService } from './services/insightService.js'
+export { generateExpenseInsight } from './rules/expense/expenseEngine.js'
+export {
+  EXPENSE_RULE_IDS,
+  EXPENSE_RULE_WEIGHTS,
+  expenseRuleRegistry,
+} from './rules/expense/expenseRuleRegistry.js'
 export { generateHealthInsight } from './rules/health/healthEngine.js'
 export {
   HEALTH_RULE_IDS,

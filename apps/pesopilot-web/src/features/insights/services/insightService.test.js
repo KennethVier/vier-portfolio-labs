@@ -23,8 +23,43 @@ vi.mock('../rules/health/healthEngine.js', () => ({
   })),
 }))
 
+vi.mock('../rules/expense/expenseEngine.js', () => ({
+  generateExpenseInsight: vi.fn(async ({ scope }) => ({
+    category: 'expense',
+    scope,
+    generatedAt: '2026-06-28T00:01:00.000Z',
+    metrics: {
+      totalExpenses: 1000,
+      expenseCount: 2,
+      dailySpendingRate: 100,
+      currentPeriodDays: 10,
+      categoryDistribution: [],
+      topSpendingCategory: null,
+      largestExpense: null,
+      largestMerchant: null,
+      trend: {
+        direction: 'No Data',
+        currentTotal: 1000,
+        comparisonTotal: 0,
+        difference: 0,
+        percentageChange: 0,
+      },
+      increase: null,
+      decrease: null,
+      anomalies: [],
+    },
+    breakdown: [],
+    evidence: [],
+    explanation: 'No expenses are recorded for this scope yet.',
+    diagnostics: {
+      executedRules: [],
+      warnings: [],
+    },
+  })),
+}))
+
 describe('insightService', () => {
-  it('loads an InsightBundle with only health populated by default', async () => {
+  it('loads an InsightBundle with health and expenses populated by default', async () => {
     await expect(insightService.loadInsights()).resolves.toEqual({
       scope: INSIGHT_SCOPES.currentCutoff,
       generatedAt: expect.any(String),
@@ -44,8 +79,39 @@ describe('insightService', () => {
           warnings: [],
         },
       },
+      expenses: {
+        category: 'expense',
+        scope: INSIGHT_SCOPES.currentCutoff,
+        generatedAt: '2026-06-28T00:01:00.000Z',
+        metrics: {
+          totalExpenses: 1000,
+          expenseCount: 2,
+          dailySpendingRate: 100,
+          currentPeriodDays: 10,
+          categoryDistribution: [],
+          topSpendingCategory: null,
+          largestExpense: null,
+          largestMerchant: null,
+          trend: {
+            direction: 'No Data',
+            currentTotal: 1000,
+            comparisonTotal: 0,
+            difference: 0,
+            percentageChange: 0,
+          },
+          increase: null,
+          decrease: null,
+          anomalies: [],
+        },
+        breakdown: [],
+        evidence: [],
+        explanation: 'No expenses are recorded for this scope yet.',
+        diagnostics: {
+          executedRules: [],
+          warnings: [],
+        },
+      },
       income: null,
-      expenses: null,
       savings: null,
       goals: null,
       cashflow: null,
@@ -55,15 +121,15 @@ describe('insightService', () => {
     })
   })
 
-  it('loads health for a supplied scope without filling other sections', async () => {
+  it('loads health and expenses for a supplied scope without filling other sections', async () => {
     const bundle = await insightService.loadInsights({
       scope: INSIGHT_SCOPES.specificCutoff,
     })
 
     expect(bundle.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.health.scope).toBe(INSIGHT_SCOPES.specificCutoff)
+    expect(bundle.expenses.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.income).toBeNull()
-    expect(bundle.expenses).toBeNull()
     expect(bundle.savings).toBeNull()
     expect(bundle.goals).toBeNull()
     expect(bundle.cashflow).toBeNull()

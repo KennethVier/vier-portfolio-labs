@@ -2460,7 +2460,7 @@ feat(insights): implement financial health engine
 
 # Phase 11A.2 — Expense Intelligence
 
-Status: ⬜
+Status: ✅
 
 ## Goal
 
@@ -2495,28 +2495,28 @@ Reports
 
 ## Features
 
-* [ ] ExpenseInsight DTO
-* [ ] Expense metrics model
-* [ ] Expense rule registry
-* [ ] Top spending category
-* [ ] Category distribution
-* [ ] Largest expense
-* [ ] Largest merchant
-* [ ] Daily spending rate
-* [ ] Expense trend
-* [ ] Expense increase detection
-* [ ] Expense decrease detection
-* [ ] Spending anomalies
-* [ ] Expense aggregation
-* [ ] Expense explanation text
+* [x] ExpenseInsight DTO
+* [x] Expense metrics model
+* [x] Expense rule registry
+* [x] Top spending category
+* [x] Category distribution
+* [x] Largest expense
+* [x] Largest merchant
+* [x] Daily spending rate
+* [x] Expense trend
+* [x] Expense increase detection
+* [x] Expense decrease detection
+* [x] Spending anomalies
+* [x] Expense aggregation
+* [x] Expense explanation text
 
 ## Definition of Done
 
-* [ ] expense insights are deterministic
-* [ ] every insight has evidence
-* [ ] category calculations are tested
-* [ ] trend logic is tested
-* [ ] tests/lint/build pass
+* [x] expense insights are deterministic
+* [x] every insight has evidence
+* [x] category calculations are tested
+* [x] trend logic is tested
+* [x] tests/lint/build pass
 
 ## Suggested Commit Message
 
