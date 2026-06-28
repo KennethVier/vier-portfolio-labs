@@ -2004,6 +2004,10 @@ Action note 2026-06-25:
 
 Redesigned the Savings module into a true Savings Goal and Contribution architecture. Goals now represent long-term financial objectives while contributions remain cutoff-based financial transactions. Lifetime goal progress is derived from linked savings contributions, while Savings KPIs continue to summarize the current cutoff only.
 
+Action note 2026-06-27:
+
+Cleaned up the goal contribution flow so Add Contribution opens a goal-specific modal, locks the selected goal, hides redundant type/goal selection, clearly displays the linked goal and contribution type, and still saves a normal cutoff-based savings contribution.
+
 ---
 
 # Group E — Usability Improvements
@@ -2158,7 +2162,7 @@ No account/authentication exists yet.
 
 [x] npm.cmd run build
 
-[ ] Manual QA walkthrough
+[x] Manual QA walkthrough
 
 Dashboard
 
@@ -2212,301 +2216,1276 @@ Goal:
 Generate meaningful financial insights from user data and eventually provide AI-generated financial summaries.
 
 ---
-
-# Phase 11A — Rule-Based Financial Insights
+# Phase 11 — Financial Insights and AI Summary
 
 Status: ⬜
 
-Goal:
+## Goal
 
-Generate accurate, deterministic, and testable financial insights using business rules.
+Build PesoPilot’s deterministic financial intelligence system first, then prepare the foundation for future AI-powered summaries.
 
----
-
-## Insight Engine
-
-[ ] Financial insight service
-
-[ ] Insight generation engine
-
-[ ] Insight prioritization
-
-[ ] Insight severity levels
-
-[ ] Insight DTOs
-
----
-
-## Income Insights
-
-[ ] Total income analysis
-
-[ ] Income trend detection
-
-[ ] Income growth/decline comparison
-
-[ ] Income source breakdown
-
----
-
-## Expense Insights
-
-[ ] Top spending categories
-
-[ ] Largest expense detection
-
-[ ] Category trend comparison
-
-[ ] Spending increase detection
-
-[ ] Spending decrease detection
-
-[ ] Spending distribution analysis
-
----
-
-## Savings Insights
-
-[ ] Savings rate calculation
-
-[ ] Savings trend comparison
-
-[ ] Savings growth detection
-
-[ ] Savings contribution analysis
-
----
-
-## Cashflow Insights
-
-[ ] Remaining cash analysis
-
-[ ] Cashflow stability analysis
-
-[ ] Current cutoff spending pace
-
-[ ] Current cutoff utilization analysis
-
----
-
-## Cutoff Comparisons
-
-[ ] Current vs Previous Cutoff
-
-[ ] Current vs Monthly Average
-
-[ ] Spending trend analysis
-
-[ ] Savings trend analysis
-
-[ ] Income trend analysis
-
----
-
-## Financial Health
-
-[ ] Financial health score
-
-[ ] Financial health explanation
-
-[ ] Health status levels
+Phase 11 is divided into:
 
 ```txt
-Excellent
-Good
-Fair
-Needs Attention
+Phase 11A — Rule-Based Financial Intelligence
+Phase 11B — AI Financial Intelligence Platform
+```
+
+Phase 11A must be completed before Phase 11B implementation begins.
+
+---
+
+# Implementation Rules
+
+All Phase 11A work must follow these rules:
+
+* No AI models.
+* No backend API dependency.
+* No external services.
+* No hallucinated financial values.
+* No dashboard behavior changes unless the phase explicitly says integration.
+* All insights must be deterministic, explainable, testable, and derived only from local financial records.
+* Architecture documents must be followed before implementation.
+* If documents conflict, follow the priority order listed in each phase.
+
+Every phase must end with:
+
+```txt
+npm.cmd run test
+npm.cmd run lint
+npm.cmd run build
 ```
 
 ---
 
-## Rule-Based Summary Generation
+# Phase 11A — Rule-Based Financial Intelligence
 
-Generate factual and explainable insights.
+Status: ⬜
 
-Examples:
+## Goal
+
+Build PesoPilot’s deterministic financial intelligence engine.
+
+The Rule Engine becomes the single source of truth for financial insights.
+
+---
+
+# Phase 11A.0 — Insight Architecture
+
+Status: ✅
+
+## Goal
+
+Create the base financial insight architecture.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+```
+
+### Supporting
+
+```txt
+04 — Rule Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 0 — Project Setup
+Phase 1 — IndexedDB Foundation
+Phase 2 — Expense Tracking
+```
+
+## Blocks
+
+```txt
+Phase 11A.1 — Health Engine
+Phase 11A.2 — Expense Intelligence
+Phase 11A.3 — Income Intelligence
+Phase 11A.4 — Savings Intelligence
+Phase 11A.5 — Goal Intelligence
+Phase 11A.6 — Cashflow Intelligence
+Phase 11A.7 — Cutoff Intelligence
+Phase 11A.8 — Recommendation Engine
+Phase 11A.9 — Summary Generator
+```
+
+## Scope
+
+Architecture-only implementation.
+
+No financial calculations yet.
+
+## Features
+
+* [x] `src/features/insights` module
+* [x] `InsightBundle` model
+* [x] Insight section shape
+* [ ] Health insight placeholder
+* [ ] Income insight placeholder
+* [ ] Expense insight placeholder
+* [ ] Savings insight placeholder
+* [ ] Goal insight placeholder
+* [ ] Cashflow insight placeholder
+* [ ] Cutoff insight placeholder
+* [ ] Recommendation placeholder
+* [ ] Summary placeholder
+* [x] `insightService`
+* [x] `useInsights` hook
+* [ ] insight DTO constants
+* [x] insight severity levels
+* [x] insight priority levels
+* [x] insight category definitions
+* [x] insight scope definitions
+* [x] shared insight utilities
+* [x] reserved `rules/` folder
+* [x] reserved `components/` folder
+* [x] architecture tests
+* [x] tracker updated
+
+## Out of Scope
+
+- Health scoring
+- Recommendation generation
+- Summary generation
+- Dashboard integration
+- AI integration
+- Backend calls
+- Route changes
+- Dexie schema changes
+
+## Definition of Done
+
+* [x] Empty InsightBundle returns correct structure
+* [x] `generatedAt` uses serializable ISO string
+* [x] default scope is `current_cutoff`
+* [x] constants are centralized
+* [x] tests pass
+* [x] lint passes
+* [x] build passes
+
+## Suggested Commit Message
+
+```txt
+feat(insights): add phase 11A insight architecture foundation
+```
+
+---
+
+# Phase 11A.1 — Financial Health Engine
+
+Status: ⬜
+
+## Goal
+
+Generate a deterministic financial health score.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+05 — Health Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.0 — Insight Architecture
+```
+
+## Blocks
+
+```txt
+Recommendation Engine
+Summary Generator
+Dashboard Health Card
+```
+
+## Features
+
+* [x] HealthInsight DTO
+* [x] Health score calculation
+* [x] Health score breakdown
+* [x] Health status
+* [x] Health rule registry
+* [x] Health rule results
+* [x] Health evidence model
+* [x] Health aggregation
+* [x] Health explanation text
+
+## Health Status Values
+
+```txt
+Excellent
+Healthy
+Fair
+Needs Attention
+Critical
+```
+
+## Rules
+
+* [ ] Income availability
+* [ ] Expense ratio
+* [ ] Savings ratio
+* [ ] Remaining cash
+* [ ] Goal contribution participation
+
+## Definition of Done
+
+* [ ] health score is deterministic
+* [ ] every score has evidence
+* [ ] every health status is tested
+* [ ] no AI usage
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement financial health engine
+```
+
+---
+
+# Phase 11A.2 — Expense Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze spending behavior.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+07 — Expense Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.0 — Insight Architecture
+```
+
+## Blocks
+
+```txt
+Recommendation Engine
+Summary Generator
+Dashboard Expense Insights
+Reports
+```
+
+## Features
+
+* [ ] ExpenseInsight DTO
+* [ ] Expense metrics model
+* [ ] Expense rule registry
+* [ ] Top spending category
+* [ ] Category distribution
+* [ ] Largest expense
+* [ ] Largest merchant
+* [ ] Daily spending rate
+* [ ] Expense trend
+* [ ] Expense increase detection
+* [ ] Expense decrease detection
+* [ ] Spending anomalies
+* [ ] Expense aggregation
+* [ ] Expense explanation text
+
+## Definition of Done
+
+* [ ] expense insights are deterministic
+* [ ] every insight has evidence
+* [ ] category calculations are tested
+* [ ] trend logic is tested
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement expense intelligence engine
+```
+
+---
+
+# Phase 11A.3 — Income Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze income quality.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+06 — Income Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.0 — Insight Architecture
+```
+
+## Blocks
+
+```txt
+Health Engine
+Recommendation Engine
+Summary Generator
+Reports
+```
+
+## Features
+
+* [ ] IncomeInsight DTO
+* [ ] Income metrics model
+* [ ] Income rule registry
+* [ ] Total income
+* [ ] Income trend
+* [ ] Previous cutoff comparison
+* [ ] Monthly comparison
+* [ ] Income source breakdown
+* [ ] Missing income detection
+* [ ] Income stability
+* [ ] Income aggregation
+* [ ] Income explanation text
+
+## Definition of Done
+
+* [ ] income insights are deterministic
+* [ ] all comparisons are tested
+* [ ] missing income is handled safely
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement income intelligence engine
+```
+
+---
+
+# Phase 11A.4 — Savings Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze savings behavior.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+08 — Savings & Goal Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.0 — Insight Architecture
+```
+
+## Blocks
+
+```txt
+Health Engine
+Recommendation Engine
+Summary Generator
+```
+
+## Features
+
+* [ ] SavingsInsight DTO
+* [ ] Savings metrics model
+* [ ] Savings rule registry
+* [ ] Savings total
+* [ ] Savings rate
+* [ ] Savings trend
+* [ ] Previous cutoff comparison
+* [ ] Contribution frequency
+* [ ] Largest contribution
+* [ ] Savings consistency
+* [ ] Savings aggregation
+* [ ] Savings explanation text
+
+## Definition of Done
+
+* [ ] savings insights are deterministic
+* [ ] savings rate is tested
+* [ ] trend logic is tested
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement savings intelligence engine
+```
+
+---
+
+# Phase 11A.5 — Savings Goal Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze savings goals.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+08 — Savings & Goal Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.0 — Insight Architecture
+Phase 11A.4 — Savings Intelligence
+```
+
+## Blocks
+
+```txt
+Recommendation Engine
+Summary Generator
+Goal Dashboard Insights
+```
+
+## Features
+
+* [ ] GoalInsight DTO
+* [ ] Goal metrics model
+* [ ] Goal rule registry
+* [ ] Goal progress
+* [ ] Goal completion
+* [ ] Goals without contributions
+* [ ] Highest funded goal
+* [ ] Remaining amount
+* [ ] Goal completion percentage
+* [ ] Goal aggregation
+* [ ] Goal explanation text
+
+## Definition of Done
+
+* [ ] goal insights are deterministic
+* [ ] empty goals are handled
+* [ ] progress calculations are tested
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement savings goal intelligence engine
+```
+
+---
+
+# Phase 11A.6 — Cashflow Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze financial position.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+09 — Cashflow & Cutoff Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.2 — Expense Intelligence
+Phase 11A.3 — Income Intelligence
+Phase 11A.4 — Savings Intelligence
+```
+
+## Blocks
+
+```txt
+Health Engine
+Recommendation Engine
+Summary Generator
+Dashboard Cashflow Insights
+```
+
+## Features
+
+* [ ] CashflowInsight DTO
+* [ ] Cashflow metrics model
+* [ ] Cashflow rule registry
+* [ ] Remaining cash
+* [ ] Net cashflow
+* [ ] Positive / negative cashflow
+* [ ] Spending pace
+* [ ] Income coverage
+* [ ] Savings coverage
+* [ ] Cashflow stability
+* [ ] Cashflow aggregation
+* [ ] Cashflow explanation text
+
+## Definition of Done
+
+* [ ] cashflow insights are deterministic
+* [ ] remaining cash is tested
+* [ ] spending pace is tested
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement cashflow intelligence engine
+```
+
+---
+
+# Phase 11A.7 — Cutoff Intelligence
+
+Status: ⬜
+
+## Goal
+
+Analyze salary cutoff performance.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+09 — Cashflow & Cutoff Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.3 — Income Intelligence
+Phase 11A.4 — Savings Intelligence
+Phase 11A.6 — Cashflow Intelligence
+```
+
+## Blocks
+
+```txt
+Recommendation Engine
+Summary Generator
+Salary Cutoff Insights
+Reports
+```
+
+## Features
+
+* [ ] CutoffInsight DTO
+* [ ] Cutoff metrics model
+* [ ] Cutoff rule registry
+* [ ] Current vs previous cutoff
+* [ ] Current vs monthly average
+* [ ] Income comparison
+* [ ] Expense comparison
+* [ ] Savings comparison
+* [ ] Best cutoff
+* [ ] Worst cutoff
+* [ ] Trend direction
+* [ ] Cutoff aggregation
+* [ ] Cutoff explanation text
+
+## Definition of Done
+
+* [ ] cutoff insights are deterministic
+* [ ] cutoff comparisons are tested
+* [ ] missing previous cutoff is handled
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement cutoff intelligence engine
+```
+
+---
+
+# Phase 11A.8 — Recommendation Engine
+
+Status: ⬜
+
+## Goal
+
+Generate actionable recommendations from deterministic insight outputs.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+04 — Rule Engine Architecture
+10 — Recommendation Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.1 — Health Engine
+Phase 11A.2 — Expense Intelligence
+Phase 11A.3 — Income Intelligence
+Phase 11A.4 — Savings Intelligence
+Phase 11A.5 — Goal Intelligence
+Phase 11A.6 — Cashflow Intelligence
+Phase 11A.7 — Cutoff Intelligence
+```
+
+## Blocks
+
+```txt
+Summary Generator
+Dashboard Recommendations
+Insights Page
+```
+
+## Features
+
+* [ ] RecommendationBundle DTO
+* [ ] Recommendation model
+* [ ] Recommendation rule registry
+* [ ] Recommendation severity
+* [ ] Recommendation priority
+* [ ] Recommendation grouping
+* [ ] Recommendation formatting
+* [ ] Recommendation conflict handling
+* [ ] Recommendation explanation text
+
+## Example
+
+```txt
+Dining accounts for 42% of your spending.
+
+Consider reviewing dining expenses next cutoff.
+```
+
+## Definition of Done
+
+* [ ] recommendations are deterministic
+* [ ] recommendation priority is stable
+* [ ] recommendations reference evidence
+* [ ] no recommendation is AI-generated
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): implement recommendation engine
+```
+
+---
+
+# Phase 11A.9 — Summary Generator
+
+Status: ⬜
+
+## Goal
+
+Generate explainable financial summaries from deterministic insights and recommendations.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+11 — Summary Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.8 — Recommendation Engine
+```
+
+## Blocks
+
+```txt
+Dashboard Integration
+Reports
+AI Prompt Builder
+```
+
+## Features
+
+* [ ] FinancialSummary DTO
+* [ ] Summary section model
+* [ ] Current cutoff summary
+* [ ] Monthly summary
+* [ ] Historical summary
+* [ ] Summary ranking
+* [ ] Summary formatting
+* [ ] Narrative composer
+* [ ] Template registry
+* [ ] Summary validator
+
+## Example
 
 ```txt
 You saved 22% of your income this cutoff.
 
-Dining expenses increased by 15% compared to the previous cutoff.
-
-Groceries remain your largest spending category.
+Food remains your largest spending category.
 
 You still have ₱4,500 remaining before your next payday.
 ```
 
-[ ] Summary builder
+## Definition of Done
 
-[ ] Insight ranking
+* [ ] summary is deterministic
+* [ ] summary uses InsightBundle and RecommendationBundle only
+* [ ] no fabricated financial values
+* [ ] empty data state is handled
+* [ ] tests/lint/build pass
 
-[ ] Insight grouping
+## Suggested Commit Message
 
-[ ] Insight formatting
-
----
-
-## Dashboard Integration
-
-[ ] Dashboard Insight Card
-
-[ ] AI Financial Coach uses generated insights
-
-[ ] Current Cutoff Summary Card
+```txt
+feat(insights): implement deterministic financial summary generator
+```
 
 ---
 
-## Insight Page
-
-[ ] Insight page
-
-[ ] Current cutoff insights
-
-[ ] Monthly insights
-
-[ ] Historical insights
-
-[ ] Insight timeline
-
----
-
-## Summary History
-
-[ ] Save generated summaries
-
-[ ] Cutoff summary history
-
-[ ] Monthly summary history
-
----
-
-## Testing
-
-[ ] Income insight tests
-
-[ ] Expense insight tests
-
-[ ] Savings insight tests
-
-[ ] Cashflow insight tests
-
-[ ] Health score tests
-
-[ ] Cutoff comparison tests
-
-[ ] Summary generation tests
-
----
-
-## Verification
-
-[ ] npm.cmd run test
-
-[ ] npm.cmd run lint
-
-[ ] npm.cmd run build
-
----
-
-# Phase 11B — AI Narrative Layer
+# Phase 11A.10 — Dashboard Integration
 
 Status: ⬜
 
-Goal:
+## Goal
 
-Convert rule-based insights into natural-language financial summaries.
+Integrate rule-based insights into the existing application.
 
----
+## Architecture References
 
-## Backend
+### Primary
 
-[ ] Spring Boot AI module
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+05–11 — Relevant Engine Documents
+```
 
-[ ] Summary API
+## Dependencies
 
-[ ] Summary DTOs
+```txt
+Phase 11A.9 — Summary Generator
+```
 
-[ ] Prompt templates
+## Features
 
-[ ] Ollama integration
+### Dashboard
 
----
+* [ ] Health Score Card
+* [ ] Current Cutoff Summary
+* [ ] Top Recommendations
 
-## Narrative Generation
+### Cashflow
 
-[ ] Current cutoff narrative
+* [ ] Cashflow Insights
+* [ ] Spending Pace
+* [ ] Remaining Cash Insight
 
-[ ] Monthly narrative
+### Income
 
-[ ] Financial health narrative
+* [ ] Income Insights
 
-[ ] Savings narrative
+### Salary Cutoff
 
-[ ] Spending narrative
+* [ ] Cutoff Performance
 
----
+### Reports
 
-## AI Summary Types
+* [ ] Rule-based report summaries
 
-[ ] Short summary
+## Cleanup
 
-[ ] Detailed summary
+* [ ] Replace remaining AI-underway placeholders with real rule-generated insights
 
-[ ] Dashboard summary
+## Definition of Done
 
-[ ] Monthly review summary
+* [ ] dashboard consumes InsightBundle
+* [ ] UI does not calculate financial intelligence directly
+* [ ] existing layout remains stable
+* [ ] tests/lint/build pass
 
----
+## Suggested Commit Message
 
-## Fallback Behavior
-
-[ ] Fallback to rule-based summary when AI unavailable
-
-[ ] AI failure handling
-
-[ ] Timeout handling
-
----
-
-## Frontend
-
-[ ] AI Summary Card
-
-[ ] AI Summary Page Section
-
-[ ] Regenerate Summary Action
-
-[ ] Summary Loading State
+```txt
+feat(insights): integrate deterministic insights into dashboard
+```
 
 ---
 
-## Testing
+# Phase 11A.11 — Insights Page
 
-[ ] API tests
+Status: ⬜
 
-[ ] Prompt generation tests
+## Goal
 
-[ ] AI fallback tests
+Provide a dedicated insights experience.
 
-[ ] Narrative rendering tests
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+02 — InsightBundle & Data Contracts
+03 — Insight Engine Architecture
+10 — Recommendation Engine Architecture
+11 — Summary Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.10 — Dashboard Integration
+```
+
+## Features
+
+* [ ] Insights page
+* [ ] Current cutoff insights
+* [ ] Monthly insights
+* [ ] Historical insights
+* [ ] Recommendation timeline
+* [ ] Summary sections
+* [ ] Empty state
+* [ ] Loading state
+* [ ] Error state
+
+## Definition of Done
+
+* [ ] page consumes insightService/useInsights
+* [ ] no duplicate financial logic in UI
+* [ ] responsive layout works
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): add dedicated insights page
+```
 
 ---
+
+# Phase 11A.12 — Summary History
+
+Status: ⬜
+
+## Goal
+
+Persist generated summaries.
+
+## Architecture References
+
+### Primary
+
+```txt
+00 — Source of Truth
+01 — Domain Model and Database
+02 — InsightBundle & Data Contracts
+11 — Summary Engine Architecture
+```
+
+## Dependencies
+
+```txt
+Phase 11A.9 — Summary Generator
+```
+
+## Features
+
+* [ ] Cutoff summary history
+* [ ] Monthly summary history
+* [ ] Insight history
+* [ ] Generated timestamp
+* [ ] Summary retrieval
+* [ ] Summary empty state
+* [ ] Summary history tests
+
+## Definition of Done
+
+* [ ] summary history persists safely
+* [ ] generated summaries remain traceable
+* [ ] no duplicate summaries for same scope unless versioned
+* [ ] tests/lint/build pass
+
+## Suggested Commit Message
+
+```txt
+feat(insights): persist deterministic summary history
+```
+
+---
+
+# Phase 11A Testing
+
+Status: ⬜
+
+## Rule Engine Tests
+
+* [ ] Health rules
+* [ ] Expense rules
+* [ ] Income rules
+* [ ] Savings rules
+* [ ] Goal rules
+* [ ] Cashflow rules
+* [ ] Cutoff rules
+
+## Service Tests
+
+* [ ] insightService
+* [ ] recommendationService
+* [ ] summaryService
+
+## Integration Tests
+
+* [ ] Dashboard
+* [ ] Reports
+* [ ] Cashflow
+* [ ] Salary Cutoff
+* [ ] Insights Page
 
 ## Verification
 
-[ ] npm.cmd run test
-
-[ ] npm.cmd run lint
-
-[ ] npm.cmd run build
+* [ ] npm.cmd run test
+* [ ] npm.cmd run lint
+* [ ] npm.cmd run build
 
 ---
 
-## Actions Taken
+# Phase 11B — AI Financial Intelligence Platform
+
+Status: ⬜
+
+## Goal
+
+Build the AI layer on top of deterministic financial intelligence.
+
+AI must consume:
 
 ```txt
-Pending.
+InsightBundle
+RecommendationBundle
+FinancialSummary
+Conversation Context
+Memory Context
 ```
+
+AI must never become the source of financial truth.
+
+## Architecture References
+
+```txt
+12.0 — AI Platform Architecture Overview
+12.1 — Prompt Builder Architecture
+12.2 — Conversation Engine Architecture
+12.3 — Ollama Integration Architecture
+12.4 — AI Orchestration Engine
+12.5 — Conversation Memory Architecture
+12.6 — AI Safety & Guardrails
+12.7 — Spring Boot AI REST API
+12.8 — Streaming & Real-Time Response Architecture
+12.9 — AI Testing Strategy
+12.10 — Future Multi-LLM & AI Evolution Architecture
+```
+
+## Depends On
+
+```txt
+Phase 11A — Rule-Based Financial Intelligence
+```
+
+## Implementation Starts After
+
+```txt
+Phase 11A.0–11A.12 completed
+```
+
+---
+
+# Phase 11B.0 — AI Platform Foundation
+
+Status: ⬜
+
+## Features
+
+* [ ] AI Platform folder/module structure
+* [ ] AI Gateway placeholder
+* [ ] Prompt Builder placeholder
+* [ ] Conversation Engine placeholder
+* [ ] Provider Layer placeholder
+* [ ] Guardrail Engine placeholder
+* [ ] AI Orchestrator placeholder
+* [ ] Memory Service placeholder
+* [ ] Streaming Engine placeholder
+
+---
+
+# Phase 11B.1 — Prompt Builder
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.1 — Prompt Builder Architecture
+12.5 — Conversation Memory Architecture
+12.6 — AI Safety & Guardrails
+```
+
+## Features
+
+* [ ] PromptPackage DTO
+* [ ] Context selector
+* [ ] Template registry
+* [ ] Prompt composer
+* [ ] Safety injector
+* [ ] Prompt validator
+
+---
+
+# Phase 11B.2 — Conversation Engine
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.2 — Conversation Engine Architecture
+12.5 — Conversation Memory Architecture
+```
+
+## Features
+
+* [ ] Conversation DTO
+* [ ] Session model
+* [ ] Message model
+* [ ] Topic tracker
+* [ ] Clarification manager
+* [ ] Conversation context builder
+
+---
+
+# Phase 11B.3 — Provider Layer / Ollama
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.3 — Ollama Integration Architecture
+12.10 — Future Multi-LLM & AI Evolution Architecture
+```
+
+## Features
+
+* [ ] LLM adapter interface
+* [ ] Provider registry
+* [ ] Ollama adapter
+* [ ] Provider request DTO
+* [ ] Provider response DTO
+* [ ] Provider diagnostics
+
+---
+
+# Phase 11B.4 — AI Orchestration Engine
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.4 — AI Orchestration Engine
+12.6 — AI Safety & Guardrails
+```
+
+## Features
+
+* [ ] AI Workflow DTO
+* [ ] Workflow manager
+* [ ] Workflow templates
+* [ ] Service coordinator
+* [ ] Timeout manager
+* [ ] Retry manager
+* [ ] Workflow diagnostics
+
+---
+
+# Phase 11B.5 — Memory Service
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.5 — Conversation Memory Architecture
+12.6 — AI Safety & Guardrails
+```
+
+## Features
+
+* [ ] Memory DTO
+* [ ] Memory Context DTO
+* [ ] Memory evaluator
+* [ ] Memory retriever
+* [ ] Memory ranker
+* [ ] Memory policy manager
+
+---
+
+# Phase 11B.6 — Guardrail Engine
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.6 — AI Safety & Guardrails
+```
+
+## Features
+
+* [ ] Input validator
+* [ ] Prompt validator
+* [ ] Memory validator
+* [ ] Provider validator
+* [ ] Response validator
+* [ ] Financial guidance validator
+* [ ] Audit logger
+
+---
+
+# Phase 11B.7 — Spring Boot AI REST API
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.7 — Spring Boot AI REST API
+```
+
+## Features
+
+* [ ] AI Gateway
+* [ ] AI REST controllers
+* [ ] Request DTOs
+* [ ] Response DTOs
+* [ ] Error handling
+* [ ] API versioning
+
+---
+
+# Phase 11B.8 — Streaming Engine
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.8 — Streaming & Real-Time Response Architecture
+```
+
+## Features
+
+* [ ] Stream manager
+* [ ] Token buffer
+* [ ] Chunk model
+* [ ] SSE endpoint
+* [ ] Cancellation
+* [ ] Stream diagnostics
+
+---
+
+# Phase 11B.9 — AI Testing Harness
+
+Status: ⬜
+
+## Architecture References
+
+```txt
+12.9 — AI Testing Strategy
+```
+
+## Features
+
+* [ ] Provider mock
+* [ ] Workflow simulator
+* [ ] Prompt simulator
+* [ ] Conversation simulator
+* [ ] Memory simulator
+* [ ] Regression runner
+
+---
+
+# Phase 11B Verification
+
+* [ ] AI outputs grounded in deterministic insights
+* [ ] no AI-generated financial source of truth
+* [ ] guardrails enforced
+* [ ] provider abstraction respected
+* [ ] streaming tested
+* [ ] npm.cmd run test
+* [ ] npm.cmd run lint
+* [ ] npm.cmd run build
 
 ---
 
