@@ -2380,7 +2380,7 @@ feat(insights): add phase 11A insight architecture foundation
 
 # Phase 11A.1 — Financial Health Engine
 
-Status: ⬜
+Status: ✅
 
 ## Goal
 
@@ -2436,19 +2436,19 @@ Critical
 
 ## Rules
 
-* [ ] Income availability
-* [ ] Expense ratio
-* [ ] Savings ratio
-* [ ] Remaining cash
-* [ ] Goal contribution participation
+* [x] Income availability
+* [x] Expense ratio
+* [x] Savings ratio
+* [x] Remaining cash
+* [x] Goal contribution participation
 
 ## Definition of Done
 
-* [ ] health score is deterministic
-* [ ] every score has evidence
-* [ ] every health status is tested
-* [ ] no AI usage
-* [ ] tests/lint/build pass
+* [x] health score is deterministic
+* [x] every score has evidence
+* [x] every health status is tested
+* [x] no AI usage
+* [x] tests/lint/build pass
 
 ## Suggested Commit Message
 
