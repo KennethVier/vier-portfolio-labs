@@ -1,6 +1,8 @@
 import { createInsightBundle } from '../models/insightBundle.js'
 import { generateExpenseInsight } from '../rules/expense/expenseEngine.js'
 import { generateHealthInsight } from '../rules/health/healthEngine.js'
+import { generateIncomeInsight } from '../rules/income/incomeEngine.js'
+import { generateSavingsInsight } from '../rules/savings/savingsEngine.js'
 import { DEFAULT_INSIGHT_SCOPE } from '../utils/insightConstants.js'
 
 export const insightService = {
@@ -9,6 +11,8 @@ export const insightService = {
 
     bundle.health = await generateHealthInsight({ scope })
     bundle.expenses = await generateExpenseInsight({ scope })
+    bundle.income = await generateIncomeInsight({ scope })
+    bundle.savings = await generateSavingsInsight({ scope })
 
     return bundle
   },

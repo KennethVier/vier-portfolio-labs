@@ -34,6 +34,33 @@ async function createDetectedExpense(overrides = {}) {
   })
 }
 
+function formatIsoDate(date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date)
+  nextDate.setUTCDate(nextDate.getUTCDate() + days)
+  return nextDate
+}
+
+function createCurrentCutoffPayload(name = 'Active Cutoff') {
+  const today = new Date()
+
+  return {
+    createdAt: '2026-06-01T00:00:00.000Z',
+    endDate: formatIsoDate(addDays(today, 7)),
+    expectedIncome: 40000,
+    name,
+    startDate: formatIsoDate(addDays(today, -7)),
+    status: 'active',
+    payday1: 16,
+    payday2: 31,
+    type: 'semi_monthly',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }
+}
+
 beforeEach(async () => {
   await db.open()
   await clearDatabase()
@@ -81,14 +108,7 @@ describe('expenseInboxService', () => {
   })
 
   it('assigns approved expenses to the current cutoff when one exists', async () => {
-    const cutoff = await cutoffService.createCutoff({
-      expectedIncome: 42000,
-      name: 'June current cycle',
-      endDate: '2026-06-30',
-      startDate: '2026-06-01',
-      status: 'active',
-      type: 'custom',
-    })
+    const cutoff = await cutoffService.createCutoff(createCurrentCutoffPayload('June current cycle'))
     const inboxId = await createDetectedExpense()
 
     const result = await expenseInboxService.approveInboxRecord(inboxId)

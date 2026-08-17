@@ -19,6 +19,31 @@ const validExpense = {
   source: 'manual',
 }
 
+function formatIsoDate(date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date)
+  nextDate.setUTCDate(nextDate.getUTCDate() + days)
+  return nextDate
+}
+
+function createCurrentCutoffPayload(name = 'Active Cutoff') {
+  const today = new Date()
+
+  return {
+    createdAt: '2026-06-01T00:00:00.000Z',
+    endDate: formatIsoDate(addDays(today, 7)),
+    expectedIncome: 40000,
+    name,
+    startDate: formatIsoDate(addDays(today, -7)),
+    status: 'active',
+    type: 'semi_monthly',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }
+}
+
 beforeEach(async () => {
   await db.open()
   await clearDatabase()
@@ -70,16 +95,9 @@ describe('expenseService', () => {
   })
 
   it('defaults new expenses to the current cutoff when cutoffId is empty', async () => {
-    const activeCutoffId = await salaryCutoffRepository.create({
-      name: 'Active Cutoff',
-      type: 'semi_monthly',
-      startDate: '2026-06-16',
-      endDate: '2026-06-30',
-      expectedIncome: 40000,
-      status: 'active',
-      createdAt: '2026-06-01T00:00:00.000Z',
-      updatedAt: '2026-06-01T00:00:00.000Z',
-    })
+    const activeCutoffId = await salaryCutoffRepository.create(
+      createCurrentCutoffPayload(),
+    )
 
     const createdExpense = await expenseService.createExpense(validExpense)
 
@@ -278,16 +296,9 @@ describe('expenseService', () => {
   })
 
   it('calculates current-cutoff expense KPIs independently from table filters', async () => {
-    const activeCutoffId = await salaryCutoffRepository.create({
-      name: 'Active Cutoff',
-      type: 'semi_monthly',
-      startDate: '2026-06-16',
-      endDate: '2026-06-30',
-      expectedIncome: 40000,
-      status: 'active',
-      createdAt: '2026-06-01T00:00:00.000Z',
-      updatedAt: '2026-06-01T00:00:00.000Z',
-    })
+    const activeCutoffId = await salaryCutoffRepository.create(
+      createCurrentCutoffPayload(),
+    )
     const historicalCutoffId = await salaryCutoffRepository.create({
       name: 'Historical Cutoff',
       type: 'semi_monthly',

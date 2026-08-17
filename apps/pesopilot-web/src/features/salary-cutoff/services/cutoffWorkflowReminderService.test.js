@@ -27,12 +27,18 @@ class MemoryStorage {
 }
 
 async function createActiveCutoff() {
+  const today = new Date()
+  const startDate = new Date(today)
+  startDate.setUTCDate(startDate.getUTCDate() - 7)
+  const endDate = new Date(today)
+  endDate.setUTCDate(endDate.getUTCDate() + 7)
+
   return salaryCutoffRepository.create({
     createdAt: '2026-06-01T00:00:00.000Z',
-    endDate: '2026-06-30',
+    endDate: endDate.toISOString().slice(0, 10),
     expectedIncome: 40000,
     name: 'Active Cutoff',
-    startDate: '2026-06-16',
+    startDate: startDate.toISOString().slice(0, 10),
     status: 'active',
     type: 'semi_monthly',
     updatedAt: '2026-06-01T00:00:00.000Z',

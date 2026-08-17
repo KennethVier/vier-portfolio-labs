@@ -13,6 +13,27 @@ export {
   createHealthRuleResult,
   HEALTH_RULE_STATUS,
 } from './models/healthRuleResult.js'
+export {
+  createEmptyIncomeMetrics,
+  createIncomeInsight,
+  INCOME_STABILITY,
+  INCOME_TREND,
+} from './models/incomeInsight.js'
+export {
+  createIncomeRuleResult,
+  INCOME_RULE_STATUS,
+} from './models/incomeRuleResult.js'
+export {
+  createEmptySavingsMetrics,
+  createSavingsInsight,
+  SAVINGS_CONSISTENCY,
+  SAVINGS_RATE_STATUS,
+  SAVINGS_TREND,
+} from './models/savingsInsight.js'
+export {
+  createSavingsRuleResult,
+  SAVINGS_RULE_STATUS,
+} from './models/savingsRuleResult.js'
 export { INSIGHT_TYPES } from './models/insightTypes.js'
 export { useInsights } from './hooks/useInsights.js'
 export { insightService } from './services/insightService.js'
@@ -28,6 +49,18 @@ export {
   HEALTH_RULE_WEIGHTS,
   healthRuleRegistry,
 } from './rules/health/healthRuleRegistry.js'
+export { generateIncomeInsight } from './rules/income/incomeEngine.js'
+export {
+  INCOME_RULE_IDS,
+  INCOME_RULE_WEIGHTS,
+  incomeRuleRegistry,
+} from './rules/income/incomeRuleRegistry.js'
+export { generateSavingsInsight } from './rules/savings/savingsEngine.js'
+export {
+  SAVINGS_RULE_IDS,
+  SAVINGS_RULE_WEIGHTS,
+  savingsRuleRegistry,
+} from './rules/savings/savingsRuleRegistry.js'
 export {
   DEFAULT_INSIGHT_SCOPE,
   INSIGHT_SCOPES,

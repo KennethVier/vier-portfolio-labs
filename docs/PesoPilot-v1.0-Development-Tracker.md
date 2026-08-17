@@ -1807,7 +1807,7 @@ Deferred manual ExpenseForm merchant suggestions and runtime international Lifes
 
 # Phase 10.5 — UX and Workflow Hardening
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -2563,25 +2563,25 @@ Reports
 
 ## Features
 
-* [ ] IncomeInsight DTO
-* [ ] Income metrics model
-* [ ] Income rule registry
-* [ ] Total income
-* [ ] Income trend
-* [ ] Previous cutoff comparison
-* [ ] Monthly comparison
-* [ ] Income source breakdown
-* [ ] Missing income detection
-* [ ] Income stability
-* [ ] Income aggregation
-* [ ] Income explanation text
+* [x] IncomeInsight DTO
+* [x] Income metrics model
+* [x] Income rule registry
+* [x] Total income
+* [x] Income trend
+* [x] Previous cutoff comparison
+* [x] Monthly comparison
+* [x] Income source breakdown
+* [x] Missing income detection
+* [x] Income stability
+* [x] Income aggregation
+* [x] Income explanation text
 
 ## Definition of Done
 
-* [ ] income insights are deterministic
-* [ ] all comparisons are tested
-* [ ] missing income is handled safely
-* [ ] tests/lint/build pass
+* [x] income insights are deterministic
+* [x] all comparisons are tested
+* [x] missing income is handled safely
+* [x] tests/lint/build pass
 
 ## Suggested Commit Message
 
@@ -2593,7 +2593,7 @@ feat(insights): implement income intelligence engine
 
 # Phase 11A.4 — Savings Intelligence
 
-Status: ⬜
+Status: ✅
 
 ## Goal
 
@@ -2627,25 +2627,39 @@ Summary Generator
 
 ## Features
 
-* [ ] SavingsInsight DTO
-* [ ] Savings metrics model
-* [ ] Savings rule registry
-* [ ] Savings total
-* [ ] Savings rate
-* [ ] Savings trend
-* [ ] Previous cutoff comparison
-* [ ] Contribution frequency
-* [ ] Largest contribution
-* [ ] Savings consistency
-* [ ] Savings aggregation
-* [ ] Savings explanation text
+* [x] SavingsInsight DTO
+* [x] Savings metrics model
+* [x] Savings rule registry
+* [x] Savings total
+* [x] Savings rate
+* [x] Savings trend
+* [x] Previous cutoff comparison
+* [x] Contribution frequency
+* [x] Largest savings contribution
+* [x] Savings consistency
+* [x] Savings aggregation
+* [x] Savings explanation text
 
 ## Definition of Done
 
-* [ ] savings insights are deterministic
-* [ ] savings rate is tested
-* [ ] trend logic is tested
-* [ ] tests/lint/build pass
+* [x] savings insights are deterministic
+* [x] savings rate is tested
+* [x] trend logic is tested
+* [x] tests/lint/build pass
+
+## Action Notes
+
+```txt
+Implemented deterministic Savings Intelligence as an insights-owned engine.
+SavingsInsight now includes current-cutoff savings totals, savings rate,
+previous-cutoff trend comparison, contribution frequency, largest savings
+contribution, consistency, evidence, aggregation, and explanation text.
+Focused insights tests, lint, and build passed; full test verification is blocked
+by existing date-sensitive current-cutoff tests after 2026-06-30.
+Goal progress, completion percentages, target achievement, projections,
+recommendations, summaries, dashboard integration, AI, backend calls, and
+schema changes remain out of scope for future phases.
+```
 
 ## Suggested Commit Message
 
