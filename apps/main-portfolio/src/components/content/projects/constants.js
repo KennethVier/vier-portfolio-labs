@@ -26,6 +26,27 @@ export const PROJECTS = [
 
   {
     id: 2,
+    title: "PesoPilot Financial OS",
+    description:
+      "Local-first personal finance workspace for tracking income, expenses, savings, cashflow, salary cutoffs, and explainable financial insights.",
+    image: "/images/pesopilot.png",
+    alt: "PesoPilot financial dashboard showing health score, cashflow, expenses, and AI insights",
+    icon: "account_balance_wallet",
+    tags: [
+      "React",
+      "Java Spring Boot",
+      "PostgreSQL",
+      "IndexedDB",
+      "Financial Insights",
+      "REST API"
+    ],
+    links: {
+      live: "https://peso-pilot-three.vercel.app/"
+    }
+  },
+
+  {
+    id: 3,
     title: "Vier Apparel Ecommerce Prototype",
     description:
       "Full-stack ecommerce prototype with a modern storefront, backend-driven product catalog, PostgreSQL seed data, cart and favorites, demo checkout, order history, and admin product management.",
@@ -45,7 +66,7 @@ export const PROJECTS = [
     }
   },
   {
-    id: 3,
+    id: 4,
     title: "PeopleOps Dashboard Prototype",
     description:
       "Full-stack internal operations dashboard for managing employees, departments, onboarding tasks, leave requests, activity logs, and workforce analytics across a simulated company.",
@@ -65,7 +86,7 @@ export const PROJECTS = [
     }
   },
   {
-    id: 4,
+    id: 5,
     title: "StrideMate AI Running Coach",
     description:
       "AI-powered running coach prototype that creates 4-week training plans, logs workouts from manual input or OCR-assisted screenshots, and adapts feedback around effort, fatigue, and safety signals.",
@@ -86,7 +107,7 @@ export const PROJECTS = [
   },
 
   {
-    id: 5,
+    id: 6,
     title: "Authly Authentication Demo",
     description:
       "Authentication-focused portfolio demo with email registration, sign-in flow, OAuth-oriented UI, protected dashboard routing, and backend-optional deployment messaging.",
@@ -107,7 +128,7 @@ export const PROJECTS = [
   },
 
   {
-    id: 6,
+    id: 7,
     title: "Enhanced To-Do List Application",
     description:
       "Full-stack task management system built with Java Spring Boot and React, featuring REST API integration, deadline tracking, email notifications, and relational database persistence.",
