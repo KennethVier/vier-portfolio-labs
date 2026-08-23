@@ -8,6 +8,15 @@ export {
   createExpenseRuleResult,
   EXPENSE_RULE_STATUS,
 } from './models/expenseRuleResult.js'
+export {
+  createEmptyGoalMetrics,
+  createGoalInsight,
+  GOAL_CONSISTENCY,
+} from './models/goalInsight.js'
+export {
+  createGoalRuleResult,
+  GOAL_RULE_STATUS,
+} from './models/goalRuleResult.js'
 export { createHealthInsight, HEALTH_STATUS } from './models/healthInsight.js'
 export {
   createHealthRuleResult,
@@ -43,6 +52,12 @@ export {
   EXPENSE_RULE_WEIGHTS,
   expenseRuleRegistry,
 } from './rules/expense/expenseRuleRegistry.js'
+export { generateGoalInsight } from './rules/goal/goalEngine.js'
+export {
+  GOAL_RULE_IDS,
+  GOAL_RULE_WEIGHTS,
+  goalRuleRegistry,
+} from './rules/goal/goalRuleRegistry.js'
 export { generateHealthInsight } from './rules/health/healthEngine.js'
 export {
   HEALTH_RULE_IDS,

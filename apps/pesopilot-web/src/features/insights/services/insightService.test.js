@@ -170,8 +170,34 @@ vi.mock('../rules/savings/savingsEngine.js', () => ({
   })),
 }))
 
+vi.mock('../rules/goal/goalEngine.js', () => ({
+  generateGoalInsight: vi.fn(async ({ scope }) => ({
+    category: 'goal',
+    scope,
+    generatedAt: '2026-06-28T00:04:00.000Z',
+    metrics: {
+      totalGoals: 1,
+      activeGoals: 1,
+      completedGoals: 0,
+      totalTargetAmount: 10000,
+      totalSavedAmount: 5000,
+      overallCompletionRate: 50,
+      highestFundedGoal: null,
+      goalsWithoutContributions: [],
+      goals: [],
+    },
+    breakdown: [],
+    evidence: [],
+    explanation: 'Overall goal completion is 50%.',
+    diagnostics: {
+      executedRules: [],
+      warnings: [],
+    },
+  })),
+}))
+
 describe('insightService', () => {
-  it('loads an InsightBundle with health, expenses, income, and savings populated by default', async () => {
+  it('loads an InsightBundle with health, expenses, income, savings, and goals populated by default', async () => {
     await expect(insightService.loadInsights()).resolves.toEqual({
       scope: INSIGHT_SCOPES.currentCutoff,
       generatedAt: expect.any(String),
@@ -329,7 +355,29 @@ describe('insightService', () => {
           warnings: [],
         },
       },
-      goals: null,
+      goals: {
+        category: 'goal',
+        scope: INSIGHT_SCOPES.currentCutoff,
+        generatedAt: '2026-06-28T00:04:00.000Z',
+        metrics: {
+          totalGoals: 1,
+          activeGoals: 1,
+          completedGoals: 0,
+          totalTargetAmount: 10000,
+          totalSavedAmount: 5000,
+          overallCompletionRate: 50,
+          highestFundedGoal: null,
+          goalsWithoutContributions: [],
+          goals: [],
+        },
+        breakdown: [],
+        evidence: [],
+        explanation: 'Overall goal completion is 50%.',
+        diagnostics: {
+          executedRules: [],
+          warnings: [],
+        },
+      },
       cashflow: null,
       cutoff: null,
       recommendations: [],
@@ -337,7 +385,7 @@ describe('insightService', () => {
     })
   })
 
-  it('loads health, expenses, income, and savings for a supplied scope without filling other sections', async () => {
+  it('loads health, expenses, income, savings, and goals for a supplied scope without filling other sections', async () => {
     const bundle = await insightService.loadInsights({
       scope: INSIGHT_SCOPES.specificCutoff,
     })
@@ -347,7 +395,7 @@ describe('insightService', () => {
     expect(bundle.expenses.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.income.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.savings.scope).toBe(INSIGHT_SCOPES.specificCutoff)
-    expect(bundle.goals).toBeNull()
+    expect(bundle.goals.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.cashflow).toBeNull()
     expect(bundle.cutoff).toBeNull()
     expect(bundle.summary).toBeNull()

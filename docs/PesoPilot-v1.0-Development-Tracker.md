@@ -2671,7 +2671,7 @@ feat(insights): implement savings intelligence engine
 
 # Phase 11A.5 — Savings Goal Intelligence
 
-Status: ⬜
+Status: ✅
 
 ## Goal
 
@@ -2706,24 +2706,25 @@ Goal Dashboard Insights
 
 ## Features
 
-* [ ] GoalInsight DTO
-* [ ] Goal metrics model
-* [ ] Goal rule registry
-* [ ] Goal progress
-* [ ] Goal completion
-* [ ] Goals without contributions
-* [ ] Highest funded goal
-* [ ] Remaining amount
-* [ ] Goal completion percentage
-* [ ] Goal aggregation
-* [ ] Goal explanation text
+* [x] GoalInsight DTO
+* [x] Goal metrics model
+* [x] Goal rule registry
+* [x] Goal progress
+* [x] Goal completion
+* [x] Goals without contributions
+* [x] Highest funded goal
+* [x] Remaining amount
+* [x] Goal completion percentage
+* [x] Contribution consistency
+* [x] Goal aggregation
+* [x] Goal explanation text
 
 ## Definition of Done
 
-* [ ] goal insights are deterministic
-* [ ] empty goals are handled
-* [ ] progress calculations are tested
-* [ ] tests/lint/build pass
+* [x] goal insights are deterministic
+* [x] empty goals are handled
+* [x] progress calculations are tested
+* [x] tests/lint/build pass
 
 ## Suggested Commit Message
 
