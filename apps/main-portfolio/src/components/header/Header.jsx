@@ -27,7 +27,7 @@ export default function Header() {
     <header className="site-header fixed inset-x-0 top-0 z-50 border-b border-outline-variant/20 bg-background/85 backdrop-blur-xl">
       <div className="site-shell flex h-18 items-center justify-between">
         <a
-          className="font-headline-section text-xl font-semibold tracking-[-0.04em] text-primary md:text-2xl"
+          className="inline-flex min-h-11 items-center font-headline-section text-xl font-semibold tracking-[-0.04em] text-primary md:text-2xl"
           href="#top"
           aria-label="VIER.OS home"
           onClick={() => setIsOpen(false)}
