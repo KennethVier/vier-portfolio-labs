@@ -1,6 +1,6 @@
 /**
  * TechStack constants
- * Skill categories and items data
+ * Capabilities grouped around the work shown in the portfolio.
  */
 export const SKILL_CATEGORIES = [
   {
@@ -11,12 +11,14 @@ export const SKILL_CATEGORIES = [
     iconColor: "text-primary",
     dotColor: "bg-primary",
     skills: [
-      "Java",
+      "Java 21 / 25",
       "Spring Boot",
       "Spring MVC",
-      "Spring Data JPA",
       "Spring Security",
-      "REST APIs"
+      "Spring Data JPA",
+      "Hibernate",
+      "REST APIs",
+      "Background Workers"
     ]
   },
   {
@@ -28,42 +30,85 @@ export const SKILL_CATEGORIES = [
     dotColor: "bg-tertiary",
     skills: [
       "React",
+      "TypeScript",
       "JavaScript",
+      "Vite",
       "Tailwind CSS",
-      "Bootstrap"
+      "TanStack Query",
+      "React Hook Form",
+      "Zod"
     ]
   },
   {
-    id: "database",
-    title: "Databases",
+    id: "data",
+    title: "Data & Persistence",
     icon: "database",
     borderColor: "border-l-secondary",
     iconColor: "text-secondary",
     dotColor: "bg-secondary",
     skills: [
       "PostgreSQL",
-      "MySQL",
-      "Microsoft SQL Server",
-      "SQL"
+      "SQL",
+      "pgvector",
+      "Full-Text Search",
+      "Flyway",
+      "IndexedDB",
+      "Dexie.js",
+      "Relational Modeling"
     ]
   },
   {
-    id: "tools",
-    title: "Tools & Practices",
+    id: "ai",
+    title: "AI & RAG",
+    icon: "psychology",
+    borderColor: "border-l-tertiary",
+    iconColor: "text-tertiary",
+    dotColor: "bg-tertiary",
+    skills: [
+      "Spring AI",
+      "RAG",
+      "Gemini",
+      "Ollama",
+      "Embeddings",
+      "Document Ingestion",
+      "Structured AI Output",
+      "Provider Abstraction"
+    ]
+  },
+  {
+    id: "quality",
+    title: "Testing & Quality",
+    icon: "verified",
+    borderColor: "border-l-primary",
+    iconColor: "text-primary",
+    dotColor: "bg-primary",
+    skills: [
+      "JUnit 5",
+      "Mockito",
+      "Testcontainers",
+      "ArchUnit",
+      "Vitest",
+      "React Testing Library",
+      "Playwright",
+      "TDD"
+    ]
+  },
+  {
+    id: "delivery",
+    title: "Delivery & AI Tools",
     icon: "terminal",
     borderColor: "border-l-on-surface-variant",
     iconColor: "text-on-surface-variant",
     dotColor: "bg-on-surface-variant",
     skills: [
-      "Git",
-      "Agile",
+      "Git / GitHub",
       "Docker",
-      "MVC",
-      "Microservices",
-      "OOP",
-      "TDD",
+      "GitHub Actions",
       "Postman",
-      "C# Automation"
+      "Cursor",
+      "OpenAI Codex",
+      "AI-Assisted Development",
+      "Validation Loops"
     ]
   }
 ];

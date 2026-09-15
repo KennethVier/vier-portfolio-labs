@@ -9,9 +9,10 @@ export const EXPERIENCE_ROLES = [
     company: "NCS Philippines",
     period: "Dec 2025 - Present",
     type: "FULL-TIME",
-    description: "Currently undergoing enterprise onboarding and technical training prior to client deployment.",
+    description:
+      "Software Engineer in an enterprise delivery environment, continuing hands-on development and technical growth across Java/Spring systems, software quality, and modern delivery practices.",
     highlights: [],
-    tags: ["Onboarding", "Training"],
+    tags: ["Java / Spring", "Enterprise Delivery", "Quality Engineering"],
     borderColor: "border-primary/40",
     dotColor: "bg-primary",
     hoverDotColor: "group-hover:bg-primary",
@@ -31,7 +32,7 @@ export const EXPERIENCE_ROLES = [
       "Resolved 15+ critical defects across production-facing systems.",
       "Delivered assigned solutions consistently on schedule."
     ],
-    tags: ["C# Automation", "API Optimization", "Defect Resolution"],
+    tags: ["Java / Spring MVC", "C# Automation", "PostgreSQL", "API Optimization"],
     borderColor: "border-secondary/40",
     dotColor: "bg-outline-variant",
     hoverDotColor: "group-hover:bg-secondary",
