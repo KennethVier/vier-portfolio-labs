@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vier-main-portfolio.vercel.app/sitemap.xml

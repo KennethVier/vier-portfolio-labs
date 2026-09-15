@@ -16,6 +16,9 @@ export default function HeroContent() {
       </div>
 
       <h1 className="font-display-hero text-display-hero text-primary leading-tight">
+        <span className="mb-4 block font-label-caps text-label-caps tracking-[0.18em] text-on-surface-variant">
+          Kenneth Vier Cerrado · Software Engineer
+        </span>
         Reliable Full-Stack <br />
         & AI-Powered Software <br />
         <span className="text-tertiary">Built for Real Products</span>
