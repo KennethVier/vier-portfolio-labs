@@ -12,9 +12,9 @@ export default function MainContent() {
     <main className="max-w-container-max mx-auto px-gutter pt-20">
       <Hero />
       <Projects />
-      <Services />
-      <TechStack />
       <Experience />
+      <TechStack />
+      <Services />
       <About />
       <Contact />
     </main>

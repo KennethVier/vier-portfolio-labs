@@ -3,7 +3,7 @@ import HeroTechTags from './HeroTechTags';
 
 /**
  * HeroContent
- * Primary positioning and conversion actions for the portfolio.
+ * Primary positioning and navigation actions for the portfolio.
  */
 export default function HeroContent() {
   return (
@@ -12,31 +12,28 @@ export default function HeroContent() {
 
       <div className="inline-flex items-center gap-2 rounded-full border border-tertiary/25 bg-tertiary/5 px-4 py-2 font-label-caps text-label-caps text-tertiary">
         <span className="h-2 w-2 rounded-full bg-tertiary shadow-[0_0_12px_rgba(76,214,251,0.8)]" />
-        Available for selected freelance & part-time projects
+        Software Engineering · Product Development · Practical AI
       </div>
 
       <h1 className="font-display-hero text-display-hero text-primary leading-tight">
         <span className="mb-4 block font-label-caps text-label-caps tracking-[0.18em] text-on-surface-variant">
           Kenneth Vier Cerrado · Software Engineer
         </span>
-        Reliable Full-Stack <br />
-        & AI-Powered Software <br />
-        <span className="text-tertiary">Built for Real Products</span>
+        Building Reliable Software <br />
+        Across Backend, Web <br />
+        <span className="text-tertiary">& Intelligent Systems</span>
       </h1>
 
       <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
-        Backend-heavy Software Engineer building web applications, APIs, AI integrations,
-        and business tools with Java, Spring Boot, React, TypeScript, and PostgreSQL —
-        from architecture and data modeling to testing and deployment.
+        Backend-heavy Software Engineer working across Java and Spring Boot systems, React products,
+        PostgreSQL data layers, APIs, automation, and AI-enabled workflows. This portfolio brings
+        together my professional experience, engineering projects, and the systems I build to keep
+        growing beyond a single stack or role.
       </p>
 
       <div className="flex flex-wrap items-center gap-4 pt-4">
-        <Button label="Explore Case Studies" href="#projects" variant="primary" />
-        <Button
-          label="Start a Project"
-          href="mailto:kennethcerrado23@gmail.com?subject=Freelance%20Project%20Inquiry%20-%20Kenneth%20Cerrado"
-          variant="secondary"
-        />
+        <Button label="Explore Engineering Work" href="#projects" variant="primary" />
+        <Button label="View Experience" href="#experience" variant="secondary" />
       </div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-2 font-label-caps text-label-caps text-on-surface-variant">
@@ -56,7 +53,7 @@ export default function HeroContent() {
         >
           LinkedIn ↗
         </a>
-        <span>Remote · Philippines</span>
+        <span>Philippines · Open to meaningful opportunities & collaborations</span>
       </div>
     </div>
   );

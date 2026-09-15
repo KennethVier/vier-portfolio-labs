@@ -14,9 +14,9 @@ export default function Header() {
 
         <nav className="hidden lg:flex items-center gap-6 xl:gap-8 justify-self-center">
           <NavLink label="Projects" href="#projects" isActive={true} />
-          <NavLink label="Services" href="#services" />
-          <NavLink label="Skills" href="#skills" />
           <NavLink label="Experience" href="#experience" />
+          <NavLink label="Skills" href="#skills" />
+          <NavLink label="Focus" href="#capabilities" />
           <NavLink label="About" href="#about" />
           <NavLink label="Contact" href="#contact" />
         </nav>
