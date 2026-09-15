@@ -1,6 +1,6 @@
 /**
  * AboutDescription
- * Engineering story aligned with the portfolio's client-facing positioning.
+ * Engineering story aligned with the portfolio's overall professional positioning.
  */
 export default function AboutDescription() {
   return (
@@ -12,16 +12,16 @@ export default function AboutDescription() {
         <span className="text-primary"> React and TypeScript</span>, and
         <span className="text-primary"> PostgreSQL</span>. I care about the engineering details that
         still matter after the demo works: clear architecture, validation, transactions, testing,
-        security boundaries, and maintainability.
+        security boundaries, maintainability, and predictable system behavior.
       </p>
 
       <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-        I also work professionally as <span className="text-on-surface">Kenneth Vier</span>. My recent work
-        increasingly combines traditional software engineering with
-        <span className="text-tertiary"> AI-enabled product development</span> — RAG, document processing,
-        LLM integrations, and AI-assisted workflows — while keeping application state and critical
-        business rules deterministic. For freelance work, I bring the same approach to new builds,
-        existing systems, and features that need to ship cleanly.
+        I also work professionally as <span className="text-on-surface">Kenneth Vier</span>. Across
+        professional delivery work and independent product builds, I keep expanding beyond traditional
+        application development into <span className="text-tertiary">AI-enabled software and agentic workflows</span>
+        — including RAG, document processing, LLM integrations, automation, and AI-assisted engineering.
+        My goal is not to chase a single technology, but to become the kind of engineer who can understand
+        a problem deeply, design the right system, and carry it through to a reliable implementation.
       </p>
     </>
   );
