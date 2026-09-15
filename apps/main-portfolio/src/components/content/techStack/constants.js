@@ -41,7 +41,7 @@ export const SKILL_CATEGORIES = [
   },
   {
     id: "data",
-    title: "Data & Persistence",
+    title: "Databases & Persistence",
     icon: "database",
     borderColor: "border-l-secondary",
     iconColor: "text-secondary",
@@ -59,7 +59,7 @@ export const SKILL_CATEGORIES = [
   },
   {
     id: "ai",
-    title: "AI & RAG",
+    title: "AI & Agentic Engineering",
     icon: "psychology",
     borderColor: "border-l-tertiary",
     iconColor: "text-tertiary",
@@ -94,20 +94,35 @@ export const SKILL_CATEGORIES = [
     ]
   },
   {
-    id: "delivery",
-    title: "Delivery & AI Tools",
+    id: "infrastructure",
+    title: "Infrastructure & Deployment",
     icon: "terminal",
     borderColor: "border-l-on-surface-variant",
     iconColor: "text-on-surface-variant",
     dotColor: "bg-on-surface-variant",
     skills: [
-      "Git / GitHub",
       "Docker",
       "GitHub Actions",
+      "Vercel",
+      "Render",
+      "Railway",
+      "Environment Configuration"
+    ]
+  },
+  {
+    id: "tools",
+    title: "Developer Tools",
+    icon: "code_blocks",
+    borderColor: "border-l-secondary",
+    iconColor: "text-secondary",
+    dotColor: "bg-secondary",
+    skills: [
+      "Git / GitHub",
       "Postman",
+      "IntelliJ IDEA",
+      "VS Code",
       "Cursor",
       "OpenAI Codex",
-      "AI-Assisted Development",
       "Validation Loops"
     ]
   }

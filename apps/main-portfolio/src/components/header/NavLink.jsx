@@ -2,14 +2,11 @@
  * NavLink
  * Individual navigation link with active state styling
  */
-export default function NavLink({ label, href, isActive = false, className = "" }) {
-  const baseClasses = "font-label-caps text-label-caps transition-colors duration-300";
-  const activeClasses = isActive 
-    ? "text-primary border-b-2 border-primary pb-1"
-    : "text-on-surface-variant hover:text-on-surface";
+export default function NavLink({ label, href, className = "", onClick }) {
+  const baseClasses = "font-label-caps text-label-caps text-on-surface-variant transition-colors duration-200 hover:text-tertiary";
 
   return (
-    <a href={href} className={`${baseClasses} ${activeClasses} ${className}`}>
+    <a href={href} className={`${baseClasses} ${className}`} onClick={onClick}>
       {label}
     </a>
   );

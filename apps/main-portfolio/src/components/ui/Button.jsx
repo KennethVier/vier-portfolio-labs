@@ -8,11 +8,11 @@ export default function Button({
   variant = "primary",
   className = ""
 }) {
-  const baseClasses = "font-label-caps text-label-caps rounded-xl transition-all duration-300";
+  const baseClasses = "inline-flex min-h-12 items-center justify-center rounded-xl px-6 py-3 font-label-caps text-label-caps transition-colors duration-200 sm:px-8";
   
   const variantClasses = variant === "primary"
-    ? "bg-primary text-on-primary px-8 py-4 hover:shadow-[0_0_25px_rgba(191,194,255,0.5)]"
-    : "border border-outline text-on-surface px-8 py-4 hover:bg-surface-variant/20 hover:shadow-[0_0_20px_rgba(159,239,254,0.1)]";
+    ? "bg-primary text-on-primary hover:bg-primary-fixed"
+    : "border border-outline-variant text-on-surface hover:border-tertiary/60 hover:bg-surface-variant/20";
 
   return (
     <a 

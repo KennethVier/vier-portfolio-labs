@@ -33,7 +33,7 @@ export default function ProjectLinks({ links = {} }) {
           href={link.href}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-outline-variant/30 px-3 py-2 font-label-caps text-label-caps text-on-surface transition-all duration-300 hover:border-tertiary/60 hover:bg-surface-variant/20 hover:text-tertiary"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 font-label-caps text-label-caps text-on-surface transition-colors duration-200 hover:border-tertiary/60 hover:bg-surface-variant/20 hover:text-tertiary"
         >
           <span className="material-symbols-outlined text-base leading-none">
             {link.icon}

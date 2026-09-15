@@ -4,11 +4,11 @@
  */
 export default function SectionHeader({ label, title, subtitle = null, centered = false }) {
   return (
-    <div className={centered ? "text-center mb-16" : "mb-16"}>
+    <div className={centered ? "mb-5 text-center" : "mb-5"}>
       <span className="font-label-caps text-label-caps text-tertiary tracking-widest mb-4 block">
         {label}
       </span>
-      <h2 className="font-headline-section text-headline-section text-on-background">
+      <h2 className="section-title font-headline-section text-on-background">
         {title}
       </h2>
       {subtitle && (

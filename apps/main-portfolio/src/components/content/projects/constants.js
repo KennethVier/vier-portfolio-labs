@@ -7,9 +7,10 @@ export const PROJECTS = [
     id: 1,
     title: "Hippocampus",
     eyebrow: "FLAGSHIP · ACTIVE DEVELOPMENT",
+    number: "01",
     featured: true,
     description:
-      "Architecture-first medical learning platform built around source-grounded Study Missions, reliable document ingestion, and bounded AI integrations.",
+      "A medical learning platform engineered around reliable source ingestion and a traceable foundation for AI-assisted study workflows.",
     image: null,
     alt: "Hippocampus medical learning platform architecture",
     icon: "school",
@@ -17,15 +18,14 @@ export const PROJECTS = [
       "Java 25",
       "Spring Boot",
       "PostgreSQL",
-      "pgvector",
-      "Spring AI",
       "React + TypeScript"
     ],
     highlights: [
-      "Modular backend with explicit transaction, background-worker, and recovery boundaries.",
-      "Grounded retrieval combining relational data, vector search, full-text search, and traceable source evidence.",
-      "Quality gates across unit, integration, architecture, frontend, and end-to-end testing."
+      "Structured the backend into explicit API, application, domain, port, and infrastructure boundaries.",
+      "Implemented durable PDF ingestion with page-level persistence, progress tracking, retries, failure classification, and recovery safeguards.",
+      "Built quality gates across unit, persistence integration, architecture, frontend, and end-to-end testing."
     ],
+    role: "System architecture, backend workflows, persistence, recovery, and full-stack implementation",
     links: {
       github: "https://github.com/KennethVier/hippocampus"
     }
@@ -34,33 +34,36 @@ export const PROJECTS = [
     id: 2,
     title: "PesoPilot Financial OS",
     eyebrow: "FLAGSHIP · LIVE PRODUCT",
+    number: "02",
     featured: true,
     description:
-      "Local-first personal finance workspace for tracking income, expenses, savings, salary cutoffs, budgets, cashflow, and explainable AI-assisted insights.",
+      "A privacy-first personal finance workspace that keeps core expense data on-device and stays usable without an account.",
     image: "/images/pesopilot.png",
     alt: "PesoPilot financial dashboard showing health score, cashflow, expenses, and AI insights",
     icon: "account_balance_wallet",
     tags: [
       "React",
-      "Java Spring Boot",
       "IndexedDB",
       "Dexie.js",
       "Zustand",
       "Zod"
     ],
     highlights: [
-      "Privacy-first local persistence keeps core finance workflows usable without requiring an account.",
-      "Repository-based IndexedDB data layer for expenses, income, savings, budgets, rules, and insights.",
-      "Validated forms, transaction search, combined filters, and backend-ready AI integration boundaries."
+      "Designed a local-first data layer with Dexie repositories and versioned IndexedDB schema foundations.",
+      "Shipped validated expense creation, editing, deletion, search, and combined filtering with no sign-in dependency.",
+      "Defined finance domain boundaries for the remaining income, savings, budget, and explainable AI phases."
     ],
+    role: "Product architecture, React UI, state management, validation, and local persistence",
     links: {
-      live: "https://peso-pilot-three.vercel.app/"
+      live: "https://peso-pilot-three.vercel.app/",
+      github: "https://github.com/KennethVier/vier-portfolio-labs/tree/master/apps/pesopilot-web"
     }
   },
   {
     id: 3,
     title: "Yomira",
     eyebrow: "FLAGSHIP · AI / MICROSERVICES",
+    number: "03",
     featured: true,
     description:
       "Document-driven learning application that extracts PDF content and generates AI-assisted quizzes through independently deployable Spring Boot services.",
@@ -80,6 +83,7 @@ export const PROJECTS = [
       "PDF ingestion and persistence feed structured quiz-generation workflows.",
       "Frontend, document service, and quiz service can be deployed independently."
     ],
+    role: "Service boundaries, PDF processing, AI integration, persistence, and deployment",
     links: {
       github: "https://github.com/KennethVier/vier-portfolio-labs/tree/master/apps/yomira-web",
       live: "https://yomira-livid.vercel.app/"

@@ -10,9 +10,12 @@ export const EXPERIENCE_ROLES = [
     period: "Dec 2025 - Present",
     type: "FULL-TIME",
     description:
-      "Software Engineer in an enterprise delivery environment, continuing hands-on development and technical growth across Java/Spring systems, software quality, and modern delivery practices.",
-    highlights: [],
-    tags: ["Java / Spring", "Enterprise Delivery", "Quality Engineering"],
+      "Working in an enterprise delivery environment with a focus on Java/Spring engineering, software quality, and maintainable delivery practices within a professional team.",
+    highlights: [
+      "Developing deeper production engineering practices through enterprise standards, technical training, and collaborative delivery.",
+      "Applying code quality, security, testing, and maintainability checks to Java/Spring work."
+    ],
+    tags: ["Java / Spring", "Enterprise Delivery", "Software Quality"],
     borderColor: "border-primary/40",
     dotColor: "bg-primary",
     hoverDotColor: "group-hover:bg-primary",
@@ -25,14 +28,14 @@ export const EXPERIENCE_ROLES = [
     company: "Be Unique Inc.",
     period: "Oct 2024 - Dec 2025",
     type: "FULL-TIME",
-    description: "",
+    description:
+      "Delivered enterprise application features across a Java/Spring MVC system and a C# reporting workflow for a Japan-based engineering team.",
     highlights: [
-      "Automated manual workflows using C#, reducing processing time by 70%.",
-      "Improved API response time by 40% through backend optimization.",
-      "Resolved 15+ critical defects across production-facing systems.",
-      "Delivered assigned solutions consistently on schedule."
+      "Built backend business logic and UI flows for résumé management, project alignment, career data, search, filtering, and pagination.",
+      "Implemented Excel exports and asynchronous CSV processing around PostgreSQL-backed enterprise data.",
+      "Automated certification reports and batch email delivery with C# and SAP Crystal Reports."
     ],
-    tags: ["Java / Spring MVC", "C# Automation", "PostgreSQL", "API Optimization"],
+    tags: ["Java / Spring MVC", "C#", "PostgreSQL", "Reporting & Exports"],
     borderColor: "border-secondary/40",
     dotColor: "bg-outline-variant",
     hoverDotColor: "group-hover:bg-secondary",
@@ -45,7 +48,7 @@ export const EXPERIENCE_ROLES = [
     company: "LexMeet Inc.",
     period: "Mar 2024 - Jun 2024",
     type: "INTERNSHIP",
-    description: "",
+    description: "Contributed responsive React interfaces to a production web team during a full-time internship.",
     highlights: [
       "Developed and maintained responsive web interfaces using ReactJS and Bootstrap, improving usability and consistency across the company website.",
       "Collaborated with the front-end team to ensure cross-browser compatibility, responsiveness, and UI consistency across devices."
@@ -55,24 +58,6 @@ export const EXPERIENCE_ROLES = [
     dotColor: "bg-outline-variant",
     hoverDotColor: "group-hover:bg-tertiary",
     dotGlow: "group-hover:shadow-[0_0_10px_rgba(76,214,251,1)]",
-    titleColor: "text-on-surface"
-  },
-  {
-    id: 4,
-    title: "Project Leader & Lead Programmer",
-    company: "Capstone Project",
-    period: "Academic Capstone",
-    type: "PROJECT",
-    description: "",
-    highlights: [
-      "Led a 4-member development team to build an AR mobile application using Unity and C#, enabling real-time 3D architectural visualization.",
-      "Delivered core AR functionalities 2 weeks ahead of schedule, implementing interactive AR features and frontend validation for improved user experience."
-    ],
-    tags: ["Unity", "C#", "AR Development", "Team Leadership"],
-    borderColor: "border-outline-variant/40",
-    dotColor: "bg-outline-variant",
-    hoverDotColor: "group-hover:bg-primary",
-    dotGlow: "group-hover:shadow-[0_0_10px_rgba(191,194,255,1)]",
     titleColor: "text-on-surface"
   }
 ];

@@ -34,20 +34,19 @@ const CAPABILITIES = [
 
 export default function Services() {
   return (
-    <section className="py-section-v-lg reveal-section" id="capabilities">
+    <section className="section-block reveal-section" id="capabilities">
       <div className="mx-auto max-w-3xl text-center">
-        <SectionHeader label="ENGINEERING FOCUS" title="What I Build & How I Work" centered={true} />
-        <p className="mt-5 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-          These are the recurring areas across my professional work and independent projects. I enjoy
-          shipping useful software, but I care just as much about architecture, data integrity, testing,
-          maintainability, and choosing AI only where it creates real product value.
+        <SectionHeader label="ENGINEERING FOCUS" title="How I approach the system" centered={true} />
+        <p className="font-body-lg text-base leading-7 text-on-surface-variant sm:text-lg sm:leading-8">
+          I work across the product, but the thread stays consistent: deterministic core behavior,
+          explicit boundaries, observable failures, and AI only where it creates real product value.
         </p>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {CAPABILITIES.map((capability) => (
-          <GlassPanel key={capability.title} className="p-8 group h-full" hoverable={true}>
-            <div className="flex items-start gap-5">
+          <GlassPanel key={capability.title} className="group h-full p-5 sm:p-7" hoverable={true}>
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tertiary/10 text-tertiary">
                 <span className="material-symbols-outlined">{capability.icon}</span>
               </div>

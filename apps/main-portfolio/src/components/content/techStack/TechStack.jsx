@@ -4,9 +4,15 @@ import { SKILL_CATEGORIES } from './constants';
 
 export default function TechStack() {
   return (
-    <section className="py-section-v-lg reveal-section" id="skills">
-      <SectionHeader label="ENGINEERING TOOLKIT" title="Technical Expertise" centered={true} />
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <section className="section-block reveal-section" id="skills">
+      <div className="section-intro mx-auto max-w-3xl text-center">
+        <SectionHeader label="ENGINEERING STACK" title="Tools grouped by the work they support" centered={true} />
+        <p className="text-base leading-7 text-on-surface-variant sm:text-lg sm:leading-8">
+          A practical stack spanning backend services, product interfaces, persistence, AI integration,
+          verification, and deployment.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {SKILL_CATEGORIES.map((category) => (
           <SkillCategory
             key={category.id}

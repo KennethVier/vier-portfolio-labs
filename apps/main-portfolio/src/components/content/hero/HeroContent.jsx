@@ -7,36 +7,30 @@ import HeroTechTags from './HeroTechTags';
  */
 export default function HeroContent() {
   return (
-    <div className="flex-1 space-y-8">
-      <HeroTechTags />
-
-      <div className="inline-flex items-center gap-2 rounded-full border border-tertiary/25 bg-tertiary/5 px-4 py-2 font-label-caps text-label-caps text-tertiary">
+    <div className="space-y-7">
+      <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-tertiary/25 bg-tertiary/5 px-3 py-2 font-label-caps text-[10px] leading-4 text-tertiary sm:px-4 sm:text-label-caps">
         <span className="h-2 w-2 rounded-full bg-tertiary shadow-[0_0_12px_rgba(76,214,251,0.8)]" />
-        Software Engineering · Product Development · Practical AI
+        Software Engineer · Philippines
       </div>
 
-      <h1 className="font-display-hero text-display-hero text-primary leading-tight">
-        <span className="mb-4 block font-label-caps text-label-caps tracking-[0.18em] text-on-surface-variant">
-          Kenneth Vier Cerrado · Software Engineer
-        </span>
-        Building Reliable Software <br />
-        Across Backend, Web <br />
-        <span className="text-tertiary">& Intelligent Systems</span>
+      <h1 className="hero-title max-w-4xl font-display-hero text-primary">
+        I engineer software systems that are built to <span className="text-tertiary">keep working.</span>
       </h1>
 
-      <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
-        Backend-heavy Software Engineer working across Java and Spring Boot systems, React products,
-        PostgreSQL data layers, APIs, automation, and AI-enabled workflows. This portfolio brings
-        together my professional experience, engineering projects, and the systems I build to keep
-        growing beyond a single stack or role.
+      <p className="max-w-2xl font-body-lg text-base leading-7 text-on-surface-variant sm:text-lg sm:leading-8">
+        Kenneth Vier Cerrado is a backend-heavy Software Engineer building full-stack products,
+        Java and Spring services, PostgreSQL data layers, and AI-enabled workflows—with architecture,
+        validation, testing, and recovery designed in from the start.
       </p>
 
-      <div className="flex flex-wrap items-center gap-4 pt-4">
-        <Button label="Explore Engineering Work" href="#projects" variant="primary" />
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button label="Explore Flagship Work" href="#projects" variant="primary" />
         <Button label="View Experience" href="#experience" variant="secondary" />
       </div>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-2 font-label-caps text-label-caps text-on-surface-variant">
+      <HeroTechTags />
+
+      <div className="flex flex-wrap gap-x-6 gap-y-3 border-t border-outline-variant/20 pt-5 font-label-caps text-label-caps text-on-surface-variant">
         <a
           className="transition-colors hover:text-tertiary"
           href="https://github.com/KennethVier"
@@ -53,7 +47,7 @@ export default function HeroContent() {
         >
           LinkedIn ↗
         </a>
-        <span>Philippines · Open to meaningful opportunities & collaborations</span>
+        <span className="basis-full sm:basis-auto">Open to engineering roles, collaboration, and part-time work</span>
       </div>
     </div>
   );
