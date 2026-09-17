@@ -47,6 +47,14 @@ export default function HeroContent() {
         >
           LinkedIn ↗
         </a>
+        <a
+          className="transition-colors hover:text-tertiary"
+          href="/resume.html"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Resume ↗
+        </a>
         <span className="basis-full sm:basis-auto">Open to engineering roles, collaboration, and part-time work</span>
       </div>
     </div>
