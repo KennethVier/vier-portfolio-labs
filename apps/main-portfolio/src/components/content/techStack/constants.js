@@ -11,7 +11,7 @@ export const SKILL_CATEGORIES = [
     iconColor: "text-primary",
     dotColor: "bg-primary",
     skills: [
-      "Java 21 / 25",
+      "Java",
       "Spring Boot",
       "Spring MVC",
       "Spring Security",
