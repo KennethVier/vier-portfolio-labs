@@ -10,12 +10,13 @@ export const EXPERIENCE_ROLES = [
     period: "Dec 2025 - Present",
     type: "FULL-TIME",
     description:
-      "Working in an enterprise delivery environment with a focus on Java/Spring engineering, software quality, and maintainable delivery practices within a professional team.",
+      "Deployed to GCash on a migration team building a new Cards Management System from scratch with Java and Spring Boot.",
     highlights: [
-      "Developing deeper production engineering practices through enterprise standards, technical training, and collaborative delivery.",
-      "Applying code quality, security, testing, and maintainability checks to Java/Spring work."
+      "Implementing card transaction flows including pre-authorization holds, reversals, completion, clearing, and debt recovery with explicit transaction-state and business-rule handling.",
+      "Building idempotency checks and duplicate-processing safeguards to protect payment operations from inconsistent outcomes on repeated requests.",
+      "Contributing to a greenfield migration build rather than maintaining an existing legacy application."
     ],
-    tags: ["Java / Spring", "Enterprise Delivery", "Software Quality"],
+    tags: ["Java / Spring Boot", "Cards & Payments", "Migration", "Idempotency"],
     borderColor: "border-primary/40",
     dotColor: "bg-primary",
     hoverDotColor: "group-hover:bg-primary",
