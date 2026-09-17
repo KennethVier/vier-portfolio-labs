@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Kenneth Vier Cerrado — Software Engineer Resume</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; color: #1f2937; background: #f3f4f6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 16px; line-height: 1.35; }
+    .toolbar { width: min(850px, 100%); margin: 0 auto 12px; display: flex; justify-content: flex-end; }
+    .print-btn { border: 1px solid #145478; background: #145478; color: #fff; border-radius: 6px; padding: 9px 14px; font: inherit; cursor: pointer; }
+    .resume { width: min(850px, 100%); margin: 0 auto; background: #fff; padding: 34px 42px; box-shadow: 0 10px 30px rgba(15, 23, 42, .08); }
+    header { text-align: center; }
+    h1 { margin: 0; font-size: 27px; letter-spacing: .01em; color: #181f2a; }
+    .headline { margin: 5px 0 6px; font-size: 13px; font-weight: 700; color: #374151; }
+    .contact { margin: 0; font-size: 11.5px; color: #4b5563; }
+    a { color: #145478; text-decoration: none; }
+    section { margin-top: 12px; }
+    h2 { margin: 0 0 6px; padding-bottom: 3px; border-bottom: 1px solid #c9d7e1; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: #145478; }
+    p { margin: 3px 0; font-size: 12.2px; }
+    .role { margin-top: 6px; font-weight: 700; color: #181f2a; }
+    .period { font-weight: 400; }
+    ul { margin: 3px 0 5px; padding-left: 18px; }
+    li { margin: 2px 0; font-size: 12px; }
+    .project-title { font-weight: 700; }
+    .skills strong { color: #181f2a; }
+    .note { color: #4b5563; }
+    @page { size: A4; margin: 12mm; }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .toolbar { display: none; }
+      .resume { width: 100%; padding: 0; box-shadow: none; }
+      a { color: inherit; text-decoration: none; }
+      section { break-inside: avoid; }
+    }
+    @media (max-width: 620px) {
+      .resume { padding: 24px 20px; }
+      h1 { font-size: 23px; }
+      .contact { line-height: 1.6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button class="print-btn" type="button" onclick="window.print()">Print / Save as PDF</button></div>
+  <main class="resume">
+    <header>
+      <h1>KENNETH VIER J. CERRADO</h1>
+      <p class="headline">Software Engineer | Java / Spring Boot | React | PostgreSQL | AI-Enabled Systems</p>
+      <p class="contact">Philippines · <a href="mailto:kennethcerrado23@gmail.com">kennethcerrado23@gmail.com</a> · <a href="https://github.com/KennethVier">GitHub</a> · <a href="https://www.linkedin.com/in/kenneth-vier-cerrado-39a863261">LinkedIn</a> · <a href="/">Portfolio</a></p>
+    </header>
+
+    <section>
+      <h2>Professional Summary</h2>
+      <p>Backend-heavy Software Engineer building enterprise Java/Spring systems and full-stack products. Experienced with PostgreSQL-backed business workflows, reporting and data exports, React interfaces, software quality practices, and AI-enabled applications. Focused on maintainable architecture, validation, testing, and reliable delivery.</p>
+    </section>
+
+    <section>
+      <h2>Experience</h2>
+      <p class="role">Software Engineer | NCS Philippines <span class="period">· Dec 2025 – Present</span></p>
+      <ul>
+        <li>Work in an enterprise delivery environment focused on Java/Spring engineering, software quality, and maintainable delivery practices within a professional team.</li>
+        <li>Apply code quality, testing, security, and maintainability checks while strengthening production engineering practices through enterprise standards and collaborative delivery.</li>
+      </ul>
+
+      <p class="role">IT Engineer | Be Unique Inc. <span class="period">· Oct 2024 – Dec 2025</span></p>
+      <ul>
+        <li>Delivered Java/Spring MVC features for resume management, project alignment, career data, search, filtering, pagination, and PostgreSQL-backed enterprise workflows.</li>
+        <li>Implemented Excel exports, asynchronous CSV processing, and data aggregation; also automated certification reporting and batch email delivery using C# and SAP Crystal Reports.</li>
+      </ul>
+
+      <p class="role">Front-End Developer Intern | LexMeet Inc. <span class="period">· Mar 2024 – Jun 2024</span></p>
+      <ul>
+        <li>Developed responsive ReactJS and Bootstrap interfaces and collaborated on cross-browser, mobile, and UI consistency for a production web team.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Selected Engineering Projects</h2>
+      <p><span class="project-title">Hippocampus</span> | Java 25, Spring Boot, PostgreSQL, React, TypeScript</p>
+      <ul><li>Engineered layered application boundaries and durable PDF ingestion with progress tracking, retries, failure classification, recovery safeguards, and quality gates across unit, persistence, architecture, frontend, and end-to-end testing.</li></ul>
+
+      <p><span class="project-title">PesoPilot Financial OS</span> | React, IndexedDB, Dexie.js, Zustand, Zod</p>
+      <ul><li>Built a privacy-first local-first finance workspace with versioned IndexedDB persistence and validated expense CRUD, search, and combined filtering without a sign-in dependency.</li></ul>
+
+      <p><span class="project-title">Yomira</span> | Spring Boot, Spring AI, React, PostgreSQL, PDFBox</p>
+      <ul><li>Designed independently deployable document-processing and AI quiz-generation services, separating PDF extraction, persistence, and AI generation concerns.</li></ul>
+    </section>
+
+    <section class="skills">
+      <h2>Technical Skills</h2>
+      <p><strong>Backend:</strong> Java 21/25, Spring Boot, Spring MVC, Spring Security, Spring Data JPA, Hibernate, REST APIs, C# · <strong>Frontend:</strong> React, TypeScript, JavaScript, Vite, Tailwind CSS, Bootstrap, React Hook Form, Zod</p>
+      <p><strong>Data & AI:</strong> PostgreSQL, SQL, MySQL, SQL Server, Flyway, IndexedDB/Dexie.js, Spring AI, RAG, Ollama, Gemini · <strong>Quality & DevOps:</strong> JUnit 5, Mockito, Testcontainers, ArchUnit, Vitest, Playwright, Docker, GitHub Actions, Vercel, Render, Railway, Git</p>
+    </section>
+
+    <section>
+      <h2>Education & Certifications</h2>
+      <p><strong>BS Information Technology, Cum Laude</strong> — Polytechnic University of the Philippines</p>
+      <p><strong>AWS Certified AI Practitioner — Certification Path</strong> <span class="note">(In Progress)</span></p>
+      <p><strong>Selected credentials:</strong> Fortinet NSE 1 & NSE 2; freeCodeCamp Responsive Web Design; DICT Web Development courses (WD001, WD002, WD003, WD005)</p>
+    </section>
+  </main>
+</body>
+</html>
