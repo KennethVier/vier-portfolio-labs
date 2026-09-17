@@ -1,4 +1,5 @@
 import Button from '../../ui/Button';
+import { trackEvent } from '../../../utils/analytics';
 import HeroTechTags from './HeroTechTags';
 
 /**
@@ -24,8 +25,18 @@ export default function HeroContent() {
       </p>
 
       <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:flex-wrap sm:items-center">
-        <Button label="Explore Flagship Work" href="#projects" variant="primary" />
-        <Button label="View Experience" href="#experience" variant="secondary" />
+        <Button
+          label="Explore Flagship Work"
+          href="#projects"
+          variant="primary"
+          onClick={() => trackEvent('cta_click', { location: 'hero', destination: 'projects' })}
+        />
+        <Button
+          label="View Experience"
+          href="#experience"
+          variant="secondary"
+          onClick={() => trackEvent('cta_click', { location: 'hero', destination: 'experience' })}
+        />
       </div>
 
       <HeroTechTags />
@@ -36,6 +47,7 @@ export default function HeroContent() {
           href="https://github.com/KennethVier"
           target="_blank"
           rel="noreferrer"
+          onClick={() => trackEvent('social_click', { location: 'hero', destination: 'github' })}
         >
           GitHub ↗
         </a>
@@ -44,6 +56,7 @@ export default function HeroContent() {
           href="https://www.linkedin.com/in/kenneth-vier-cerrado-39a863261"
           target="_blank"
           rel="noreferrer"
+          onClick={() => trackEvent('social_click', { location: 'hero', destination: 'linkedin' })}
         >
           LinkedIn ↗
         </a>
@@ -52,6 +65,7 @@ export default function HeroContent() {
           href="/resume.html"
           target="_blank"
           rel="noreferrer"
+          onClick={() => trackEvent('resume_click', { location: 'hero' })}
         >
           Resume ↗
         </a>

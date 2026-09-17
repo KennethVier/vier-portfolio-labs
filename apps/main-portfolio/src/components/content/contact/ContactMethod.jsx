@@ -1,3 +1,4 @@
+import { trackEvent } from '../../../utils/analytics';
 import ContactMethodIcon from './ContactMethodIcon';
 
 /**
@@ -11,6 +12,10 @@ export default function ContactMethod({ label, href, icon, hoverColor, isExterna
       href={href}
       target={isExternal ? '_blank' : undefined}
       rel={isExternal ? 'noreferrer' : undefined}
+      onClick={() => trackEvent('contact_click', {
+        location: 'contact',
+        method: label.toLowerCase()
+      })}
     >
       <ContactMethodIcon icon={icon} hoverColor={hoverColor} />
       <span className="font-label-code text-label-code">{label}</span>

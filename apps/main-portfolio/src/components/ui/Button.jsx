@@ -6,7 +6,8 @@ export default function Button({
   label, 
   href = "#", 
   variant = "primary",
-  className = ""
+  className = "",
+  onClick
 }) {
   const baseClasses = "inline-flex min-h-12 items-center justify-center rounded-xl px-6 py-3 font-label-caps text-label-caps transition-colors duration-200 sm:px-8";
   
@@ -18,6 +19,7 @@ export default function Button({
     <a 
       href={href}
       className={`${baseClasses} ${variantClasses} ${className}`}
+      onClick={onClick}
     >
       {label}
     </a>

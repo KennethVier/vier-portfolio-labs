@@ -56,7 +56,7 @@ export default function ProjectCard({
         )}
 
         <ProjectTechTags tags={tags} />
-        <ProjectLinks links={links} />
+        <ProjectLinks links={links} projectName={title} />
         </div>
       </div>
     </GlassPanel>

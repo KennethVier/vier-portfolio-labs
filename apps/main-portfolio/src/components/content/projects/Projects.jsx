@@ -1,4 +1,5 @@
 import SectionHeader from '../../ui/SectionHeader';
+import { trackEvent } from '../../../utils/analytics';
 import ProjectCard from './ProjectCard';
 import { ADDITIONAL_PROJECTS, FEATURED_PROJECTS } from './constants';
 
@@ -21,7 +22,12 @@ export default function Projects() {
         ))}
       </div>
 
-      <details className="more-work mt-10 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest/35 p-4 sm:p-6">
+      <details
+        className="more-work mt-10 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest/35 p-4 sm:p-6"
+        onToggle={(event) => trackEvent('project_list_toggle', {
+          expanded: event.currentTarget.open ? 'true' : 'false'
+        })}
+      >
         <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-4 font-headline-section text-lg text-on-surface">
           <span>Explore five additional product builds</span>
           <span className="material-symbols-outlined text-tertiary" aria-hidden="true">add</span>
