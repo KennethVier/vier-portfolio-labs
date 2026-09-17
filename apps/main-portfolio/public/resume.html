@@ -26,6 +26,7 @@
     li { margin: 2px 0; font-size: 12px; }
     .project-title { font-weight: 700; }
     .skills strong { color: #181f2a; }
+    .skills p { margin: 4px 0; }
     .note { color: #4b5563; }
     @page { size: A4; margin: 12mm; }
     @media print {
@@ -53,15 +54,16 @@
 
     <section>
       <h2>Professional Summary</h2>
-      <p>Backend-heavy Software Engineer building enterprise Java/Spring systems and full-stack products. Experienced with PostgreSQL-backed business workflows, reporting and data exports, React interfaces, software quality practices, and AI-enabled applications. Focused on maintainable architecture, validation, testing, and reliable delivery.</p>
+      <p>Backend-heavy Software Engineer building enterprise Java/Spring payment systems and full-stack products. Currently contributing to a greenfield cards-platform migration for GCash, implementing transaction lifecycle logic and reliability safeguards. Experienced with PostgreSQL-backed business workflows, React interfaces, software quality practices, and AI-enabled applications, with a focus on maintainable architecture, validation, testing, and reliable delivery.</p>
     </section>
 
     <section>
       <h2>Experience</h2>
       <p class="role">Software Engineer | NCS Philippines <span class="period">· Dec 2025 – Present</span></p>
       <ul>
-        <li>Work in an enterprise delivery environment focused on Java/Spring engineering, software quality, and maintainable delivery practices within a professional team.</li>
-        <li>Apply code quality, testing, security, and maintainability checks while strengthening production engineering practices through enterprise standards and collaborative delivery.</li>
+        <li>Deployed to GCash on a migration team building a new Cards Management System from scratch, implementing Java/Spring Boot payment-domain logic rather than maintaining a legacy application.</li>
+        <li>Implement card transaction flows including pre-authorization holds, reversals, completion, clearing, and debt recovery, with explicit handling of transaction states and business rules.</li>
+        <li>Implement idempotency checks and duplicate-processing safeguards for payment operations to keep repeated requests from creating inconsistent transaction outcomes.</li>
       </ul>
 
       <p class="role">IT Engineer | Be Unique Inc. <span class="period">· Oct 2024 – Dec 2025</span></p>
@@ -78,7 +80,7 @@
 
     <section>
       <h2>Selected Engineering Projects</h2>
-      <p><span class="project-title">Hippocampus</span> | Java 25, Spring Boot, PostgreSQL, React, TypeScript</p>
+      <p><span class="project-title">Hippocampus</span> | Java, Spring Boot, PostgreSQL, React, TypeScript</p>
       <ul><li>Engineered layered application boundaries and durable PDF ingestion with progress tracking, retries, failure classification, recovery safeguards, and quality gates across unit, persistence, architecture, frontend, and end-to-end testing.</li></ul>
 
       <p><span class="project-title">PesoPilot Financial OS</span> | React, IndexedDB, Dexie.js, Zustand, Zod</p>
@@ -90,14 +92,16 @@
 
     <section class="skills">
       <h2>Technical Skills</h2>
-      <p><strong>Backend:</strong> Java 21/25, Spring Boot, Spring MVC, Spring Security, Spring Data JPA, Hibernate, REST APIs, C# · <strong>Frontend:</strong> React, TypeScript, JavaScript, Vite, Tailwind CSS, Bootstrap, React Hook Form, Zod</p>
-      <p><strong>Data & AI:</strong> PostgreSQL, SQL, MySQL, SQL Server, Flyway, IndexedDB/Dexie.js, Spring AI, RAG, Ollama, Gemini · <strong>Quality & DevOps:</strong> JUnit 5, Mockito, Testcontainers, ArchUnit, Vitest, Playwright, Docker, GitHub Actions, Vercel, Render, Railway, Git</p>
+      <p><strong>Backend:</strong> Java, Spring Boot, Spring MVC, Spring Security, Spring Data JPA, Hibernate, REST APIs, transaction processing, idempotency, C#</p>
+      <p><strong>Frontend:</strong> React, TypeScript, JavaScript, Vite, Tailwind CSS, Bootstrap, React Hook Form, Zod</p>
+      <p><strong>Data & AI:</strong> PostgreSQL, SQL, MySQL, SQL Server, Flyway, IndexedDB/Dexie.js, Spring AI, RAG, Ollama, Gemini</p>
+      <p><strong>Quality & DevOps:</strong> JUnit 5, Mockito, Testcontainers, ArchUnit, Vitest, Playwright, Docker, GitHub Actions, Vercel, Render, Railway, Git</p>
     </section>
 
     <section>
       <h2>Education & Certifications</h2>
       <p><strong>BS Information Technology, Cum Laude</strong> — Polytechnic University of the Philippines</p>
-      <p><strong>AWS Certified AI Practitioner — Certification Path</strong> <span class="note">(In Progress)</span></p>
+      <p><strong>AWS Certified AI Practitioner (AIF-C01)</strong> <span class="note">— Currently pursuing; not yet certified</span></p>
       <p><strong>Selected credentials:</strong> Fortinet NSE 1 & NSE 2; freeCodeCamp Responsive Web Design; DICT Web Development courses (WD001, WD002, WD003, WD005)</p>
     </section>
   </main>
