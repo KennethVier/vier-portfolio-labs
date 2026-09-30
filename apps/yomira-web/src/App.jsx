@@ -2,7 +2,7 @@
 import UploadPdf from "./components/UploadPdf";
 import QuizForm from "./components/QuizForm";
 import QuizResult from "./components/QuizResult";
-import { BACKEND_DISABLED_MESSAGE, demoQuiz } from "./demoData";
+import { demoQuiz } from "./demoData";
 
 const steps = [
   { key: "read", label: "Read", detail: "Upload source material" },
@@ -27,6 +27,13 @@ export default function App() {
     setDocumentName(null);
     setQuiz(null);
     setIsDemoFallback(false);
+  };
+
+  const handleDemo = () => {
+    setDocumentId("demo");
+    setDocumentName("Yomira demo reading sample");
+    setQuiz(null);
+    setIsDemoFallback(true);
   };
 
   return (
@@ -79,6 +86,7 @@ export default function App() {
                   setDocumentName(name);
                   setIsDemoFallback(false);
                 }}
+                onDemo={handleDemo}
               />
             </div>
             <aside className="surface-panel reflection-panel">
@@ -124,5 +132,3 @@ export default function App() {
     </div>
   );
 }
-
-
