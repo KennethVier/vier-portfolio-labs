@@ -1,48 +1,45 @@
 import { useEffect } from 'react';
+import { trackEvent } from '../utils/analytics';
 
 export function usePortfolioEffects() {
   useEffect(() => {
-        // Mouse Glow Logic
-        const glow = document.getElementById('cursor-glow');
-        window.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) * 100;
-            const y = (e.clientY / window.innerHeight) * 100;
-            glow.style.setProperty('--mouse-x', `${x}%`);
-            glow.style.setProperty('--mouse-y', `${y}%`);
-        });
+    const glow = document.getElementById('cursor-glow');
+    const updateGlow = (event) => {
+      const x = (event.clientX / window.innerWidth) * 100;
+      const y = (event.clientY / window.innerHeight) * 100;
+      glow?.style.setProperty('--mouse-x', `${x}%`);
+      glow?.style.setProperty('--mouse-y', `${y}%`);
+    };
 
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
+    window.addEventListener('mousemove', updateGlow, { passive: true });
+    return () => window.removeEventListener('mousemove', updateGlow);
+  }, []);
 
-        // IntersectionObserver for Reveal Sections
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: "0px 0px -50px 0px"
-        };
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      return undefined;
+    }
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    // Optional: stop observing after reveal for performance
-                    // observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
+    const viewedSections = new Set();
+    const sections = document.querySelectorAll('.reveal-section[id]');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.35) {
+          return;
+        }
 
-        document.querySelectorAll('.reveal-section').forEach(section => {
-            observer.observe(section);
-        });
+        const sectionName = entry.target.id;
+        if (!sectionName || viewedSections.has(sectionName)) {
+          return;
+        }
 
-    }, []);
+        viewedSections.add(sectionName);
+        trackEvent('section_view', { section_name: sectionName });
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: [0.35] });
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
 }

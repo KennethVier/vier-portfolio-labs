@@ -9,16 +9,23 @@ export default function LoginForm() {
     const [message, setMessage] = useState("");
 
     const onSubmit = async (data) => {
-        console.log("Login data submitted:", data);
-        try{
+        try {
             const response = await authApiService.login(data);
             authApiService.saveAuth(response);
-            console.log("Login response:", response);
             navigate("/dashboard");
         } catch (error) {
-            console.error("Login error:", error);
-            setMessage(error.response?.data?.message || "Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
+            console.error("Login request failed:", error?.message);
+            setMessage(error.response?.data?.message || "Live backend is currently disabled for this portfolio demo. Use the demo dashboard below to explore the protected-route flow.");
         }
+    };
+
+    const handleDemo = () => {
+        authApiService.saveAuth({
+            token: "portfolio-demo-session",
+            email: "demo@authly.local",
+            username: "Portfolio Demo"
+        });
+        navigate("/dashboard");
     };
 
     return(
@@ -54,10 +61,16 @@ export default function LoginForm() {
                 <label htmlFor="password">Password</label>
             </div>
 
-            <button className="btn btn-primary w-100 py-2 fw-semibold">
+            <button className="btn btn-primary w-100 py-2 fw-semibold" type="submit">
                 Login
             </button>
+
+            <button className="btn btn-outline-primary w-100 py-2 fw-semibold mt-2" type="button" onClick={handleDemo}>
+                Explore demo dashboard
+            </button>
+            <p className="text-muted small text-center mt-2 mb-0">
+                Demo mode shows the protected-route UI without claiming a live authenticated backend session.
+            </p>
         </form>
     );
 }
-

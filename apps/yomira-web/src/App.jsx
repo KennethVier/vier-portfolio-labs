@@ -1,8 +1,8 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import UploadPdf from "./components/UploadPdf";
 import QuizForm from "./components/QuizForm";
 import QuizResult from "./components/QuizResult";
-import { BACKEND_DISABLED_MESSAGE, demoQuiz } from "./demoData";
+import { demoQuiz } from "./demoData";
 
 const steps = [
   { key: "read", label: "Read", detail: "Upload source material" },
@@ -27,6 +27,13 @@ export default function App() {
     setDocumentName(null);
     setQuiz(null);
     setIsDemoFallback(false);
+  };
+
+  const handleDemo = () => {
+    setDocumentId("demo");
+    setDocumentName("Yomira demo reading sample");
+    setQuiz(null);
+    setIsDemoFallback(true);
   };
 
   return (
@@ -68,7 +75,7 @@ export default function App() {
         </section>
 
         {!documentId ? (
-          <section className="mirror-grid">
+          <section className="mirror-grid read-grid">
             <div className="surface-panel read-panel">
               <span className="eyebrow">Step 01 / Read</span>
               <h2>Bring in the source</h2>
@@ -79,6 +86,7 @@ export default function App() {
                   setDocumentName(name);
                   setIsDemoFallback(false);
                 }}
+                onDemo={handleDemo}
               />
             </div>
             <aside className="surface-panel reflection-panel">
@@ -92,7 +100,7 @@ export default function App() {
             </aside>
           </section>
         ) : !quiz ? (
-          <section className="mirror-grid">
+          <section className="mirror-grid reflect-grid">
             <div className="surface-panel read-panel compact-source">
               <span className="eyebrow">Source locked</span>
               <h2>{documentName}</h2>
@@ -103,8 +111,17 @@ export default function App() {
               <span className="eyebrow">Step 02 / Reflect</span>
               <h2>Shape the study mirror</h2>
               <p>Pick the quiz format and question count that match the way you want to remember this material.</p>
-              {isDemoFallback && <div className="demo-fallback-banner"><strong>Sample quiz</strong><span>Real AI generation is disabled until the backend is enabled.</span></div>}
-              <QuizForm documentId={documentId} OnGenerated={(nextQuiz) => { setQuiz(nextQuiz); }} demoQuiz={isDemoFallback ? demoQuiz : null} />
+              {isDemoFallback && (
+                <div className="demo-fallback-banner">
+                  <strong>Sample quiz mode</strong>
+                  <span>This path uses Yomira&apos;s built-in sample instead of calling the live backend.</span>
+                </div>
+              )}
+              <QuizForm
+                documentId={documentId}
+                OnGenerated={(nextQuiz) => setQuiz(nextQuiz)}
+                demoQuiz={isDemoFallback ? demoQuiz : null}
+              />
             </div>
           </section>
         ) : (
@@ -124,5 +141,3 @@ export default function App() {
     </div>
   );
 }
-
-

@@ -7,8 +7,8 @@ function App() {
   usePortfolioEffects();
   return (
     <>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <div id="cursor-glow" />
-      <div className="noise-overlay" />
       <Header />
       <MainContent />
       <Footer />

@@ -1,18 +1,18 @@
 /**
  * About constants
- * Stats data for about section
+ * Proof-oriented stats that map to visible portfolio work.
  */
 export const ABOUT_STATS = [
   {
     id: 1,
-    number: "01+",
-    label: "Years Experience",
+    number: "08+",
+    label: "Full-Stack Projects",
     color: "text-primary"
   },
   {
     id: 2,
-    number: "05+",
-    label: "Projects Built",
+    number: "03",
+    label: "Flagship Case Studies",
     color: "text-tertiary"
   }
 ];

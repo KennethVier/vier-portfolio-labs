@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { uploadPdf } from "../api/documentApi";
 import PdfPreview from "./PdfPreview";
 
@@ -38,7 +38,7 @@ export default function UploadPdf({ onUploaded, onDemo }) {
       const response = await uploadPdf(file);
       onUploaded(response.id, file.name);
     } catch (err) {
-      setError("Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
+      setError("Upload failed. Please try again in a moment; the backend may still be waking up.");
       console.error("Upload error:", err);
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ export default function UploadPdf({ onUploaded, onDemo }) {
     <div className="upload-workflow">
       {error && <div className="alert alert-error">{error}</div>}
 
-      <div className="upload-layout">
+      <div className={`upload-layout ${file ? "has-preview" : "single-upload"}`}>
         <label className={`upload-area ${file ? "active" : ""}`} onDrop={handleDrop} onDragOver={handleDragOver}>
           <input type="file" accept="application/pdf" onChange={handleFileChange} />
           <span className="upload-symbol">PDF</span>
@@ -79,12 +79,12 @@ export default function UploadPdf({ onUploaded, onDemo }) {
         )}
       </div>
 
-      {onDemo && <button className="quiet-button" type="button" onClick={onDemo}>Use demo reading sample</button>}
-      <button className="primary-button" onClick={handleUpload} disabled={!file || loading}>
-        {loading ? "Reading document..." : "Read this document"}
-      </button>
+      <div className="upload-actions">
+        {onDemo && <button className="quiet-button" type="button" onClick={onDemo}>Use demo sample</button>}
+        <button className="primary-button" onClick={handleUpload} disabled={!file || loading}>
+          {loading ? "Reading document..." : "Read this document"}
+        </button>
+      </div>
     </div>
   );
 }
-
-

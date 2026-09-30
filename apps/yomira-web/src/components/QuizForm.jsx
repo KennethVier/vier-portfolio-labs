@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { generateQuiz } from "../api/quizApi";
 
 const quizTypeOptions = [
@@ -35,7 +35,7 @@ export default function QuizForm({ documentId, OnGenerated, demoQuiz }) {
     }
 
     if (demoQuiz) {
-      setError("Live backend is currently disabled for this portfolio demo. Showing a sample reflected quiz instead.");
+      setError(null);
       OnGenerated(demoQuiz);
       return;
     }
@@ -47,7 +47,7 @@ export default function QuizForm({ documentId, OnGenerated, demoQuiz }) {
       const result = await generateQuiz({ documentId, quizType, questionsCount: count });
       OnGenerated(result);
     } catch (err) {
-      setError("Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
+      setError("Quiz generation failed. Please try again in a moment and confirm the AI backend is available.");
       console.error("Quiz generation error:", err);
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export default function QuizForm({ documentId, OnGenerated, demoQuiz }) {
         </div>
       </div>
 
-      <div className="quiz-setting-block">
+      <div className="quiz-setting-block question-count-block">
         <div className="setting-label-row">
           <label htmlFor="questionCount">Question count</label>
           <strong>{count}</strong>
@@ -99,5 +99,3 @@ export default function QuizForm({ documentId, OnGenerated, demoQuiz }) {
     </div>
   );
 }
-
-

@@ -4,12 +4,12 @@
  */
 export default function ExperienceHeader({ title, company, period, type, titleColor }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+    <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
       <div>
-        <h3 className={`font-headline-section text-2xl ${titleColor}`}>{title}</h3>
-        <p className="text-on-surface-variant font-body-md">{company} • {period}</p>
+        <h3 className={`font-headline-section text-xl sm:text-2xl ${titleColor}`}>{title}</h3>
+        <p className="mt-1 font-body-md text-sm text-on-surface-variant sm:text-base">{company} <span aria-hidden="true">•</span> {period}</p>
       </div>
-      <span className="font-label-code text-label-code px-4 py-1.5 rounded-full bg-primary-container text-primary">
+      <span className="w-fit rounded-full bg-primary-container px-3 py-1.5 font-label-code text-[11px] text-primary sm:px-4">
         {type}
       </span>
     </div>

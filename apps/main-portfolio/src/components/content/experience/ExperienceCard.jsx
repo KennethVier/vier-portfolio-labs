@@ -23,13 +23,13 @@ export default function ExperienceCard({
   titleColor
 }) {
   return (
-    <div className="md:pl-24 relative group">
+    <div className="relative group md:pl-20">
       <TimelineIndicator 
         dotColor={dotColor}
         hoverDotColor={hoverDotColor}
         dotGlow={dotGlow}
       />
-      <GlassPanel className={`p-8 rounded-2xl ${borderColor}`}>
+      <GlassPanel className={`rounded-2xl p-5 sm:p-7 lg:p-8 ${borderColor}`}>
         <ExperienceHeader 
           title={title}
           company={company}

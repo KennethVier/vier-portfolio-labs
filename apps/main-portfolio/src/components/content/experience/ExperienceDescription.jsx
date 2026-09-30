@@ -4,10 +4,10 @@
  */
 export default function ExperienceDescription({ description, highlights = [] }) {
   return (
-    <div className="font-body-md text-on-surface max-w-4xl mb-6">
-      {description && <p>{description}</p>}
+    <div className="mb-6 max-w-4xl font-body-md leading-7 text-on-surface">
+      {description && <p className="text-on-surface-variant">{description}</p>}
       {highlights.length > 0 && (
-        <ul className="space-y-3 list-disc pl-5">
+        <ul className={`${description ? "mt-5" : ""} space-y-3 border-l border-outline-variant/40 pl-4 sm:pl-5`}>
           {highlights.map((highlight) => (
             <li key={highlight}>{highlight}</li>
           ))}
