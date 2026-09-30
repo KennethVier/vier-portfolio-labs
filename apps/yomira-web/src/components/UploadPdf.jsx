@@ -1,11 +1,23 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { uploadPdf } from "../api/documentApi";
 import PdfPreview from "./PdfPreview";
+import AsyncProgress from "./AsyncProgress";
+import useBoundedProgress from "./useBoundedProgress";
+
+const preparationStages = [
+  { until: 20, label: "Uploading source", detail: "Uploading your PDF securely..." },
+  { until: 65, label: "Reading document", detail: "Reading and preparing your PDF for study..." },
+  { until: 90, label: "Preparing study content", detail: "Extracting the most useful study content..." },
+  { until: 100, label: "Finalizing", detail: "Finalizing your prepared document..." }
+];
 
 export default function UploadPdf({ onUploaded, onDemo }) {
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState("idle");
+  const [preparedDocument, setPreparedDocument] = useState(null);
   const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
+  const [progress, setProgress] = useBoundedProgress(phase === "preparing");
 
   const validateFile = (selectedFile) => {
     if (!selectedFile) return;
@@ -31,24 +43,36 @@ export default function UploadPdf({ onUploaded, onDemo }) {
       return;
     }
 
-    setLoading(true);
+    if (phase === "preparing") return;
+    setProgress(4);
+    setPhase("preparing");
     setError(null);
 
     try {
       const response = await uploadPdf(file);
-      onUploaded(response.id, file.name);
+      setProgress(100);
+      setPreparedDocument({ id: response.id, name: file.name });
+      setPhase("ready");
     } catch (err) {
-      setError("Upload failed. Please try again in a moment; the backend may still be waking up.");
+      setError("Yomira couldn't prepare this document.");
+      setPhase("error");
       console.error("Upload error:", err);
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleChooseAnother = () => {
+    setFile(null);
+    setPreparedDocument(null);
+    setError(null);
+    setPhase("idle");
+    setProgress(0);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    validateFile(event.dataTransfer.files[0]);
+    if (phase !== "preparing") validateFile(event.dataTransfer.files[0]);
   };
 
   const handleDragOver = (event) => {
@@ -58,14 +82,40 @@ export default function UploadPdf({ onUploaded, onDemo }) {
 
   return (
     <div className="upload-workflow">
-      {error && <div className="alert alert-error">{error}</div>}
+      {phase === "preparing" && (
+        <AsyncProgress title="Preparing your document" progress={progress} stages={preparationStages} context={file.name} />
+      )}
 
+      {phase === "ready" && (
+        <div className="completion-state" aria-live="polite">
+          <AsyncProgress title="Document ready" progress={100} stages={preparationStages} context={preparedDocument.name} />
+          <p><strong>{preparedDocument.name}</strong> is ready for quiz generation.</p>
+          <button className="primary-button" type="button" onClick={() => onUploaded(preparedDocument.id, preparedDocument.name)}>
+            Choose quiz settings
+          </button>
+        </div>
+      )}
+
+      {phase === "error" && (
+        <div className="failure-state" role="alert">
+          <span className="eyebrow">Preparation stopped</span>
+          <h3>{error}</h3>
+          <p>Your selected PDF is still available. Try again, or choose a different file.</p>
+          <div className="failure-actions">
+            <button className="primary-button" type="button" onClick={handleUpload}>Try again</button>
+            <button className="quiet-button" type="button" onClick={handleChooseAnother}>Choose another PDF</button>
+          </div>
+        </div>
+      )}
+
+      {(phase === "idle") && <>
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
       <div className={`upload-layout ${file ? "has-preview" : "single-upload"}`}>
         <label className={`upload-area ${file ? "active" : ""}`} onDrop={handleDrop} onDragOver={handleDragOver}>
-          <input type="file" accept="application/pdf" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} />
           <span className="upload-symbol">PDF</span>
           <strong>{file ? file.name : "Drop your PDF here"}</strong>
-          <p>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB ready to read` : "Browse or drag one source document into Yomira."}</p>
+          <p>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB ready to prepare` : "Browse or drag one source document into Yomira."}</p>
         </label>
 
         {file && (
@@ -81,10 +131,12 @@ export default function UploadPdf({ onUploaded, onDemo }) {
 
       <div className="upload-actions">
         {onDemo && <button className="quiet-button" type="button" onClick={onDemo}>Use demo sample</button>}
-        <button className="primary-button" onClick={handleUpload} disabled={!file || loading}>
-          {loading ? "Reading document..." : "Read this document"}
+        <button className="primary-button" type="button" onClick={handleUpload} disabled={!file}>
+          Prepare document
         </button>
       </div>
+      <p className="supporting-copy">Upload and prepare this PDF for quiz generation.</p>
+      </>}
     </div>
   );
 }

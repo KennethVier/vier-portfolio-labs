@@ -4,6 +4,12 @@ import QuizForm from "./components/QuizForm";
 import QuizResult from "./components/QuizResult";
 import { demoQuiz } from "./demoData";
 
+const normalizeQuestion = (question) => question
+  .normalize("NFKC")
+  .toLocaleLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, " ")
+  .trim();
+
 const steps = [
   { key: "read", label: "Read", detail: "Upload source material" },
   { key: "reflect", label: "Reflect", detail: "Choose how to study" },
@@ -13,6 +19,7 @@ const steps = [
 export default function App() {
   const [documentId, setDocumentId] = useState(null);
   const [documentName, setDocumentName] = useState(null);
+  const [previouslyAskedQuestions, setPreviouslyAskedQuestions] = useState(new Set());
   const [quiz, setQuiz] = useState(null);
   const [isDemoFallback, setIsDemoFallback] = useState(false);
 
@@ -22,16 +29,29 @@ export default function App() {
     return "read";
   }, [documentId, quiz]);
 
-  const handleReset = () => {
+  const handleChangeDocument = () => {
     setDocumentId(null);
     setDocumentName(null);
+    setPreviouslyAskedQuestions(new Set());
     setQuiz(null);
     setIsDemoFallback(false);
+  };
+
+  const handleQuizGenerated = (nextQuiz) => {
+    setPreviouslyAskedQuestions((previous) => {
+      const next = new Set(previous);
+      (nextQuiz.questions || nextQuiz.data || []).forEach((question) => {
+        if (question.question) next.add(normalizeQuestion(question.question));
+      });
+      return next;
+    });
+    setQuiz(nextQuiz);
   };
 
   const handleDemo = () => {
     setDocumentId("demo");
     setDocumentName("Yomira demo reading sample");
+    setPreviouslyAskedQuestions(new Set());
     setQuiz(null);
     setIsDemoFallback(true);
   };
@@ -53,7 +73,7 @@ export default function App() {
       </header>
 
       <main className="workspace">
-        <section className="hero-panel">
+        {!quiz && <section className="hero-panel">
           <div className="hero-copy">
             <span className="eyebrow">Reading mirror workspace</span>
             <h1>Turn dense PDFs into questions you can actually remember.</h1>
@@ -72,7 +92,7 @@ export default function App() {
               </div>
             ))}
           </div>
-        </section>
+        </section>}
 
         {!documentId ? (
           <section className="mirror-grid read-grid">
@@ -105,7 +125,7 @@ export default function App() {
               <span className="eyebrow">Source locked</span>
               <h2>{documentName}</h2>
               <p>Your reading material is ready. Now choose how Yomira should reflect it back for study.</p>
-              <button className="quiet-button" type="button" onClick={handleReset}>Choose another PDF</button>
+              <button className="quiet-button" type="button" onClick={handleChangeDocument}>Choose another PDF</button>
             </div>
             <div className="surface-panel reflection-panel">
               <span className="eyebrow">Step 02 / Reflect</span>
@@ -119,22 +139,20 @@ export default function App() {
               )}
               <QuizForm
                 documentId={documentId}
-                OnGenerated={(nextQuiz) => setQuiz(nextQuiz)}
+                documentName={documentName}
+                previouslyAskedQuestions={previouslyAskedQuestions}
+                OnGenerated={handleQuizGenerated}
                 demoQuiz={isDemoFallback ? demoQuiz : null}
               />
             </div>
           </section>
         ) : (
-          <section className="surface-panel result-panel">
-            <div className="result-header">
-              <div>
-                <span className="eyebrow">Step 03 / Remember</span>
-                <h2>Your reflected quiz</h2>
-                <p>Use the questions as a memory check, then review what the document reflected back.</p>
-              </div>
-              <button className="quiet-button" type="button" onClick={handleReset}>Start over</button>
-            </div>
-            <QuizResult quiz={quiz} />
+          <section className="surface-panel result-panel quiz-focus-panel">
+            <QuizResult
+              quiz={quiz}
+              onGenerateAnother={() => setQuiz(null)}
+              onChangeDocument={handleChangeDocument}
+            />
           </section>
         )}
       </main>

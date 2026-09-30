@@ -1,5 +1,7 @@
 package com.yomira.quiz.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.yomira.quiz.enums.QuizType;
@@ -10,12 +12,17 @@ public class QuizPrompts {
     public String buildPrompt(
         QuizType quizType,
         int count,
-        String documentText
+        String documentText,
+        List<String> excludedQuestions
     ) {
+        String exclusionRule = excludedQuestions == null || excludedQuestions.isEmpty()
+            ? ""
+            : "\nDo not repeat or closely rephrase any of these previously asked questions:\n- "
+                + String.join("\n- ", excludedQuestions) + "\n";
         return switch(quizType) {
-            case MULTIPLE_CHOICE -> mcqPrompt(count, documentText);
-            case TRUE_FALSE -> trueFalsePrompt(count, documentText);
-            case FLASHCARDS -> flashcardPrompt(count, documentText);
+            case MULTIPLE_CHOICE -> mcqPrompt(count, documentText) + exclusionRule;
+            case TRUE_FALSE -> trueFalsePrompt(count, documentText) + exclusionRule;
+            case FLASHCARDS -> flashcardPrompt(count, documentText) + exclusionRule;
         };
     }
 

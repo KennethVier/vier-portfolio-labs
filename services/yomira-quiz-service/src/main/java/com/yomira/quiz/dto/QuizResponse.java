@@ -13,4 +13,5 @@ public class QuizResponse {
     private Long documentId;
     private QuizType quizType;
     private List<Mcq> questions;
+    private String message;
 }

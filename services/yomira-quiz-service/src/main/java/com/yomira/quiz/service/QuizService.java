@@ -1,6 +1,11 @@
 package com.yomira.quiz.service;
 
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -51,51 +56,60 @@ public class QuizService {
 
         log.info("Fetched document text (length={} chars)", doc.getText().length());
 
-        // Build AI prompt
-        String prompt = quizPrompts.buildPrompt(request.getQuizType(),
-                                                request.getQuestionsCount(),
-                                                doc.getText());
-        String aiResult;
-        try {
-            OllamaRequest ollamaRequest = new OllamaRequest("gpt-oss:120b-cloud", prompt, 0.3, 500, false);
-
-            aiResult = ollamaCloudService.generate(ollamaRequest);
-            log.info("AI response received (length={} chars)", aiResult.length());
-
-        } catch (Exception e) {
-            log.error("Failed to generate quiz via AI for document ID {}: {}", request.getDocumentId(), e.getMessage());
-            throw new RuntimeException("Failed to generate content", e);
+        Set<String> fingerprints = new HashSet<>();
+        if (request.getExcludedQuestions() != null) {
+            request.getExcludedQuestions().stream()
+                    .map(this::normalizeQuestion)
+                    .filter(fingerprint -> !fingerprint.isBlank())
+                    .forEach(fingerprints::add);
         }
-            log.info("AI RAW RESPONSE: \n{}", aiResult);
-        // Parse AI output
-        List<Mcq> questions = quizParser.parse(aiResult);
+
+        List<Mcq> questions = new ArrayList<>();
+        List<String> promptExclusions = new ArrayList<>(request.getExcludedQuestions() == null
+                ? List.of()
+                : request.getExcludedQuestions());
         int tries = 0;
-        while (questions.size() < request.getQuestionsCount()) {
+        while (questions.size() < request.getQuestionsCount() && tries < 4) {
             int questionsNeeded = request.getQuestionsCount() - questions.size();
-            log.info("Only parsed {} questions, need {} more. Requesting additional questions from AI.",
-                     questions.size(), questionsNeeded);
-            String followUpPrompt = quizPrompts.buildPrompt(request.getQuizType(),
-                                                            questionsNeeded,
-                                                            doc.getText());
-            String followUpResult = ollamaCloudService.generate(new OllamaRequest("gpt-oss:120b-cloud", followUpPrompt, 0.3, 500, false));
-            questions.addAll(quizParser.parse(followUpResult));
-            tries++;
-            if (tries >= 3) {
-                log.warn("Reached maximum follow-up attempts to get questions from AI.");
-                break;
+            String prompt = quizPrompts.buildPrompt(request.getQuizType(), questionsNeeded, doc.getText(), promptExclusions);
+            try {
+                String aiResult = ollamaCloudService.generate(new OllamaRequest("gpt-oss:120b-cloud", prompt, 0.3, 500, false));
+                log.info("AI response received (length={} chars)", aiResult.length());
+                for (Mcq candidate : quizParser.parse(aiResult)) {
+                    String fingerprint = normalizeQuestion(candidate.getQuestion());
+                    if (!fingerprint.isBlank() && fingerprints.add(fingerprint)) {
+                        questions.add(candidate);
+                        promptExclusions.add(candidate.getQuestion());
+                    }
+                    if (questions.size() == request.getQuestionsCount()) break;
+                }
+            } catch (Exception e) {
+                log.error("Failed to generate quiz via AI for document ID {}: {}", request.getDocumentId(), e.getMessage());
+                throw new RuntimeException("Failed to generate content", e);
             }
+            tries++;
         }
         log.info("Parsed {} questions from AI output", questions.size());
 
-        if (questions.size() > request.getQuestionsCount()) {
-            questions = questions.subList(0, request.getQuestionsCount());
-        }
+        String message = questions.size() < request.getQuestionsCount()
+                ? "Generated " + questions.size() + " unique questions out of " + request.getQuestionsCount()
+                    + "; no additional unseen questions could be produced."
+                : null;
 
         // Return response
         return QuizResponse.builder()
                 .documentId(request.getDocumentId())
                 .quizType(request.getQuizType())
                 .questions(questions)
+                .message(message)
                 .build();
+    }
+
+    private String normalizeQuestion(String question) {
+        if (question == null) return "";
+        return Normalizer.normalize(question, Normalizer.Form.NFKC)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .trim();
     }
 }

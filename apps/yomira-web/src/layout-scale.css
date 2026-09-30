@@ -183,6 +183,10 @@
     padding: 15px;
   }
 
+  .focused-question-card {
+    padding: 22px;
+  }
+
   .choice {
     padding: 9px 10px;
   }

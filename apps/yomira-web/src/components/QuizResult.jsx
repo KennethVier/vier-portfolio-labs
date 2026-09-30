@@ -1,108 +1,130 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 
-export default function QuizResult({ quiz }) {
+export default function QuizResult({ quiz, onGenerateAnother, onChangeDocument }) {
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [view, setView] = useState("quiz");
 
   if (!quiz) return null;
 
   const questions = quiz.questions || quiz.data || [];
 
-  if (!questions || questions.length === 0) {
+  if (questions.length === 0) {
     return (
-      <div className="empty-state">
-        <strong>No questions generated</strong>
-        <span>Try another document or reduce the question count.</span>
+      <div className="result-workflow compact-result">
+        <div className="empty-state">
+          <strong>No new unique questions available</strong>
+          <span>{quiz.message || "Try a different quiz format, or choose another PDF."}</span>
+        </div>
+        <div className="result-actions result-choice-actions">
+          <button className="primary-button" type="button" onClick={onGenerateAnother}>Adjust quiz settings</button>
+          <button className="quiet-button" type="button" onClick={onChangeDocument}>Change PDF</button>
+        </div>
       </div>
     );
   }
 
-  const handleSelectAnswer = (questionIndex, choiceIndex) => {
-    if (!submitted) {
-      setSelectedAnswers({ ...selectedAnswers, [questionIndex]: choiceIndex });
-    }
-  };
-
-  const handleReset = () => {
-    setSelectedAnswers({});
-    setSubmitted(false);
-  };
-
-  const score = questions.reduce((total, question, index) => total + (selectedAnswers[index] === question.correctAnswer ? 1 : 0), 0);
+  const score = questions.reduce(
+    (total, question, index) => total + (selectedAnswers[index] === question.correctAnswer ? 1 : 0),
+    0
+  );
   const percentage = Math.round((score / questions.length) * 100);
 
-  return (
-    <div className="result-workflow">
-      {submitted && (
+  if (view === "results") {
+    return (
+      <div className="result-workflow compact-result">
         <section className="score-panel">
           <span className="eyebrow">Memory reflection</span>
           <strong>{percentage}%</strong>
-          <p>{score} of {questions.length} answers matched the reflected source.</p>
+          <p>{score} correct out of {questions.length}</p>
         </section>
-      )}
+        {quiz.message && <div className="alert generation-note">{quiz.message}</div>}
+        <div className="result-actions result-choice-actions">
+          <button className="primary-button" type="button" onClick={onGenerateAnother}>Generate another quiz</button>
+          <button className="quiet-button" type="button" onClick={() => { setCurrentQuestionIndex(0); setView("review"); }}>Review answers</button>
+          <button className="quiet-button" type="button" onClick={onChangeDocument}>Change PDF</button>
+        </div>
+      </div>
+    );
+  }
 
-      <div className="quiz-container">
-        {questions.map((question, questionIndex) => {
-          const selectedChoice = selectedAnswers[questionIndex];
-          const isAnswered = Object.prototype.hasOwnProperty.call(selectedAnswers, questionIndex);
-          const isCorrect = selectedChoice === question.correctAnswer;
-          const showFeedback = submitted && isAnswered;
+  const question = questions[currentQuestionIndex];
+  const selectedChoice = selectedAnswers[currentQuestionIndex];
+  const isAnswered = Object.prototype.hasOwnProperty.call(selectedAnswers, currentQuestionIndex);
+  const isCorrect = selectedChoice === question.correctAnswer;
+  const isReviewing = view === "review";
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
-          return (
-            <article key={questionIndex} className="question-card">
-              <div className="question-topline">
-                <span>Question {questionIndex + 1}</span>
-                {showFeedback && <strong className={isCorrect ? "answer-correct" : "answer-incorrect"}>{isCorrect ? "Correct" : "Review"}</strong>}
-              </div>
+  const handleSelectAnswer = (choiceIndex) => {
+    if (!isAnswered && !isReviewing) {
+      setSelectedAnswers((answers) => ({ ...answers, [currentQuestionIndex]: choiceIndex }));
+    }
+  };
 
-              <p className="question-text">{question.question}</p>
+  const handleNext = () => {
+    if (currentQuestionIndex === questions.length - 1) {
+      setView("results");
+      return;
+    }
+    setCurrentQuestionIndex((index) => index + 1);
+  };
 
-              <div className="choice-list">
-                {question.choices && question.choices.map((choice, choiceIndex) => {
-                  const isSelected = selectedChoice === choiceIndex;
-                  const isCorrectChoice = choiceIndex === question.correctAnswer;
-                  const showAsCorrect = submitted && isCorrectChoice;
-                  const showAsIncorrect = submitted && isSelected && !isCorrect;
-
-                  return (
-                    <button
-                      type="button"
-                      key={choiceIndex}
-                      className={`choice ${isSelected ? "selected" : ""} ${showAsCorrect ? "correct" : ""} ${showAsIncorrect ? "incorrect" : ""}`}
-                      onClick={() => handleSelectAnswer(questionIndex, choiceIndex)}
-                      disabled={submitted}
-                    >
-                      <span className="choice-radio">{String.fromCharCode(65 + choiceIndex)}</span>
-                      <span>{choice}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {showFeedback && !isCorrect && (
-                <div className="answer-reflection">
-                  <strong>Reflected answer</strong>
-                  <span>{question.choices[question.correctAnswer]}</span>
-                </div>
-              )}
-            </article>
-          );
-        })}
+  return (
+    <div className="result-workflow focused-quiz">
+      {quiz.message && <div className="alert generation-note">{quiz.message}</div>}
+      <div className="quiz-progress" aria-label={`Question ${currentQuestionIndex + 1} of ${questions.length}`}>
+        <div className="question-topline">
+          <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+          {isAnswered && <strong className={isCorrect ? "answer-correct" : "answer-incorrect"}>{isCorrect ? "Correct" : "Incorrect"}</strong>}
+        </div>
+        <div className="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress)}>
+          <span style={{ width: `${progress}%` }} />
+        </div>
       </div>
 
-      <div className="result-actions">
-        {!submitted ? (
-          <button className="primary-button" onClick={() => setSubmitted(true)} disabled={Object.keys(selectedAnswers).length !== questions.length}>
-            Submit reflection
+      <article className="question-card focused-question-card">
+        <p className="question-text">{question.question}</p>
+        <div className="choice-list">
+          {(question.choices || []).map((choice, choiceIndex) => {
+            const isSelected = selectedChoice === choiceIndex;
+            const isCorrectChoice = choiceIndex === question.correctAnswer;
+            const showAsCorrect = isAnswered && isCorrectChoice;
+            const showAsIncorrect = isAnswered && isSelected && !isCorrect;
+
+            return (
+              <button
+                type="button"
+                key={choiceIndex}
+                className={`choice ${isSelected ? "selected" : ""} ${showAsCorrect ? "correct" : ""} ${showAsIncorrect ? "incorrect" : ""}`}
+                onClick={() => handleSelectAnswer(choiceIndex)}
+                disabled={isAnswered || isReviewing}
+              >
+                <span className="choice-radio">{String.fromCharCode(65 + choiceIndex)}</span>
+                <span>{choice}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {isAnswered && (
+          <div className={`answer-reflection ${isCorrect ? "success" : ""}`}>
+            <strong>{isCorrect ? "That's right." : "Correct answer"}</strong>
+            {!isCorrect && <span>{question.choices?.[question.correctAnswer]}</span>}
+            {(question.rationale || question.explanation) && <span>{question.rationale || question.explanation}</span>}
+          </div>
+        )}
+      </article>
+
+      <div className="result-actions question-navigation">
+        {isReviewing && currentQuestionIndex > 0 && (
+          <button className="quiet-button" type="button" onClick={() => setCurrentQuestionIndex((index) => index - 1)}>Previous</button>
+        )}
+        {isAnswered && (
+          <button className="primary-button" type="button" onClick={handleNext}>
+            {currentQuestionIndex === questions.length - 1 ? (isReviewing ? "Back to results" : "See results") : "Next question"}
           </button>
-        ) : (
-          <button className="quiet-button" onClick={handleReset}>Review again</button>
         )}
       </div>
-
-      {!submitted && (
-        <p className="answered-count">Answered {Object.keys(selectedAnswers).length} of {questions.length}</p>
-      )}
     </div>
   );
 }
