@@ -9,7 +9,7 @@ export default function AuthPage() {
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-primary bg-gradient">
       <AuthContainer mode={mode} setMode={setMode}>
-        <div className="alert alert-info py-2 small mb-3">Authly is a portfolio demo. Live login/register requires the backend service to be enabled by the admin.</div>
+        <div className="alert alert-info py-2 small mb-3">Live authentication is enabled. You can also explore the demo dashboard without creating an account.</div>
         {mode === "login" ? <LoginForm /> : <RegisterForm />}
       </AuthContainer>
     </div>

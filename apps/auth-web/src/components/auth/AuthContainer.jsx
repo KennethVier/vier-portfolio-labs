@@ -17,7 +17,7 @@ export default function AuthContainer({ mode, setMode, children }) {
         <div className="text-center mt-4">
           <span className="text-muted small">
             {mode === "login"
-              ? "Donâ€™t have an account?"
+              ? "Don't have an account?"
               : "Already have an account?"}
           </span>
           <button
