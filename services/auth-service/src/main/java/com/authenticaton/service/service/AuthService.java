@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.authenticaton.service.dto.AuthResponse;
 import com.authenticaton.service.dto.RegisterRequest;
+import com.authenticaton.service.dto.UserResponse;
 import com.authenticaton.service.entity.User;
 import com.authenticaton.service.enums.AuthProvider;
 import com.authenticaton.service.enums.Role;
@@ -60,10 +61,10 @@ public class AuthService {
     public AuthResponse login(String email, String password) {
         email = email.trim().toLowerCase();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidRequestException("Invalid email"));
+                .orElseThrow(() -> new InvalidRequestException("Invalid credentials"));
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidRequestException("Invalid password");
+        if (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new InvalidRequestException("Invalid credentials");
         }
 
         String token = jwtService.generateToken(user);
@@ -75,6 +76,12 @@ public class AuthService {
                 .build();
 
         return response;
+    }
+
+    public UserResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidRequestException("Authenticated user not found"));
+        return new UserResponse(user.getEmail(), user.getUsername(), user.getRole());
     }
 
 }

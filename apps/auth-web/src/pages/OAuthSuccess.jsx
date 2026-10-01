@@ -9,16 +9,25 @@ export default function OAuthSuccess() {
         if (handledRef.current) return;
         handledRef.current = true;
 
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.hash.slice(1));
         const token = params.get("token");
-        const email = params.get("email");
-        const username = params.get("username");
+        window.history.replaceState(null, "", window.location.pathname);
 
         if (token) {
-            authApiService.saveAuthFromGoogle(token, email, username);
-            navigate("/dashboard", { replace: true });
+            authApiService.saveToken(token);
+            authApiService.getMe()
+                .then((user) => {
+                    authApiService.saveUser(user);
+                    navigate("/dashboard", { replace: true });
+                })
+                .catch(() => {
+                    authApiService.logout();
+                    navigate("/auth", { replace: true });
+                });
         } else {
-            navigate("/auth");
+            navigate("/auth", { replace: true });
         }
-    }, []);
+    }, [navigate]);
+
+    return null;
 }

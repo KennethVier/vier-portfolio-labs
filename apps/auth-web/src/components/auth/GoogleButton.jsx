@@ -1,19 +1,17 @@
-const API_ROOT = import.meta.env.VITE_API_BASE_URL;
+import { API_ROOT, GOOGLE_OAUTH_ENABLED } from "../../config";
 
 export default function GoogleButton() {
-    const backendEnabled = Boolean(API_ROOT);
-
     const handleGoogleLogin = () => {
-        if (!backendEnabled) return;
-        window.location.href = `${API_ROOT}/auth/oauth2/authorization/google`;
+        if (!GOOGLE_OAUTH_ENABLED) return;
+        window.location.href = `${API_ROOT}/oauth2/authorization/google`;
     };
 
     return (
         <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={!backendEnabled}
-            title={backendEnabled ? "Continue with Google" : "Google OAuth requires the live backend deployment"}
+            disabled={!GOOGLE_OAUTH_ENABLED}
+            title={GOOGLE_OAUTH_ENABLED ? "Continue with Google" : "Google OAuth requires live backend configuration"}
             className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
         >
             <img
@@ -21,7 +19,7 @@ export default function GoogleButton() {
                 width="18"
                 alt="Google"
             />
-            {backendEnabled ? "Continue with Google" : "Google OAuth · backend required"}
+            {GOOGLE_OAUTH_ENABLED ? "Continue with Google" : "Google OAuth · configuration required"}
         </button>
     );
 }

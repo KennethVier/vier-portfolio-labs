@@ -42,9 +42,7 @@ public class OAuthLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHand
 
         String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
 
-        String redirectUrl = oauthSuccessRedirectUrl + "?token=" + encodedToken + "&email=" + 
-                             URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8) + 
-                             "&username=" + URLEncoder.encode(user.getUsername(), StandardCharsets.UTF_8);
+        String redirectUrl = oauthSuccessRedirectUrl + "#token=" + encodedToken;
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 

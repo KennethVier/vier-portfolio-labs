@@ -11,26 +11,38 @@ const authApiService = {
         return response.data;
     },
 
+    async getMe() {
+        const response = await api.get("/me");
+        return response.data;
+    },
+
     saveAuth(authResponse) {
         localStorage.setItem("token", authResponse.token);
+        this.saveUser(authResponse);
+    },
+
+    saveToken(token) {
+        localStorage.setItem("token", token);
+    },
+
+    saveUser(user) {
         localStorage.setItem(
         "user",
         JSON.stringify({
-            email: authResponse.email,
-            username: authResponse.username
+            email: user.email,
+            username: user.username,
+            role: user.role
         })
         );
     },
 
-    saveAuthFromGoogle(token, email, username) {
-        localStorage.setItem("token",token);
-        localStorage.setItem(
-            "user",
-            JSON.stringify({
-                email: email,
-                username: username
-            })
-        );
+    saveDemoSession() {
+        this.saveAuth({
+            token: "portfolio-demo-session",
+            email: "demo@authly.local",
+            username: "Portfolio Demo",
+            role: "DEMO"
+        });
     },
 
     logout() {
@@ -40,6 +52,10 @@ const authApiService = {
 
     isAuthenticated() {
         return !!localStorage.getItem("token");
+    },
+
+    isDemoSession() {
+        return localStorage.getItem("token") === "portfolio-demo-session";
     }
 };
 

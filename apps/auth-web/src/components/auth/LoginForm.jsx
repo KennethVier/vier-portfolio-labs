@@ -15,16 +15,12 @@ export default function LoginForm() {
             navigate("/dashboard");
         } catch (error) {
             console.error("Login request failed:", error?.message);
-            setMessage(error.response?.data?.message || "Live backend is currently disabled for this portfolio demo. Use the demo dashboard below to explore the protected-route flow.");
+            setMessage(error.response?.data?.error || "Live backend is currently unavailable. Use the demo dashboard below to explore the protected-route flow.");
         }
     };
 
     const handleDemo = () => {
-        authApiService.saveAuth({
-            token: "portfolio-demo-session",
-            email: "demo@authly.local",
-            username: "Portfolio Demo"
-        });
+        authApiService.saveDemoSession();
         navigate("/dashboard");
     };
 

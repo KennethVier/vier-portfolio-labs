@@ -9,15 +9,13 @@ export default function RegisterForm() {
     const [message, setMessage] = useState("");
 
     const onSubmit = async (data) => {
-        console.log("Register data submitted:", data);
         try {
             const response = await authApiService.register(data);
             authApiService.saveAuth(response);
-            console.log("Register response:", response);
             navigate("/dashboard");
         } catch (error) {
-            console.error("Register error:", error);
-            setMessage(error.response?.data?.message || "Live backend is currently disabled for this portfolio demo. Contact the admin to enable this workflow.");
+            console.error("Register request failed:", error?.message);
+            setMessage(error.response?.data?.error || "Live backend is currently unavailable. Contact the admin to enable this workflow.");
         }
     };
 
