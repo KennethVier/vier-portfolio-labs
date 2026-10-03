@@ -1,6 +1,6 @@
 ---
 name: pesopilot-implement-task
-description: PesoPilot implementation-only workflow. Execute an approved ChatGPT-reviewed plan directly with exact path scope, Ponytail-style reuse, Caveman-style low ceremony, no tests by default, and OWASP-aligned security/user-validation handoff.
+description: PesoPilot implementation-only workflow. Execute an approved ChatGPT-reviewed plan directly with exact path scope, Ponytail-style reuse, Caveman-style low ceremony, modern React coding standards, no tests by default, and OWASP-aligned security/user-validation handoff.
 ---
 
 # Implement an Approved PesoPilot Task
@@ -54,6 +54,90 @@ Use the shortest safe path from approved plan to working code.
 Do not perform broad repository reconnaissance, inspect unrelated history/branches/PRs, spawn subagents, load unrelated docs, narrate routine work, or re-plan already-approved decisions.
 
 Expand context only for a concrete blocker, contradiction, dependency, architecture boundary, or security concern.
+
+## React Frontend Standard — Modern React / AI-Assisted Coding
+
+For React work, repository reality and the approved plan outrank generic style advice. When they do not decide an issue, follow current official React principles: pure rendering, minimal state, Effects only for external synchronization, immutable inputs, and behavior-oriented component boundaries.
+
+Do not "modernize" unrelated code just because a newer React pattern exists. Do not introduce APIs, compiler assumptions, framework features, or React-version-specific behavior that the installed PesoPilot toolchain does not already support unless explicitly approved.
+
+### Components and Rendering
+
+- Use function components and Hooks; preserve existing project conventions before introducing a new component pattern.
+- Components and custom Hooks must be pure during render: no network calls, persistence writes, global mutation, timers, random IDs, `Date.now()`, or other side effects in render.
+- Never mutate props, Hook arguments, Zustand state objects, InsightBundle objects, financial DTOs, or other non-local inputs. Produce new values instead.
+- Keep components focused on presentation and interaction. Deterministic finance calculations, financial classification, recommendations, and narrative generation belong in their existing engines/services, not JSX.
+- Prefer composition and small local helpers over giant conditional components, but do not split a component solely to satisfy an arbitrary line-count rule.
+- Use stable domain IDs for list keys. Do not use array indexes as keys when items can be inserted, removed, filtered, or reordered.
+- Render deterministic values. Do not create unstable keys or output with `Math.random()`, timestamps, or generated IDs during render.
+
+### Hooks and Effects
+
+- Follow the Rules of Hooks: call Hooks only at component/custom-Hook top level, never conditionally, in loops, or in nested callbacks.
+- Treat `useEffect` as an escape hatch for synchronizing React with an external system such as browser APIs, subscriptions, timers, or imperative third-party code.
+- Do not use Effects to derive display data from props/state. Compute derived values during render or in the existing deterministic service/selector layer.
+- Do not use Effects merely to react to a user event when the logic belongs in that event handler.
+- Avoid Effect chains that copy state into more state. Prefer one source of truth and derive downstream values.
+- When an Effect performs asynchronous work, handle cleanup/staleness so an older response cannot overwrite newer state.
+- Keep dependency arrays truthful. Do not suppress Hook dependency lint rules to force behavior unless the approved task documents why.
+
+### State Ownership
+
+- Keep state minimal. Do not store values that can be derived from existing props, state, selectors, or deterministic DTOs.
+- Avoid contradictory, duplicated, or deeply nested state when a simpler normalized representation is sufficient.
+- Keep transient UI state local to the component when it is not shared.
+- Use Zustand only for genuinely shared application/feature state and follow the existing store API. Prefer narrow selectors when the existing store supports them rather than subscribing a component to unrelated state.
+- Keep IndexedDB/Dexie persistence behind the existing service/repository boundaries. React components must not become an alternate persistence or finance-calculation layer.
+- Do not mirror persisted DTOs into separate component state unless an explicit editable draft/snapshot is required.
+
+### Data and Business Logic Boundaries
+
+- UI consumes authoritative service/engine outputs; it does not recompute financial intelligence for convenience.
+- Never duplicate formulas for balances, remaining cash, rates, health scores, trends, recommendations, summary rankings, or cutoff logic inside React components.
+- If a UI needs a view model, derive it from existing deterministic outputs without changing financial meaning.
+- Preserve explicit loading, empty, error, and no-data semantics. Do not convert missing financial data into plausible-looking zeroes or default positive/negative conclusions.
+- User-triggered mutations belong in explicit event/action flows, not hidden render/Effect behavior.
+
+### Memoization and Performance
+
+- Do not cargo-cult `useMemo`, `useCallback`, or `React.memo`.
+- Add memoization only for a demonstrated expensive computation, a required referential-stability contract, or an existing project pattern where it prevents meaningful rerenders.
+- Prefer fixing state ownership, Effect misuse, or overly broad subscriptions before adding memoization.
+- Do not assume React Compiler is configured. Do not add compiler directives or compiler-specific patterns unless the repository already uses them or the approved plan explicitly adds them.
+- Avoid premature code-splitting or dependency changes in a feature task unless performance work is explicitly in scope.
+
+### Forms and User Input
+
+- Reuse the project's existing form and validation patterns before introducing new ones.
+- Use semantic form controls and keep controlled/uncontrolled ownership consistent within a field.
+- Validate user input at the appropriate boundary; client validation improves UX but must not be treated as a security boundary for future server-backed flows.
+- Do not duplicate validation rules across component state, schemas, and services unless each layer has a distinct responsibility.
+
+### Accessibility and UX Correctness
+
+- Prefer semantic HTML first: `button` for actions, links for navigation, labels for form controls, headings in logical order.
+- Preserve keyboard operation and visible focus for interactive controls.
+- Use ARIA only when native semantics are insufficient; do not add decorative ARIA that conflicts with native behavior.
+- Provide meaningful accessible names/alt text when the touched UI requires them.
+- Preserve existing loading, empty, error, disabled, and success states when changing a flow.
+
+### React Security
+
+- Treat external/user-derived strings as untrusted display data. Rely on normal React escaping.
+- Do not use `dangerouslySetInnerHTML`, raw HTML injection, `eval`, `Function`, or executable string templates unless an explicitly approved design has a reviewed sanitization boundary.
+- Do not place secrets, tokens, financial records, or sensitive payloads in console logs or rendered debug output.
+- Do not trust client-side route guards or hidden UI as authorization; future server-backed authorization must remain server-enforced.
+
+### AI Coding Guardrails
+
+When acting as an implementation agent:
+
+- Existing project conventions beat fashionable rewrites.
+- Prefer local reasoning: a reviewer should understand a component/Hook without tracing speculative abstractions across the app.
+- Do not create generic hooks, wrappers, contexts, adapters, component systems, or "future-proof" layers unless the current task has at least one concrete use that existing patterns cannot serve cleanly.
+- Do not rename/restructure files merely to match a preferred React architecture if current architecture is coherent.
+- Do not upgrade React, Vite, Zustand, Dexie, routing, form, styling, or testing dependencies as part of an unrelated feature task.
+- If the approved plan conflicts with React correctness, stop and report the concrete contradiction instead of silently redesigning the task.
 
 ## PesoPilot Boundaries
 
