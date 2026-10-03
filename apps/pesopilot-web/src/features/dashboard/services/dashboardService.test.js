@@ -6,6 +6,7 @@ import {
   buildSpendingOverview,
   calculateCutoffProgress,
   calculateHealthScore,
+  dashboardServiceInternals,
   deriveBudgetAlert,
   deriveCoachMessages,
   deriveExpenseHelperText,
@@ -45,6 +46,31 @@ describe('dashboardService derivations', () => {
       title: 'Cashflow Stable',
       tone: 'stable',
     })
+  })
+
+  it('uses deterministic insight output for dashboard insight text and health score', () => {
+    const insights = {
+      expenses: {
+        explanation: 'Expense insight generated from current financial records.',
+      },
+      health: {
+        explanation: 'Financial health is Fair with a score of 68.',
+        score: 68,
+      },
+    }
+
+    expect(
+      deriveBudgetAlert({ remainingCash: 100, expenseRate: 50 }, insights).insight,
+    ).toBe('Expense insight generated from current financial records.')
+    expect(
+      dashboardServiceInternals.getHealthScore(
+        { remainingCash: 100, expenseRate: 50, savingsRate: 10 },
+        insights,
+      ),
+    ).toBe(68)
+    expect(
+      deriveBudgetAlert({ remainingCash: 100, expenseRate: 50 }).insight,
+    ).not.toContain('AI placeholder')
   })
 
   it('derives total expense helper text from expense rate', () => {
