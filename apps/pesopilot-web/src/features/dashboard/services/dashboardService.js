@@ -1,6 +1,7 @@
 import { cashflowService } from '@/features/cashflow/services/cashflowService.js'
 import { expenseService } from '@/features/expenses/services/expenseService.js'
 import { incomeService } from '@/features/income/services/incomeService.js'
+import { insightService } from '@/features/insights/services/insightService.js'
 import { savingsService } from '@/features/savings/services/savingsService.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
@@ -63,6 +64,20 @@ function buildCategoryLookup(categories) {
   return new Map(categories.map((category) => [String(category.id), category]))
 }
 
+function getInsightExplanation(insights, fallback) {
+  return insights?.expenses?.explanation || insights?.health?.explanation || fallback
+}
+
+function getHealthScore(cashflow, insights) {
+  const insightScore = Number(insights?.health?.score)
+
+  if (Number.isFinite(insightScore)) {
+    return clamp(insightScore, 0, 100)
+  }
+
+  return calculateHealthScore(cashflow)
+}
+
 export function calculateHealthScore(cashflow) {
   if (!cashflow) {
     return null
@@ -103,7 +118,7 @@ export function deriveExpenseHelperText(cashflow) {
   return 'Within range'
 }
 
-export function deriveBudgetAlert(cashflow) {
+export function deriveBudgetAlert(cashflow, insights = null) {
   const remainingCash = getCashflowValue(cashflow, 'remainingCash')
   const expenseRate = getCashflowValue(cashflow, 'expenseRate')
 
@@ -111,7 +126,10 @@ export function deriveBudgetAlert(cashflow) {
     return {
       actionLabel: 'Review Spending',
       icon: 'warning',
-      insight: 'AI placeholder: Focus on essential spending until cashflow recovers.',
+      insight: getInsightExplanation(
+        insights,
+        'Focus on essential spending until cashflow recovers.',
+      ),
       message: 'Your current cutoff cashflow is negative. Reduce discretionary expenses before the next cutoff.',
       title: 'Cashflow Risk Alert',
       tone: 'critical',
@@ -122,7 +140,10 @@ export function deriveBudgetAlert(cashflow) {
     return {
       actionLabel: 'Review Expenses',
       icon: 'warning',
-      insight: 'AI placeholder: Expenses are close to consuming all actual income.',
+      insight: getInsightExplanation(
+        insights,
+        'Expenses are close to consuming all actual income.',
+      ),
       message: 'Expenses have reached a critical share of your actual income for this cutoff.',
       title: 'Expense Usage Warning',
       tone: 'warning',
@@ -133,7 +154,10 @@ export function deriveBudgetAlert(cashflow) {
     return {
       actionLabel: 'Check Categories',
       icon: 'priority_high',
-      insight: 'AI placeholder: Keep an eye on categories with the largest shares.',
+      insight: getInsightExplanation(
+        insights,
+        'Keep an eye on categories with the largest shares.',
+      ),
       message: 'Expenses are elevated for this cutoff. Monitor high-spend categories closely.',
       title: 'Spending Caution',
       tone: 'caution',
@@ -143,7 +167,10 @@ export function deriveBudgetAlert(cashflow) {
   return {
     actionLabel: 'View Details',
     icon: 'check_circle',
-    insight: 'AI placeholder: Cashflow looks stable for the current cutoff.',
+    insight: getInsightExplanation(
+      insights,
+      'Cashflow looks stable for the current cutoff.',
+    ),
     message: 'Current spending is within a stable range for this cutoff.',
     title: 'Cashflow Stable',
     tone: 'stable',
@@ -354,17 +381,19 @@ function buildDashboardModel({
   currentCutoff,
   expenses,
   income,
+  insights,
   savings,
 }) {
   return {
     allocationRows: buildAllocationMatrix(expenses, categories, currentCutoff),
-    budgetAlert: deriveBudgetAlert(cashflow),
+    budgetAlert: deriveBudgetAlert(cashflow, insights),
     cashflow,
     coachMessages: deriveCoachMessages(cashflow),
     currentCutoff,
     cutoffProgress: calculateCutoffProgress(currentCutoff),
     expenseHelperText: deriveExpenseHelperText(cashflow),
-    healthScore: calculateHealthScore(cashflow),
+    healthScore: getHealthScore(cashflow, insights),
+    insights,
     recentTransactions: buildRecentTransactions({ expenses, income, savings }),
     spendingOverview: buildSpendingOverview(expenses, currentCutoff),
   }
@@ -379,6 +408,7 @@ export const dashboardService = {
       categories,
       income,
       savings,
+      insights,
     ] = await Promise.all([
       cashflowService.getCurrentCashflow(),
       cutoffService.findCurrentCutoff(),
@@ -386,6 +416,7 @@ export const dashboardService = {
       expenseService.loadCategories(),
       incomeService.loadIncome(),
       savingsService.loadSavings(),
+      insightService.loadInsights(),
     ])
 
     return buildDashboardModel({
@@ -394,6 +425,7 @@ export const dashboardService = {
       currentCutoff,
       expenses,
       income,
+      insights,
       savings,
     })
   },
@@ -403,4 +435,6 @@ export const dashboardServiceInternals = {
   buildDashboardModel,
   getCurrentCutoffExpenses,
   getDayIndex,
+  getHealthScore,
+  getInsightExplanation,
 }
