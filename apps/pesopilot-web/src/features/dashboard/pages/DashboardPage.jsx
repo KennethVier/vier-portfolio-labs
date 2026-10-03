@@ -26,6 +26,10 @@ function formatMoney(value) {
   return currencyFormatter.format(value ?? 0)
 }
 
+function formatRate(value) {
+  return `${Math.round(Number(value) || 0)}%`
+}
+
 function getAlertToneClasses(tone) {
   const toneClasses = {
     caution: {
@@ -53,7 +57,7 @@ function getAlertToneClasses(tone) {
   return toneClasses[tone] ?? toneClasses.stable
 }
 
-function BudgetShockAlert({ alert }) {
+function CashflowStatusAlert({ alert }) {
   const toneClasses = getAlertToneClasses(alert.tone)
 
   return (
@@ -221,8 +225,8 @@ function AiUnavailableModal({ isOpen, onClose }) {
     >
       <div className="space-y-3 text-body-sm text-on-surface-variant">
         <p>
-          AI coaching, generated reports, and deeper financial insights are still
-          being prepared for a future phase.
+          AI report generation and conversational coaching are still being prepared
+          for a future phase.
         </p>
         <p>
           For now, the dashboard uses local deterministic summaries from your
@@ -233,12 +237,22 @@ function AiUnavailableModal({ isOpen, onClose }) {
   )
 }
 
-function AIFinancialCoach({ messages, onGenerateReport }) {
+function FinancialInsights({ healthScore, healthStatus, messages, onGenerateReport }) {
   return (
     <section className="h-full rounded-lg bg-primary p-4 text-on-primary shadow-sm lg:col-span-4">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="material-symbols-outlined">auto_awesome</span>
-        <h3 className="font-headline-sm text-headline-sm">AI Financial Coach</h3>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined">monitoring</span>
+          <h3 className="font-headline-sm text-headline-sm">Financial Insights</h3>
+        </div>
+        <div className="text-right">
+          <div className="font-data-mono text-lg font-semibold">
+            {healthScore ?? '--'}
+          </div>
+          <div className="font-label-caps text-label-caps uppercase opacity-80">
+            {healthStatus ?? 'No data'}
+          </div>
+        </div>
       </div>
       <div className="space-y-3">
         {messages.map((message) => (
@@ -468,18 +482,13 @@ export function DashboardPage() {
 
           <KpiGrid columns={4}>
             <StatCard
-              label="Health Score"
-              value={data.healthScore ?? '--'}
-              tone="info"
-              valueSize="display"
-              icon={<span className="material-symbols-outlined text-lg">monitoring</span>}
-              progress={data.healthScore ?? undefined}
-              helperText={data.healthScore === null ? 'No current cutoff data' : 'Current cycle score'}
-            />
-            <StatCard
-              label="Expected Income"
-              value={formatMoney(data.cashflow?.expectedIncome)}
-              helperText={data.currentCutoff?.endDate ? `Due by ${data.currentCutoff.endDate}` : 'No active cutoff'}
+              label="Actual Income"
+              value={formatMoney(data.cashflow?.actualIncome)}
+              helperText={
+                data.currentCutoff
+                  ? `Expected ${formatMoney(data.cashflow?.expectedIncome)}`
+                  : 'No active cutoff'
+              }
               tone="neutral"
               icon={<span className="material-symbols-outlined text-lg">payments</span>}
             />
@@ -489,6 +498,13 @@ export function DashboardPage() {
               helperText={data.expenseHelperText}
               tone="neutral"
               icon={<span className="material-symbols-outlined text-lg">receipt_long</span>}
+            />
+            <StatCard
+              label="Total Savings"
+              value={formatMoney(data.cashflow?.totalSavings)}
+              helperText={`Savings rate ${formatRate(data.cashflow?.savingsRate)}`}
+              tone="neutral"
+              icon={<span className="material-symbols-outlined text-lg">savings</span>}
             />
             <StatCard
               label="Remaining Cash"
@@ -514,7 +530,7 @@ export function DashboardPage() {
           />
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            <BudgetShockAlert alert={data.budgetAlert} />
+            <CashflowStatusAlert alert={data.budgetAlert} />
             <SpendingOverview bars={data.spendingOverview} />
           </div>
 
@@ -523,7 +539,9 @@ export function DashboardPage() {
               className="lg:col-span-8"
               transactions={data.recentTransactions}
             />
-            <AIFinancialCoach
+            <FinancialInsights
+              healthScore={data.healthScore}
+              healthStatus={data.insights?.health?.status}
               messages={data.coachMessages}
               onGenerateReport={() => setIsAiUnavailableOpen(true)}
             />
