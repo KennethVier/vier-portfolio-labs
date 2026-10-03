@@ -42,6 +42,11 @@ function getAlertToneClasses(tone) {
       icon: 'bg-error-container text-error',
       stripe: 'bg-error',
     },
+    neutral: {
+      border: 'border-outline-variant',
+      icon: 'bg-surface-container text-on-surface-variant',
+      stripe: 'bg-outline',
+    },
     stable: {
       border: 'border-secondary/20',
       icon: 'bg-secondary-container text-secondary',
@@ -54,7 +59,7 @@ function getAlertToneClasses(tone) {
     },
   }
 
-  return toneClasses[tone] ?? toneClasses.stable
+  return toneClasses[tone] ?? toneClasses.neutral
 }
 
 function CashflowStatusAlert({ alert }) {
@@ -79,13 +84,13 @@ function CashflowStatusAlert({ alert }) {
           <p className="font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
             {alert.message}
           </p>
-          <button
-            type="button"
+          <Link
+            to={alert.actionTo}
             className="flex items-center gap-1 font-body-sm font-semibold text-primary hover:underline"
           >
             {alert.actionLabel}
             <span className="material-symbols-outlined text-base">chevron_right</span>
-          </button>
+          </Link>
         </div>
       </div>
       <div className="mt-3 flex items-start gap-2 rounded border border-outline-variant bg-surface-container-low p-2.5">
@@ -98,7 +103,9 @@ function CashflowStatusAlert({ alert }) {
   )
 }
 
-function SpendingOverview({ bars }) {
+function SpendingOverview({ bars, hasCurrentCutoff }) {
+  const hasSpending = bars.some((bar) => bar.amount > 0)
+
   return (
     <SectionCard
       title="Spending Overview"
@@ -109,24 +116,38 @@ function SpendingOverview({ bars }) {
         </span>
       }
     >
-      <div className="flex h-24 items-end justify-between gap-2 px-2">
-        {bars.map((bar) => (
-          <div
-            key={bar.label}
-            className="group relative flex-1 rounded-t-sm bg-primary transition-colors hover:bg-primary-container"
-            style={{ height: `${bar.percent}%` }}
-          >
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-on-surface px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {bar.label}: {formatMoney(bar.amount)}
-            </div>
+      {!hasCurrentCutoff ? (
+        <EmptyState
+          title="No active cutoff"
+          message="Create a salary cutoff to start current-cycle spending analysis."
+        />
+      ) : !hasSpending ? (
+        <EmptyState
+          title="No current-cycle spending"
+          message="Expenses assigned to this cutoff will appear in the spending overview."
+        />
+      ) : (
+        <>
+          <div className="flex h-24 items-end justify-between gap-2 px-2">
+            {bars.map((bar) => (
+              <div
+                key={bar.label}
+                className="group relative flex-1 rounded-t-sm bg-primary transition-colors hover:bg-primary-container"
+                style={{ height: `${bar.percent}%` }}
+              >
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-on-surface px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  {bar.label}: {formatMoney(bar.amount)}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="mt-4 flex justify-between px-2 font-label-caps text-label-caps text-on-surface-variant">
-        {bars.map((bar) => (
-          <span key={bar.label}>{bar.label}</span>
-        ))}
-      </div>
+          <div className="mt-4 flex justify-between px-2 font-label-caps text-label-caps text-on-surface-variant">
+            {bars.map((bar) => (
+              <span key={bar.label}>{bar.label}</span>
+            ))}
+          </div>
+        </>
+      )}
     </SectionCard>
   )
 }
@@ -286,27 +307,41 @@ function NextCutoffCard({ currentCutoff, cutoffProgress }) {
       <div className="flex items-start justify-between">
         <div>
           <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-            Next Cutoff
+            Current Cutoff
           </span>
           <div className="mt-1 font-headline-sm text-headline-sm">
-            {currentCutoff?.endDate ?? 'No active cutoff'}
+            {currentCutoff ? `Ends ${currentCutoff.endDate}` : 'No active cutoff'}
           </div>
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container">
           <span className="material-symbols-outlined text-primary">calendar_today</span>
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container">
-          <div
-            className="h-full bg-primary"
-            style={{ width: `${cutoffProgress.progress}%` }}
-          />
+      {currentCutoff ? (
+        <div className="mt-4 flex items-center gap-2">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container">
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${cutoffProgress.progress}%` }}
+            />
+          </div>
+          <span className="font-body-sm text-on-surface-variant">
+            {cutoffProgress.daysLeft} days left
+          </span>
         </div>
-        <span className="font-body-sm text-on-surface-variant">
-          {cutoffProgress.daysLeft} days left
-        </span>
-      </div>
+      ) : (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="font-body-sm text-on-surface-variant">
+            Create a cutoff to start current-cycle tracking.
+          </span>
+          <Link
+            to="/salary-cutoff"
+            className="whitespace-nowrap text-body-sm font-semibold text-primary hover:underline"
+          >
+            Create Cutoff
+          </Link>
+        </div>
+      )}
     </section>
   )
 }
@@ -483,7 +518,7 @@ export function DashboardPage() {
           <KpiGrid columns={4}>
             <StatCard
               label="Actual Income"
-              value={formatMoney(data.cashflow?.actualIncome)}
+              value={data.currentCutoff ? formatMoney(data.cashflow?.actualIncome) : '--'}
               helperText={
                 data.currentCutoff
                   ? `Expected ${formatMoney(data.cashflow?.expectedIncome)}`
@@ -494,23 +529,39 @@ export function DashboardPage() {
             />
             <StatCard
               label="Total Expenses"
-              value={formatMoney(data.cashflow?.totalExpenses)}
-              helperText={data.expenseHelperText}
+              value={data.currentCutoff ? formatMoney(data.cashflow?.totalExpenses) : '--'}
+              helperText={data.currentCutoff ? data.expenseHelperText : 'No active cutoff'}
               tone="neutral"
               icon={<span className="material-symbols-outlined text-lg">receipt_long</span>}
             />
             <StatCard
               label="Total Savings"
-              value={formatMoney(data.cashflow?.totalSavings)}
-              helperText={`Savings rate ${formatRate(data.cashflow?.savingsRate)}`}
+              value={data.currentCutoff ? formatMoney(data.cashflow?.totalSavings) : '--'}
+              helperText={
+                data.currentCutoff
+                  ? `Savings rate ${formatRate(data.cashflow?.savingsRate)}`
+                  : 'No active cutoff'
+              }
               tone="neutral"
               icon={<span className="material-symbols-outlined text-lg">savings</span>}
             />
             <StatCard
               label="Remaining Cash"
-              value={formatMoney(data.cashflow?.remainingCash)}
-              helperText={(data.cashflow?.remainingCash ?? 0) >= 0 ? 'Net Surplus' : 'Deficit Risk'}
-              tone={(data.cashflow?.remainingCash ?? 0) >= 0 ? 'info' : 'critical'}
+              value={data.currentCutoff ? formatMoney(data.cashflow?.remainingCash) : '--'}
+              helperText={
+                data.currentCutoff
+                  ? (data.cashflow?.remainingCash ?? 0) >= 0
+                    ? 'Net Surplus'
+                    : 'Deficit Risk'
+                  : 'No active cutoff'
+              }
+              tone={
+                !data.currentCutoff
+                  ? 'neutral'
+                  : (data.cashflow?.remainingCash ?? 0) >= 0
+                    ? 'info'
+                    : 'critical'
+              }
               icon={<span className="material-symbols-outlined text-lg">account_balance_wallet</span>}
             />
           </KpiGrid>
@@ -531,7 +582,10 @@ export function DashboardPage() {
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             <CashflowStatusAlert alert={data.budgetAlert} />
-            <SpendingOverview bars={data.spendingOverview} />
+            <SpendingOverview
+              bars={data.spendingOverview}
+              hasCurrentCutoff={Boolean(data.currentCutoff)}
+            />
           </div>
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
@@ -541,7 +595,7 @@ export function DashboardPage() {
             />
             <FinancialInsights
               healthScore={data.healthScore}
-              healthStatus={data.insights?.health?.status}
+              healthStatus={data.healthStatus}
               messages={data.coachMessages}
               onGenerateReport={() => setIsAiUnavailableOpen(true)}
             />
