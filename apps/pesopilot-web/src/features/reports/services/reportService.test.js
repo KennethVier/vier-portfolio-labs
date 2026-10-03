@@ -93,6 +93,7 @@ describe('reportService', () => {
 
     const result = await reportService.loadReports()
 
+    expect(result.summary).toBeNull()
     expect(result.kpis).toMatchObject({
       netCashflow: 60500,
       totalExpenses: 1500,
@@ -127,6 +128,8 @@ describe('reportService', () => {
       scope: REPORT_SCOPES.currentCutoff,
     })
 
+    expect(result.summary).not.toBeNull()
+    expect(result.summary.scope).toBe('current_cutoff')
     expect(result.kpis).toMatchObject({
       netCashflow: 34000,
       totalExpenses: 1000,
@@ -173,6 +176,7 @@ describe('reportService', () => {
       selectedCutoffId,
     })
 
+    expect(result.summary).toBeNull()
     expect(result.kpis).toMatchObject({
       netCashflow: 32000,
       totalExpenses: 2000,
@@ -206,6 +210,7 @@ describe('reportService', () => {
       scope: REPORT_SCOPES.currentCutoff,
     })
 
+    expect(result.summary).toBeNull()
     expect(result.kpis).toMatchObject({
       netCashflow: 0,
       totalExpenses: 0,

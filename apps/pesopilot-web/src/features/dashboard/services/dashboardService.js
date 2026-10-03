@@ -4,6 +4,7 @@ import { incomeService } from '@/features/income/services/incomeService.js'
 import { insightService } from '@/features/insights/services/insightService.js'
 import { savingsService } from '@/features/savings/services/savingsService.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
+import { SUMMARY_SECTION_TYPES } from '@/features/insights/summary/summaryConstants.js'
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const CATEGORY_COLORS = [
@@ -16,10 +17,6 @@ const CATEGORY_COLORS = [
 
 function getAmount(record) {
   return Number(record?.amount) || 0
-}
-
-function getCashflowValue(cashflow, key) {
-  return Number(cashflow?.[key]) || 0
 }
 
 function clamp(value, min, max) {
@@ -60,26 +57,25 @@ function getCurrentCutoffExpenses(expenses, currentCutoff) {
   return expenses.filter((expense) => isCurrentCutoffRecord(expense, currentCutoff))
 }
 
-function buildCategoryLookup(categories) {
-  return new Map(categories.map((category) => [String(category.id), category]))
-}
-
 function getInsightExplanation(insights, fallback) {
-  return insights?.expenses?.explanation || insights?.health?.explanation || fallback
+  return insights?.cashflow?.explanation || insights?.expenses?.explanation || insights?.health?.explanation || fallback
 }
 
-function getHealthScore(cashflow, insights, hasCurrentCutoff = true) {
-  if (!hasCurrentCutoff) {
+export function getHealthScore(insights, hasCurrentCutoff = true) {
+  const actualInsights = insights?.health !== undefined ? insights : arguments[1]
+  const actualCutoff = typeof hasCurrentCutoff === 'boolean' ? hasCurrentCutoff : (arguments[2] ?? true)
+
+  if (!actualCutoff) {
     return null
   }
 
-  const insightScore = Number(insights?.health?.score)
+  const insightScore = Number(actualInsights?.health?.score)
 
   if (Number.isFinite(insightScore)) {
-    return clamp(insightScore, 0, 100)
+    return insightScore
   }
 
-  return calculateHealthScore(cashflow)
+  return null
 }
 
 function createNoCutoffStatus() {
@@ -94,106 +90,77 @@ function createNoCutoffStatus() {
   }
 }
 
-export function calculateHealthScore(cashflow) {
-  if (!cashflow) {
-    return null
+export function deriveExpenseHelperText(insights, hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff) {
+    return 'No active cutoff'
   }
 
-  let score = 100
+  const paceStatus = insights?.cashflow?.metrics?.spendingPace?.status
 
-  if (getCashflowValue(cashflow, 'remainingCash') < 0) {
-    score -= 20
-  }
-
-  if (getCashflowValue(cashflow, 'expenseRate') > 80) {
-    score -= 10
-  }
-
-  if (getCashflowValue(cashflow, 'savingsRate') < 10) {
-    score -= 10
-  }
-
-  if (getCashflowValue(cashflow, 'incomeVariance') < 0) {
-    score -= 10
-  }
-
-  return clamp(score, 0, 100)
-}
-
-export function deriveExpenseHelperText(cashflow) {
-  const expenseRate = getCashflowValue(cashflow, 'expenseRate')
-
-  if (expenseRate >= 90) {
-    return 'Critical usage'
-  }
-
-  if (expenseRate >= 75) {
-    return 'High usage'
+  if (paceStatus && paceStatus !== 'No Data') {
+    return `Pace: ${paceStatus}`
   }
 
   return 'Within range'
 }
 
-export function deriveBudgetAlert(cashflow, insights = null) {
-  const remainingCash = getCashflowValue(cashflow, 'remainingCash')
-  const expenseRate = getCashflowValue(cashflow, 'expenseRate')
-
-  if (remainingCash < 0) {
-    return {
-      actionLabel: 'Review Spending',
-      actionTo: '/expenses',
-      icon: 'warning',
-      insight: getInsightExplanation(
-        insights,
-        'Focus on essential spending until cashflow recovers.',
-      ),
-      message: 'Your current cutoff cashflow is negative. Reduce discretionary expenses before the next cutoff.',
-      title: 'Cashflow Risk Alert',
-      tone: 'critical',
-    }
+export function deriveBudgetAlert(cashflow, insights = null, hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff) {
+    return createNoCutoffStatus()
   }
 
-  if (expenseRate >= 90) {
-    return {
-      actionLabel: 'Review Expenses',
-      actionTo: '/expenses',
-      icon: 'warning',
-      insight: getInsightExplanation(
-        insights,
-        'Expenses are close to consuming all actual income.',
-      ),
-      message: 'Expenses have reached a critical share of your actual income for this cutoff.',
-      title: 'Expense Usage Warning',
-      tone: 'warning',
-    }
+  const breakdown = Array.isArray(insights?.cashflow?.breakdown)
+    ? insights.cashflow.breakdown
+    : []
+
+  const hasCritical = breakdown.some((rule) => rule?.severity === 'critical')
+  const hasWarning = breakdown.some((rule) => rule?.severity === 'warning')
+
+  let tone = 'neutral'
+  let icon = 'info'
+  let title = 'Cashflow Status'
+
+  if (hasCritical) {
+    tone = 'critical'
+    icon = 'warning'
+    title = 'Cashflow Deficit Risk'
+  } else if (hasWarning) {
+    tone = 'warning'
+    icon = 'priority_high'
+    title = 'Cashflow Warning'
+  } else if (
+    insights?.cashflow?.metrics?.position === 'Positive' ||
+    insights?.cashflow?.metrics?.stability?.status === 'Stable'
+  ) {
+    tone = 'stable'
+    icon = 'check_circle'
+    title = 'Cashflow Stable'
   }
 
-  if (expenseRate >= 75) {
-    return {
-      actionLabel: 'Check Categories',
-      actionTo: '/reports',
-      icon: 'priority_high',
-      insight: getInsightExplanation(
-        insights,
-        'Keep an eye on categories with the largest shares.',
-      ),
-      message: 'Expenses are elevated for this cutoff. Monitor high-spend categories closely.',
-      title: 'Spending Caution',
-      tone: 'caution',
-    }
+  const message =
+    insights?.cashflow?.explanation ||
+    'Cashflow is being tracked for the current cutoff.'
+
+  let insightText = 'Cashflow data is up to date.'
+  const paceStatus = insights?.cashflow?.metrics?.spendingPace?.status
+  const position = insights?.cashflow?.metrics?.position
+
+  if (paceStatus && paceStatus !== 'No Data') {
+    insightText = `Spending pace is ${paceStatus} for this cutoff.`
+  } else if (position && position !== 'No Data') {
+    insightText = `Current cashflow position is ${position}.`
+  } else if (insights?.cashflow?.explanation) {
+    insightText = insights.cashflow.explanation
   }
 
   return {
     actionLabel: 'View Cashflow',
     actionTo: '/cashflow',
-    icon: 'check_circle',
-    insight: getInsightExplanation(
-      insights,
-      'Cashflow looks stable for the current cutoff.',
-    ),
-    message: 'Current spending is within a stable range for this cutoff.',
-    title: 'Cashflow Stable',
-    tone: 'stable',
+    icon,
+    insight: insightText,
+    message,
+    title,
+    tone,
   }
 }
 
@@ -219,129 +186,66 @@ export function buildSpendingOverview(expenses, currentCutoff) {
   }))
 }
 
-function getAllocationStatus(share) {
-  if (share >= 40) {
-    return { label: 'High', tone: 'critical' }
+export function buildAllocationMatrix(
+  categoryDistribution = [],
+  topSpendingCategory = null,
+  currentCutoff = null,
+) {
+  if (
+    !currentCutoff ||
+    !Array.isArray(categoryDistribution) ||
+    categoryDistribution.length === 0
+  ) {
+    return []
   }
 
-  if (share >= 20) {
-    return { label: 'Moderate', tone: 'warning' }
-  }
+  return categoryDistribution.slice(0, 5).map((row, index) => {
+    const isTop = Boolean(
+      topSpendingCategory?.categoryName &&
+        row.categoryName === topSpendingCategory.categoryName,
+    )
 
-  return { label: 'Normal', tone: 'success' }
+    return {
+      category: row.categoryName,
+      colorClassName: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+      share: Math.round(row.percentage ?? 0),
+      spent: row.amount ?? 0,
+      status: isTop ? 'Top Category' : '—',
+      tone: 'neutral',
+    }
+  })
 }
 
-export function buildAllocationMatrix(expenses, categories, currentCutoff) {
-  const currentExpenses = getCurrentCutoffExpenses(expenses, currentCutoff)
-  const categoriesById = buildCategoryLookup(categories)
-  const totalsByCategory = new Map()
+export function getTopRecommendations(recommendations = [], hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff || !Array.isArray(recommendations)) {
+    return []
+  }
 
-  currentExpenses.forEach((expense) => {
-    const categoryName =
-      categoriesById.get(String(expense.categoryId))?.name ?? 'Uncategorized'
+  return recommendations.slice(0, 2)
+}
 
-    totalsByCategory.set(
-      categoryName,
-      (totalsByCategory.get(categoryName) ?? 0) + getAmount(expense),
-    )
-  })
+export function getExecutiveSummaryNarrative(summary = null, hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff || !summary?.sections) {
+    return null
+  }
 
-  const totalSpent = [...totalsByCategory.values()].reduce(
-    (total, amount) => total + amount,
-    0,
+  const executiveSection = summary.sections.find(
+    (section) => section?.type === SUMMARY_SECTION_TYPES.executive,
   )
 
-  return [...totalsByCategory.entries()]
-    .sort((firstCategory, secondCategory) => {
-      if (secondCategory[1] === firstCategory[1]) {
-        return firstCategory[0].localeCompare(secondCategory[0])
-      }
+  if (!executiveSection?.paragraphs?.length) {
+    return null
+  }
 
-      return secondCategory[1] - firstCategory[1]
-    })
-    .slice(0, 5)
-    .map(([category, spent], index) => {
-      const share = totalSpent === 0 ? 0 : Math.round((spent / totalSpent) * 100)
-      const status = getAllocationStatus(share)
-
-      return {
-        category,
-        colorClassName: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-        share,
-        spent,
-        status: status.label,
-        tone: status.tone,
-      }
-    })
+  return executiveSection.paragraphs.map((paragraph) => paragraph.text).join(' ')
 }
 
-export function deriveCoachMessages(cashflow, hasCurrentCutoff = true) {
+export function getCutoffPerformance(insights = null, hasCurrentCutoff = true) {
   if (!hasCurrentCutoff) {
-    return [
-      {
-        label: 'No Current Cycle',
-        message: 'Create a salary cutoff that covers today to enable current-cycle insights.',
-      },
-      {
-        label: 'Historical Data',
-        message: 'Existing income, expenses, and savings remain available in Reports.',
-      },
-    ]
+    return null
   }
 
-  const remainingCash = getCashflowValue(cashflow, 'remainingCash')
-  const savingsRate = getCashflowValue(cashflow, 'savingsRate')
-  const expenseRate = getCashflowValue(cashflow, 'expenseRate')
-
-  if (remainingCash < 0) {
-    return [
-      {
-        label: 'Cashflow Risk',
-        message: 'Cashflow is negative. Reduce discretionary expenses before the next cutoff.',
-      },
-      {
-        label: 'Action Focus',
-        message: 'Prioritize bills, transport, and food until the current cycle stabilizes.',
-      },
-    ]
-  }
-
-  if (savingsRate >= 20) {
-    return [
-      {
-        label: 'Savings Strength',
-        message: 'Strong savings rate. Keep protecting this cutoff.',
-      },
-      {
-        label: 'Cycle Discipline',
-        message: 'Your current savings share leaves room for steady cashflow control.',
-      },
-    ]
-  }
-
-  if (expenseRate >= 80) {
-    return [
-      {
-        label: 'Expense Pressure',
-        message: 'Expenses are consuming most of your income this cutoff.',
-      },
-      {
-        label: 'Action Focus',
-        message: 'Review the largest spending categories before adding new expenses.',
-      },
-    ]
-  }
-
-  return [
-    {
-      label: 'Stable Cycle',
-      message: 'Cashflow looks stable for the current cutoff.',
-    },
-    {
-      label: 'Next Step',
-      message: 'Keep recording income, expenses, and savings to improve dashboard accuracy.',
-    },
-  ]
+  return insights?.cutoff?.explanation ?? null
 }
 
 export function calculateCutoffProgress(currentCutoff, today = new Date()) {
@@ -410,7 +314,6 @@ export function buildRecentTransactions({ expenses = [], income = [], savings = 
 
 function buildDashboardModel({
   cashflow,
-  categories,
   currentCutoff,
   expenses,
   income,
@@ -418,24 +321,28 @@ function buildDashboardModel({
   savings,
 }) {
   const hasCurrentCutoff = Boolean(currentCutoff)
+  const categoryDistribution = insights?.expenses?.metrics?.categoryDistribution ?? []
+  const topSpendingCategory = insights?.expenses?.metrics?.topSpendingCategory ?? null
 
   return {
-    allocationRows: buildAllocationMatrix(expenses, categories, currentCutoff),
-    budgetAlert: hasCurrentCutoff
-      ? deriveBudgetAlert(cashflow, insights)
-      : createNoCutoffStatus(),
+    allocationRows: buildAllocationMatrix(
+      categoryDistribution,
+      topSpendingCategory,
+      currentCutoff,
+    ),
+    budgetAlert: deriveBudgetAlert(cashflow, insights, hasCurrentCutoff),
     cashflow,
-    coachMessages: deriveCoachMessages(cashflow, hasCurrentCutoff),
     currentCutoff,
+    cutoffPerformance: getCutoffPerformance(insights, hasCurrentCutoff),
     cutoffProgress: calculateCutoffProgress(currentCutoff),
-    expenseHelperText: hasCurrentCutoff
-      ? deriveExpenseHelperText(cashflow)
-      : 'No active cutoff',
-    healthScore: getHealthScore(cashflow, insights, hasCurrentCutoff),
+    expenseHelperText: deriveExpenseHelperText(insights, hasCurrentCutoff),
+    healthScore: getHealthScore(insights, hasCurrentCutoff),
     healthStatus: hasCurrentCutoff ? insights?.health?.status ?? null : null,
     insights,
     recentTransactions: buildRecentTransactions({ expenses, income, savings }),
     spendingOverview: buildSpendingOverview(expenses, currentCutoff),
+    summaryNarrative: getExecutiveSummaryNarrative(insights?.summary, hasCurrentCutoff),
+    topRecommendations: getTopRecommendations(insights?.recommendations, hasCurrentCutoff),
   }
 }
 
@@ -445,7 +352,6 @@ export const dashboardService = {
       cashflowResult,
       currentCutoff,
       expenses,
-      categories,
       income,
       savings,
       insights,
@@ -453,7 +359,6 @@ export const dashboardService = {
       cashflowService.getCurrentCashflow(),
       cutoffService.findCurrentCutoff(),
       expenseService.loadExpenses(),
-      expenseService.loadCategories(),
       incomeService.loadIncome(),
       savingsService.loadSavings(),
       insightService.loadInsights(),
@@ -461,7 +366,6 @@ export const dashboardService = {
 
     return buildDashboardModel({
       cashflow: cashflowResult.cashflow,
-      categories,
       currentCutoff,
       expenses,
       income,
@@ -472,10 +376,16 @@ export const dashboardService = {
 }
 
 export const dashboardServiceInternals = {
+  buildAllocationMatrix,
   buildDashboardModel,
   createNoCutoffStatus,
+  deriveBudgetAlert,
+  deriveExpenseHelperText,
   getCurrentCutoffExpenses,
+  getCutoffPerformance,
   getDayIndex,
+  getExecutiveSummaryNarrative,
   getHealthScore,
   getInsightExplanation,
+  getTopRecommendations,
 }

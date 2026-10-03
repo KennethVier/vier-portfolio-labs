@@ -5,76 +5,111 @@ import {
   buildRecentTransactions,
   buildSpendingOverview,
   calculateCutoffProgress,
-  calculateHealthScore,
   dashboardServiceInternals,
   deriveBudgetAlert,
-  deriveCoachMessages,
   deriveExpenseHelperText,
+  getCutoffPerformance,
+  getExecutiveSummaryNarrative,
+  getHealthScore,
+  getTopRecommendations,
 } from './dashboardService.js'
 
 describe('dashboardService derivations', () => {
-  it('calculates and clamps health score from cashflow values', () => {
-    expect(calculateHealthScore({
-      expenseRate: 81,
-      incomeVariance: -1,
-      remainingCash: -1,
-      savingsRate: 5,
-    })).toBe(50)
+  it('extracts exact authoritative health score from HealthInsight without clamping or fallback', () => {
+    expect(getHealthScore({
+      health: { score: 85, status: 'Healthy' },
+    })).toBe(85)
 
-    expect(calculateHealthScore({
-      expenseRate: 0,
-      incomeVariance: 100,
-      remainingCash: 100,
-      savingsRate: 20,
-    })).toBe(100)
+    expect(getHealthScore({
+      health: { score: 105, status: 'Healthy' },
+    })).toBe(105)
+
+    expect(getHealthScore({
+      health: { score: -10, status: 'Critical' },
+    })).toBe(-10)
+
+    // Missing score or missing health insight returns null (no fallback calculation)
+    expect(getHealthScore({ health: null })).toBeNull()
+    expect(getHealthScore({})).toBeNull()
+    expect(getHealthScore(null)).toBeNull()
+    // No active cutoff returns null
+    expect(getHealthScore({ health: { score: 85 } }, false)).toBeNull()
   })
 
-  it('derives budget alert state from current cashflow', () => {
-    expect(deriveBudgetAlert({ remainingCash: -10, expenseRate: 20 })).toMatchObject({
-      actionTo: '/expenses',
-      title: 'Cashflow Risk Alert',
+  it('derives budget alert state from CashflowInsight source severity and status', () => {
+    // Critical breakdown severity -> critical alert tone
+    expect(deriveBudgetAlert(null, {
+      cashflow: {
+        breakdown: [{ id: 'rule_1', severity: 'critical' }],
+        explanation: 'Cashflow deficit detected for this cutoff.',
+        metrics: { position: 'Negative', spendingPace: { status: 'Fast' } },
+      },
+    })).toMatchObject({
+      actionTo: '/cashflow',
+      message: 'Cashflow deficit detected for this cutoff.',
+      title: 'Cashflow Deficit Risk',
       tone: 'critical',
     })
-    expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 95 })).toMatchObject({
-      actionTo: '/expenses',
-      title: 'Expense Usage Warning',
+
+    // Warning breakdown severity -> warning alert tone
+    expect(deriveBudgetAlert(null, {
+      cashflow: {
+        breakdown: [{ id: 'rule_2', severity: 'warning' }],
+        explanation: 'Spending pace is elevated.',
+        metrics: { position: 'Positive', spendingPace: { status: 'Fast' } },
+      },
+    })).toMatchObject({
+      actionTo: '/cashflow',
+      message: 'Spending pace is elevated.',
+      title: 'Cashflow Warning',
       tone: 'warning',
     })
-    expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 80 })).toMatchObject({
-      actionTo: '/reports',
-      title: 'Spending Caution',
-      tone: 'caution',
-    })
-    expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 50 })).toMatchObject({
+
+    // Positive and Stable state -> stable alert tone
+    expect(deriveBudgetAlert(null, {
+      cashflow: {
+        breakdown: [{ id: 'rule_3', severity: 'info' }],
+        explanation: 'Cashflow is positive and spending is on pace.',
+        metrics: { position: 'Positive', stability: { status: 'Stable' } },
+      },
+    })).toMatchObject({
       actionTo: '/cashflow',
+      message: 'Cashflow is positive and spending is on pace.',
       title: 'Cashflow Stable',
       tone: 'stable',
     })
+
+    // Neutral fallback when no negative severity and not explicitly positive/stable
+    expect(deriveBudgetAlert(null, {
+      cashflow: {
+        breakdown: [],
+        explanation: 'Cashflow tracking is active.',
+        metrics: { position: 'No Data', stability: { status: 'No Data' } },
+      },
+    })).toMatchObject({
+      title: 'Cashflow Status',
+      tone: 'neutral',
+    })
   })
 
-  it('uses deterministic insight output for dashboard insight text and health score', () => {
-    const insights = {
-      expenses: {
-        explanation: 'Expense insight generated from current financial records.',
-      },
-      health: {
-        explanation: 'Financial health is Fair with a score of 68.',
-        score: 68,
-      },
-    }
+  it('derives total expense helper text from spending pace status', () => {
+    expect(deriveExpenseHelperText({
+      cashflow: { metrics: { spendingPace: { status: 'Fast' } } },
+    })).toBe('Pace: Fast')
 
-    expect(
-      deriveBudgetAlert({ remainingCash: 100, expenseRate: 50 }, insights).insight,
-    ).toBe('Expense insight generated from current financial records.')
-    expect(
-      dashboardServiceInternals.getHealthScore(
-        { remainingCash: 100, expenseRate: 50, savingsRate: 10 },
-        insights,
-      ),
-    ).toBe(68)
-    expect(
-      deriveBudgetAlert({ remainingCash: 100, expenseRate: 50 }).insight,
-    ).not.toContain('AI placeholder')
+    expect(deriveExpenseHelperText({
+      cashflow: { metrics: { spendingPace: { status: 'On Pace' } } },
+    })).toBe('Pace: On Pace')
+
+    expect(deriveExpenseHelperText({
+      cashflow: { metrics: { spendingPace: { status: 'Slow' } } },
+    })).toBe('Pace: Slow')
+
+    expect(deriveExpenseHelperText({
+      cashflow: { metrics: { spendingPace: { status: 'No Data' } } },
+    })).toBe('Within range')
+
+    expect(deriveExpenseHelperText(null, false)).toBe('No active cutoff')
   })
 
   it('does not classify missing current-cutoff data as healthy or critical', () => {
@@ -88,7 +123,6 @@ describe('dashboardService derivations', () => {
         totalExpenses: 0,
         totalSavings: 0,
       },
-      categories: [],
       currentCutoff: null,
       expenses: [],
       income: [],
@@ -109,15 +143,107 @@ describe('dashboardService derivations', () => {
       title: 'No Active Cutoff',
       tone: 'neutral',
     })
-    expect(model.coachMessages[0]).toMatchObject({
-      label: 'No Current Cycle',
-    })
+    expect(model.summaryNarrative).toBeNull()
+    expect(model.topRecommendations).toEqual([])
   })
 
-  it('derives total expense helper text from expense rate', () => {
-    expect(deriveExpenseHelperText({ expenseRate: 90 })).toBe('Critical usage')
-    expect(deriveExpenseHelperText({ expenseRate: 75 })).toBe('High usage')
-    expect(deriveExpenseHelperText({ expenseRate: 20 })).toBe('Within range')
+  it('consumes categoryDistribution directly without 40/20 threshold classification', () => {
+    const categoryDistribution = [
+      { amount: 500, categoryName: 'Food', count: 3, percentage: 50 },
+      { amount: 300, categoryName: 'Transport', count: 2, percentage: 30 },
+      { amount: 200, categoryName: 'Utilities', count: 1, percentage: 20 },
+    ]
+    const topCategory = { categoryName: 'Food', percentage: 50 }
+
+    const rows = buildAllocationMatrix(categoryDistribution, topCategory, { id: 1 })
+
+    expect(rows).toEqual([
+      {
+        category: 'Food',
+        colorClassName: 'bg-primary',
+        share: 50,
+        spent: 500,
+        status: 'Top Category',
+        tone: 'neutral',
+      },
+      {
+        category: 'Transport',
+        colorClassName: 'bg-secondary',
+        share: 30,
+        spent: 300,
+        status: '—',
+        tone: 'neutral',
+      },
+      {
+        category: 'Utilities',
+        colorClassName: 'bg-tertiary',
+        share: 20,
+        spent: 200,
+        status: '—',
+        tone: 'neutral',
+      },
+    ])
+  })
+
+  it('returns an empty allocation matrix without current cutoff', () => {
+    const categoryDistribution = [
+      { amount: 500, categoryName: 'Food', count: 3, percentage: 50 },
+    ]
+    expect(buildAllocationMatrix(categoryDistribution, { categoryName: 'Food' }, null)).toEqual([])
+    expect(buildAllocationMatrix([], null, { id: 1 })).toEqual([])
+  })
+
+  it('preserves recommendation engine order and limits to top 2', () => {
+    const recommendations = [
+      { id: 'rec_1', priority: 'high', rank: 1, title: 'Reduce dining out' },
+      { id: 'rec_2', priority: 'medium', rank: 2, title: 'Automate savings' },
+      { id: 'rec_3', priority: 'low', rank: 3, title: 'Review subscription' },
+    ]
+
+    const result = getTopRecommendations(recommendations, true)
+    expect(result).toHaveLength(2)
+    expect(result[0].id).toBe('rec_1')
+    expect(result[1].id).toBe('rec_2')
+
+    // 0 recommendations returns empty array
+    expect(getTopRecommendations([], true)).toEqual([])
+    // No cutoff returns empty array
+    expect(getTopRecommendations(recommendations, false)).toEqual([])
+  })
+
+  it('extracts executive summary narrative from FinancialSummary sections', () => {
+    const summary = {
+      sections: [
+        {
+          paragraphs: [
+            { text: 'Cashflow is positive for June cycle with ₱5,000 remaining.' },
+            { text: 'Spending pace is healthy across essential categories.' },
+          ],
+          title: 'Executive Summary',
+          type: 'executive',
+        },
+      ],
+    }
+
+    expect(getExecutiveSummaryNarrative(summary, true)).toBe(
+      'Cashflow is positive for June cycle with ₱5,000 remaining. Spending pace is healthy across essential categories.',
+    )
+    expect(getExecutiveSummaryNarrative(null, true)).toBeNull()
+    expect(getExecutiveSummaryNarrative(summary, false)).toBeNull()
+  })
+
+  it('extracts financial cutoff performance from CutoffInsight', () => {
+    const insights = {
+      cutoff: {
+        explanation: 'Remaining cash improved by 15% compared to the previous cutoff.',
+      },
+    }
+
+    expect(getCutoffPerformance(insights, true)).toBe(
+      'Remaining cash improved by 15% compared to the previous cutoff.',
+    )
+    expect(getCutoffPerformance(null, true)).toBeNull()
+    expect(getCutoffPerformance(insights, false)).toBeNull()
   })
 
   it('builds day-of-week spending overview for current cutoff expenses', () => {
@@ -148,61 +274,7 @@ describe('dashboardService derivations', () => {
     ], null).every((day) => day.amount === 0 && day.percent === 0)).toBe(true)
   })
 
-  it('builds top category allocation rows with fallback names and statuses', () => {
-    const rows = buildAllocationMatrix([
-      { amount: 500, categoryId: 'food', cutoffId: 1 },
-      { amount: 300, categoryId: 'transport', cutoffId: 1 },
-      { amount: 200, categoryId: 'missing', cutoffId: 1 },
-      { amount: 1000, categoryId: 'food', cutoffId: 2 },
-    ], [
-      { id: 'food', name: 'Food' },
-      { id: 'transport', name: 'Transport' },
-    ], { id: 1 })
-
-    expect(rows).toEqual([
-      expect.objectContaining({
-        category: 'Food',
-        share: 50,
-        spent: 500,
-        status: 'High',
-      }),
-      expect.objectContaining({
-        category: 'Transport',
-        share: 30,
-        spent: 300,
-        status: 'Moderate',
-      }),
-      expect.objectContaining({
-        category: 'Uncategorized',
-        share: 20,
-        spent: 200,
-        status: 'Moderate',
-      }),
-    ])
-  })
-
-  it('returns an empty allocation matrix without current cutoff expenses', () => {
-    expect(buildAllocationMatrix([
-      { amount: 500, categoryId: 'food', cutoffId: 1 },
-    ], [{ id: 'food', name: 'Food' }], null)).toEqual([])
-  })
-
-  it('derives coach messages from cashflow conditions', () => {
-    expect(deriveCoachMessages({ remainingCash: -1 })[0]).toMatchObject({
-      label: 'Cashflow Risk',
-    })
-    expect(deriveCoachMessages({ remainingCash: 100, savingsRate: 20 })[0]).toMatchObject({
-      label: 'Savings Strength',
-    })
-    expect(deriveCoachMessages({ expenseRate: 80, remainingCash: 100, savingsRate: 5 })[0]).toMatchObject({
-      label: 'Expense Pressure',
-    })
-    expect(deriveCoachMessages({ expenseRate: 20, remainingCash: 100, savingsRate: 5 })[0]).toMatchObject({
-      label: 'Stable Cycle',
-    })
-  })
-
-  it('calculates cutoff progress and days left from dates', () => {
+  it('calculates cutoff progress and days left from calendar dates', () => {
     expect(calculateCutoffProgress(
       { endDate: '2026-06-30', startDate: '2026-06-01' },
       new Date('2026-06-15T12:00:00.000Z'),
@@ -248,11 +320,12 @@ describe('dashboardService derivations', () => {
     expect(transactions[1].amount).toBe(1000)
   })
 
-  it('handles empty/default cashflow values', () => {
-    expect(calculateHealthScore(null)).toBeNull()
-    expect(deriveBudgetAlert(null)).toMatchObject({
-      title: 'Cashflow Stable',
-      tone: 'stable',
+  it('handles empty/default values safely without fallback score fabrication', () => {
+    expect(getHealthScore(null)).toBeNull()
+    expect(deriveBudgetAlert(null, null, false)).toMatchObject({
+      title: 'No Active Cutoff',
+      tone: 'neutral',
     })
   })
 })
+

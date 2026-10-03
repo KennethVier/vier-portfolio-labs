@@ -12,7 +12,6 @@ import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
-import { Modal } from '@/components/ui/Modal.jsx'
 import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { useDashboard } from '../hooks/useDashboard.js'
@@ -203,6 +202,7 @@ function AllocationMatrix({ rows }) {
                     <span className="flex items-center gap-2">
                       <span
                         className={['h-2.5 w-2.5 rounded-full', row.colorClassName].join(' ')}
+                        aria-hidden="true"
                       />
                       {row.category}
                     </span>
@@ -226,39 +226,13 @@ function AllocationMatrix({ rows }) {
   )
 }
 
-function AiUnavailableModal({ isOpen, onClose }) {
-  return (
-    <Modal
-      title="AI Features Are Underway"
-      description="PesoPilot v1.0 keeps your financial workflow local and review-first."
-      isOpen={isOpen}
-      onClose={onClose}
-      size="sm"
-      footer={
-        <button
-          type="button"
-          className="rounded bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
-          onClick={onClose}
-        >
-          Got it
-        </button>
-      }
-    >
-      <div className="space-y-3 text-body-sm text-on-surface-variant">
-        <p>
-          AI report generation and conversational coaching are still being prepared
-          for a future phase.
-        </p>
-        <p>
-          For now, the dashboard uses local deterministic summaries from your
-          current cutoff, income, expenses, and savings records.
-        </p>
-      </div>
-    </Modal>
-  )
-}
-
-function FinancialInsights({ healthScore, healthStatus, messages, onGenerateReport }) {
+function FinancialInsights({
+  hasCurrentCutoff,
+  healthScore,
+  healthStatus,
+  summaryNarrative,
+  topRecommendations = [],
+}) {
   return (
     <section className="h-full rounded-lg bg-primary p-4 text-on-primary shadow-sm lg:col-span-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -276,32 +250,66 @@ function FinancialInsights({ healthScore, healthStatus, messages, onGenerateRepo
         </div>
       </div>
       <div className="space-y-3">
-        {messages.map((message) => (
-          <div
-            key={message.label}
-            className="rounded border border-white/10 bg-white/10 p-2.5"
-          >
+        {summaryNarrative ? (
+          <div className="rounded border border-white/10 bg-white/10 p-2.5">
             <div className="mb-1 font-label-caps text-label-caps uppercase opacity-80">
-              {message.label}
+              Executive Summary
             </div>
-            <div className="font-body-md text-body-md">
-              {message.message}
-            </div>
+            <p className="font-body-md text-body-md leading-relaxed">
+              {summaryNarrative}
+            </p>
           </div>
-        ))}
-        <button
-          type="button"
-          className="mt-2 w-full rounded border border-white/30 py-2 font-body-md transition-colors hover:bg-white/10"
-          onClick={onGenerateReport}
+        ) : null}
+
+        {hasCurrentCutoff ? (
+          topRecommendations.length > 0 ? (
+            topRecommendations.map((rec) => (
+              <div
+                key={rec.id || rec.title}
+                className="rounded border border-white/10 bg-white/10 p-2.5"
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="font-label-caps text-label-caps uppercase opacity-80">
+                    {rec.title}
+                  </span>
+                  {rec.rank ? (
+                    <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                      Rank #{rec.rank}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="font-body-md text-body-md leading-relaxed">
+                  {rec.explanation}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded border border-white/10 bg-white/10 p-2.5">
+              <p className="font-body-sm text-body-sm opacity-90">
+                No priority recommendations available for this cutoff.
+              </p>
+            </div>
+          )
+        ) : (
+          <div className="rounded border border-white/10 bg-white/10 p-2.5">
+            <p className="font-body-sm text-body-sm opacity-90">
+              Create a salary cutoff to enable current-cycle insights and recommendations.
+            </p>
+          </div>
+        )}
+
+        <Link
+          to="/reports"
+          className="mt-2 block w-full rounded border border-white/30 py-2 text-center font-body-md transition-colors hover:bg-white/10"
         >
-          Generate Weekly Report
-        </button>
+          Open Reports
+        </Link>
       </div>
     </section>
   )
 }
 
-function NextCutoffCard({ currentCutoff, cutoffProgress }) {
+function NextCutoffCard({ currentCutoff, cutoffPerformance, cutoffProgress }) {
   return (
     <section className="border border-outline-variant bg-surface-container-lowest p-5 lg:col-span-4">
       <div className="flex items-start justify-between">
@@ -318,17 +326,24 @@ function NextCutoffCard({ currentCutoff, cutoffProgress }) {
         </div>
       </div>
       {currentCutoff ? (
-        <div className="mt-4 flex items-center gap-2">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${cutoffProgress.progress}%` }}
-            />
+        <>
+          <div className="mt-4 flex items-center gap-2">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${cutoffProgress.progress}%` }}
+              />
+            </div>
+            <span className="font-body-sm text-on-surface-variant">
+              {cutoffProgress.daysLeft} days left
+            </span>
           </div>
-          <span className="font-body-sm text-on-surface-variant">
-            {cutoffProgress.daysLeft} days left
-          </span>
-        </div>
+          {cutoffPerformance ? (
+            <div className="mt-3 border-t border-outline-variant pt-2 text-body-sm text-on-surface-variant">
+              {cutoffPerformance}
+            </div>
+          ) : null}
+        </>
       ) : (
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="font-body-sm text-on-surface-variant">
@@ -470,7 +485,6 @@ function RecentTransactions({ className = '', transactions }) {
 
 export function DashboardPage() {
   const [isAiQuickAddOpen, setIsAiQuickAddOpen] = useState(false)
-  const [isAiUnavailableOpen, setIsAiUnavailableOpen] = useState(false)
   const { data, error, isLoading } = useDashboard()
   const { resetHeaderConfig, setHeaderConfig } = useHeader()
 
@@ -518,10 +532,12 @@ export function DashboardPage() {
           <KpiGrid columns={4}>
             <StatCard
               label="Actual Income"
-              value={data.currentCutoff ? formatMoney(data.cashflow?.actualIncome) : '--'}
+              value={data.currentCutoff ? formatMoney(data.insights?.income?.metrics?.totalIncome ?? data.cashflow?.actualIncome) : '--'}
               helperText={
                 data.currentCutoff
-                  ? `Expected ${formatMoney(data.cashflow?.expectedIncome)}`
+                  ? (data.insights?.income?.metrics?.missingIncome?.missing
+                      ? `Shortfall ${formatMoney(data.insights.income.metrics.missingIncome.gap)}`
+                      : `Expected ${formatMoney(data.currentCutoff.expectedIncome ?? data.cashflow?.expectedIncome)}`)
                   : 'No active cutoff'
               }
               tone="neutral"
@@ -529,17 +545,17 @@ export function DashboardPage() {
             />
             <StatCard
               label="Total Expenses"
-              value={data.currentCutoff ? formatMoney(data.cashflow?.totalExpenses) : '--'}
+              value={data.currentCutoff ? formatMoney(data.insights?.expenses?.metrics?.totalExpenses ?? data.cashflow?.totalExpenses) : '--'}
               helperText={data.currentCutoff ? data.expenseHelperText : 'No active cutoff'}
               tone="neutral"
               icon={<span className="material-symbols-outlined text-lg">receipt_long</span>}
             />
             <StatCard
               label="Total Savings"
-              value={data.currentCutoff ? formatMoney(data.cashflow?.totalSavings) : '--'}
+              value={data.currentCutoff ? formatMoney(data.insights?.savings?.metrics?.totalSavings ?? data.cashflow?.totalSavings) : '--'}
               helperText={
                 data.currentCutoff
-                  ? `Savings rate ${formatRate(data.cashflow?.savingsRate)}`
+                  ? `Savings rate ${formatRate(data.insights?.savings?.metrics?.savingsRate?.rate ?? data.cashflow?.savingsRate)}`
                   : 'No active cutoff'
               }
               tone="neutral"
@@ -547,20 +563,20 @@ export function DashboardPage() {
             />
             <StatCard
               label="Remaining Cash"
-              value={data.currentCutoff ? formatMoney(data.cashflow?.remainingCash) : '--'}
+              value={data.currentCutoff ? formatMoney(data.insights?.cashflow?.metrics?.remainingCash ?? data.cashflow?.remainingCash) : '--'}
               helperText={
                 data.currentCutoff
-                  ? (data.cashflow?.remainingCash ?? 0) >= 0
-                    ? 'Net Surplus'
-                    : 'Deficit Risk'
+                  ? (data.insights?.cashflow?.metrics?.position && data.insights.cashflow.metrics.position !== 'No Data'
+                      ? `${data.insights.cashflow.metrics.position} Position`
+                      : 'Tracked for cutoff')
                   : 'No active cutoff'
               }
               tone={
                 !data.currentCutoff
                   ? 'neutral'
-                  : (data.cashflow?.remainingCash ?? 0) >= 0
-                    ? 'info'
-                    : 'critical'
+                  : data.insights?.cashflow?.metrics?.position === 'Negative'
+                    ? 'critical'
+                    : 'info'
               }
               icon={<span className="material-symbols-outlined text-lg">account_balance_wallet</span>}
             />
@@ -574,11 +590,6 @@ export function DashboardPage() {
               onClose={() => setIsAiQuickAddOpen(false)}
             />
           ) : null}
-
-          <AiUnavailableModal
-            isOpen={isAiUnavailableOpen}
-            onClose={() => setIsAiUnavailableOpen(false)}
-          />
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             <CashflowStatusAlert alert={data.budgetAlert} />
@@ -594,10 +605,11 @@ export function DashboardPage() {
               transactions={data.recentTransactions}
             />
             <FinancialInsights
+              hasCurrentCutoff={Boolean(data.currentCutoff)}
               healthScore={data.healthScore}
               healthStatus={data.healthStatus}
-              messages={data.coachMessages}
-              onGenerateReport={() => setIsAiUnavailableOpen(true)}
+              summaryNarrative={data.summaryNarrative}
+              topRecommendations={data.topRecommendations}
             />
           </div>
 
@@ -605,6 +617,7 @@ export function DashboardPage() {
             <AllocationMatrix rows={data.allocationRows} />
             <NextCutoffCard
               currentCutoff={data.currentCutoff}
+              cutoffPerformance={data.cutoffPerformance}
               cutoffProgress={data.cutoffProgress}
             />
           </div>

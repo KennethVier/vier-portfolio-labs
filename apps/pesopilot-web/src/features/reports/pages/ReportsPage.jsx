@@ -390,6 +390,7 @@ export function ReportsPage() {
     kpis,
     meta,
     records,
+    summary,
   } = data
   const hasAnyRecords =
     records.scoped.expenses.length > 0 ||
@@ -459,6 +460,30 @@ export function ReportsPage() {
             : 'Start recording income and expenses to generate meaningful report charts.'
         }
       />
+
+      {reportScope === REPORT_SCOPES.currentCutoff && summary?.sections?.length > 0 ? (
+        <SectionCard
+          title="Current Cutoff Summary"
+          description="Deterministic financial summary generated for the active salary cutoff."
+        >
+          <div className="space-y-4">
+            {summary.sections.map((section) => (
+              <div key={section.type || section.title} className="space-y-1.5">
+                <h4 className="font-headline-sm text-headline-sm text-on-surface">
+                  {section.title}
+                </h4>
+                <div className="space-y-2 text-body-md text-on-surface-variant">
+                  {section.paragraphs.map((paragraph, index) => (
+                    <p key={paragraph.key || `${section.type}-${index}`} className="leading-relaxed">
+                      {paragraph.text}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
 
       {!hasAnyRecords ? (
         <EmptyState

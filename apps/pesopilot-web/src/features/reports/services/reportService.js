@@ -4,6 +4,8 @@ import { incomeRepository } from '@/lib/db/repositories/incomeRepository.js'
 import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
+import { insightService } from '@/features/insights/services/insightService.js'
+import { INSIGHT_SCOPES } from '@/features/insights/utils/insightConstants.js'
 
 import {
   buildCashflowTrend,
@@ -62,6 +64,14 @@ export const reportService = {
       selectedCutoffId,
     })
 
+    let summary = null
+    if (scope === REPORT_SCOPES.currentCutoff && currentCutoff) {
+      const insights = await insightService.loadInsights({
+        scope: INSIGHT_SCOPES.currentCutoff,
+      })
+      summary = insights?.summary ?? null
+    }
+
     return {
       datasets: {
         cashflowTrend: buildCashflowTrend(scopedRecords),
@@ -94,6 +104,7 @@ export const reportService = {
         savings,
         scoped: scopedRecords,
       },
+      summary,
     }
   },
 }
