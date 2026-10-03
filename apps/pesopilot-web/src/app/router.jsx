@@ -64,6 +64,12 @@ const HelpPage = lazy(() =>
   })),
 )
 
+const InsightsPage = lazy(() =>
+  import('@/features/insights/pages/InsightsPage.jsx').then((module) => ({
+    default: module.InsightsPage,
+  })),
+)
+
 const ReportsPage = lazy(() =>
   import('@/features/reports/pages/ReportsPage.jsx').then((module) => ({
     default: module.ReportsPage,
@@ -125,6 +131,10 @@ export const router = createBrowserRouter([
       {
         path: 'cashflow',
         element: wrapLazyRoute(<CashflowPage />, 'Loading cashflow'),
+      },
+      {
+        path: 'insights',
+        element: wrapLazyRoute(<InsightsPage />, 'Loading insights'),
       },
       {
         path: 'reports',
