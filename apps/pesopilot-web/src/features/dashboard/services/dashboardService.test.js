@@ -31,18 +31,22 @@ describe('dashboardService derivations', () => {
 
   it('derives budget alert state from current cashflow', () => {
     expect(deriveBudgetAlert({ remainingCash: -10, expenseRate: 20 })).toMatchObject({
+      actionTo: '/expenses',
       title: 'Cashflow Risk Alert',
       tone: 'critical',
     })
     expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 95 })).toMatchObject({
+      actionTo: '/expenses',
       title: 'Expense Usage Warning',
       tone: 'warning',
     })
     expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 80 })).toMatchObject({
+      actionTo: '/reports',
       title: 'Spending Caution',
       tone: 'caution',
     })
     expect(deriveBudgetAlert({ remainingCash: 10, expenseRate: 50 })).toMatchObject({
+      actionTo: '/cashflow',
       title: 'Cashflow Stable',
       tone: 'stable',
     })
@@ -71,6 +75,43 @@ describe('dashboardService derivations', () => {
     expect(
       deriveBudgetAlert({ remainingCash: 100, expenseRate: 50 }).insight,
     ).not.toContain('AI placeholder')
+  })
+
+  it('does not classify missing current-cutoff data as healthy or critical', () => {
+    const model = dashboardServiceInternals.buildDashboardModel({
+      cashflow: {
+        actualIncome: 0,
+        expectedIncome: 0,
+        expenseRate: 0,
+        remainingCash: 0,
+        savingsRate: 0,
+        totalExpenses: 0,
+        totalSavings: 0,
+      },
+      categories: [],
+      currentCutoff: null,
+      expenses: [],
+      income: [],
+      insights: {
+        health: {
+          score: 0,
+          status: 'Critical',
+        },
+      },
+      savings: [],
+    })
+
+    expect(model.healthScore).toBeNull()
+    expect(model.healthStatus).toBeNull()
+    expect(model.expenseHelperText).toBe('No active cutoff')
+    expect(model.budgetAlert).toMatchObject({
+      actionTo: '/salary-cutoff',
+      title: 'No Active Cutoff',
+      tone: 'neutral',
+    })
+    expect(model.coachMessages[0]).toMatchObject({
+      label: 'No Current Cycle',
+    })
   })
 
   it('derives total expense helper text from expense rate', () => {
