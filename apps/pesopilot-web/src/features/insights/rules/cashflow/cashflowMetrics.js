@@ -23,7 +23,9 @@ function parseDate(value) {
     return null
   }
 
-  const date = value instanceof Date ? value : new Date(`${value}T00:00:00.000Z`)
+  const date = value instanceof Date
+    ? value
+    : new Date(`${String(value).slice(0, 10)}T00:00:00.000Z`)
 
   return Number.isNaN(date.getTime()) ? null : date
 }
