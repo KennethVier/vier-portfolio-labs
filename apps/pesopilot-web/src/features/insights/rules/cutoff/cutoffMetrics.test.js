@@ -122,6 +122,12 @@ describe('buildCutoffMetrics', () => {
       comparisonTotal: 20000,
       difference: -9500,
     })
+    expect(metrics.currentCutoff).toMatchObject({
+      cutoffId: 3,
+      startDate: '2026-02-01',
+      endDate: '2026-02-15',
+    })
+    expect(metrics.currentCutoff.id).toBeUndefined()
   })
 
   it('computes historical monthly average across multiple completed months', () => {

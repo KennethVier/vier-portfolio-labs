@@ -987,7 +987,7 @@ export function buildCandidateSections({
       if (rec && typeof rec === 'object') {
         candidates.push({
           domain: rec.domain ?? 'general',
-          evidence: Array.isArray(rec.evidence) ? [...rec.evidence] : [],
+          evidence: [],
           horizon: 'current',
           key: `action_${rec.id}`,
           rank: rec.rank ?? null,

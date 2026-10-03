@@ -65,7 +65,13 @@ describe('summaryEngine', () => {
       {
         actionKey: 'maintain_savings',
         domain: 'savings',
-        evidence: [],
+        evidence: [
+          {
+            label: 'Savings Rate',
+            ruleId: 'savings_rate',
+            value: 22,
+          },
+        ],
         explanation: 'Keep up consistent emergency fund deposits.',
         id: 'rec_savings_strong',
         priority: 'medium',
@@ -123,6 +129,10 @@ describe('summaryEngine', () => {
     expect(actionSection.paragraphs[0].text).toBe(
       'Maintain current savings pace. Keep up consistent emergency fund deposits.',
     )
+    expect(actionSection.paragraphs[0].evidence).toEqual([])
+    expect(actionSection.paragraphs[0].relatedRecommendations).toEqual([
+      'rec_savings_strong',
+    ])
   })
 
   it('returns valid empty summary when input bundle has insufficient data (Correction 5 & 6)', () => {

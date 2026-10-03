@@ -58,6 +58,8 @@ function toCutoffSummary(snapshot) {
   return {
     cutoffId: snapshot.cutoffId,
     cutoffName: snapshot.cutoffName,
+    startDate: snapshot.startDate,
+    endDate: snapshot.endDate,
     income: snapshot.income,
     expenses: snapshot.expenses,
     savings: snapshot.savings,

@@ -48,6 +48,8 @@ function sortSummariesDesc(records) {
 
 export const summaryHistoryService = {
   async captureSummary({ summary, cutoff } = {}) {
+    const cutoffId = cutoff?.id ?? cutoff?.cutoffId
+
     if (
       !summary ||
       typeof summary !== 'object' ||
@@ -55,7 +57,7 @@ export const summaryHistoryService = {
       summary.diagnostics?.state !== 'ready' ||
       !cutoff ||
       typeof cutoff !== 'object' ||
-      !isValidCutoffId(cutoff.id) ||
+      !isValidCutoffId(cutoffId) ||
       !isValidStartDate(cutoff.startDate)
     ) {
       return null
@@ -67,7 +69,7 @@ export const summaryHistoryService = {
     const narrativeVersion = summary.metadata?.narrativeVersion
     const templateVersion = summary.metadata?.templateVersion
 
-    const existingRecords = await aiInsightRepository.findByCutoff(cutoff.id)
+    const existingRecords = await aiInsightRepository.findByCutoff(cutoffId)
     const cutoffRecords = existingRecords.filter(
       (record) => record?.type === SUMMARY_HISTORY_TYPES.cutoffSummary,
     )
@@ -100,7 +102,7 @@ export const summaryHistoryService = {
 
     const newRecord = {
       type: SUMMARY_HISTORY_TYPES.cutoffSummary,
-      cutoffId: cutoff.id,
+      cutoffId,
       title: 'Financial Summary',
       content: summary,
       severity: null,

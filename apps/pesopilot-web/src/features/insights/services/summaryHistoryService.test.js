@@ -483,4 +483,33 @@ describe('summaryHistoryService', () => {
     expect(persisted.insightBundle).toBeUndefined()
     expect(persisted.recommendationBundle).toBeUndefined()
   })
+
+  it('24. accepts CutoffInsight-style boundary object with cutoffId and no id', async () => {
+    const summary = createMockSummary()
+    const cutoffInsightSummary = {
+      cutoffId: 1,
+      cutoffName: 'June Cutoff 1',
+      startDate: '2026-06-01',
+      endDate: '2026-06-15',
+      income: 50000,
+      expenses: 25000,
+      savings: 5000,
+      remainingCash: 20000,
+    }
+
+    const persisted = await summaryHistoryService.captureSummary({
+      summary,
+      cutoff: cutoffInsightSummary,
+    })
+
+    expect(persisted).toBeDefined()
+    expect(persisted.cutoffId).toBe(1)
+    expect(persisted.periodKey).toBe('2026-06')
+
+    const allRecords = await db.ai_insights.toArray()
+    const cutoffSummaries = allRecords.filter(
+      (record) => record.type === SUMMARY_HISTORY_TYPES.cutoffSummary,
+    )
+    expect(cutoffSummaries).toHaveLength(1)
+  })
 })

@@ -646,4 +646,51 @@ describe('summarySectionBuilder', () => {
       buildCandidateSections({ insightBundle: bundle, recommendationBundle: recBundle })
     }).not.toThrow()
   })
+
+  it('builds priorityActions candidates with empty evidence array, preserving recommendation references and variables', () => {
+    const bundle = {
+      cashflow: {
+        metrics: {
+          position: 'Positive',
+          remainingCash: 5000,
+        },
+      },
+    }
+    const recommendation = {
+      id: 'expense_category_concentration',
+      domain: 'expense',
+      actionKey: 'review_expenses',
+      title: 'High Category Spending Concentration',
+      explanation: 'Food accounts for 50% of current spending.',
+      severity: 'warning',
+      priority: 'medium',
+      rank: 1,
+      evidence: [
+        {
+          label: 'Share',
+          value: 50,
+          ruleId: 'top_spending_category',
+        },
+      ],
+      sourceRuleIds: ['top_spending_category'],
+    }
+
+    const result = buildCandidateSections({
+      insightBundle: bundle,
+      recommendationBundle: { recommendations: [recommendation] },
+    })
+
+    const candidate = result.candidates.find(
+      (c) => c.key === 'action_expense_category_concentration',
+    )
+    expect(candidate).toBeDefined()
+    expect(candidate.evidence).toEqual([])
+    expect(candidate.relatedRecommendations).toEqual([
+      'expense_category_concentration',
+    ])
+    expect(candidate.variables).toEqual({
+      title: 'High Category Spending Concentration',
+      explanation: 'Food accounts for 50% of current spending.',
+    })
+  })
 })

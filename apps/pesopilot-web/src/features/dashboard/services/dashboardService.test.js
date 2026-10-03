@@ -1,10 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { clearDatabase } from '@/lib/db/devTools.js'
+import { db } from '@/lib/db/dexie.js'
+import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
+import { incomeRepository } from '@/lib/db/repositories/incomeRepository.js'
+import { salaryCutoffRepository } from '@/lib/db/repositories/salaryCutoffRepository.js'
+import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
+import { seedDatabase } from '@/lib/db/seed.js'
 
 import {
   buildAllocationMatrix,
   buildRecentTransactions,
   buildSpendingOverview,
   calculateCutoffProgress,
+  dashboardService,
   dashboardServiceInternals,
   deriveBudgetAlert,
   deriveExpenseHelperText,
@@ -328,4 +337,105 @@ describe('dashboardService derivations', () => {
     })
   })
 })
+
+describe('dashboardService.loadDashboard integration', () => {
+  const FIXED_DATE = new Date('2026-06-05T12:00:00.000Z')
+  const TS = '2026-06-01T00:00:00.000Z'
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(FIXED_DATE)
+    await db.open()
+    await clearDatabase()
+    await seedDatabase()
+  })
+
+  afterEach(async () => {
+    await clearDatabase()
+    db.close()
+    vi.useRealTimers()
+  })
+
+  it('loads the dashboard model using authoritative insight values for an active cutoff', async () => {
+    const currentCutoffId = await salaryCutoffRepository.create({
+      createdAt: TS,
+      endDate: '2026-06-15',
+      expectedIncome: 40000,
+      name: 'June First Half',
+      startDate: '2026-06-01',
+      status: 'active',
+      type: 'custom',
+      updatedAt: TS,
+    })
+
+    await incomeRepository.create({
+      amount: 40000,
+      createdAt: TS,
+      cutoffId: currentCutoffId,
+      date: '2026-06-02',
+      note: null,
+      source: 'Salary',
+      updatedAt: TS,
+    })
+
+    await expenseRepository.create({
+      amount: 15000,
+      categoryId: 'food',
+      createdAt: TS,
+      cutoffId: currentCutoffId,
+      date: '2026-06-03',
+      emotionTag: null,
+      merchant: 'Supermarket',
+      note: null,
+      paymentMethod: 'Cash',
+      source: 'manual',
+      updatedAt: TS,
+    })
+
+    await savingsRepository.create({
+      amount: 5000,
+      createdAt: TS,
+      cutoffId: currentCutoffId,
+      date: '2026-06-04',
+      note: null,
+      source: 'Emergency Fund',
+      updatedAt: TS,
+    })
+
+    const dashboard = await dashboardService.loadDashboard()
+
+    expect(dashboard.currentCutoff).not.toBeNull()
+    expect(dashboard.currentCutoff.id).toBe(currentCutoffId)
+
+    // Authoritative health values
+    expect(dashboard.healthScore).toBe(dashboard.insights.health.score)
+    expect(dashboard.healthStatus).toBe(dashboard.insights.health.status)
+
+    // Budget alert derives from authoritative cashflow breakdown/metrics
+    expect(dashboard.budgetAlert).toBeDefined()
+    expect(dashboard.budgetAlert.tone).toBeDefined()
+
+    // Summary narrative matches executive summary section text
+    expect(dashboard.summaryNarrative).toBeDefined()
+
+    // Top recommendations capped at 2, matching existing engine order
+    const expectedTop = dashboard.insights.recommendations.slice(0, 2)
+    expect(dashboard.topRecommendations).toEqual(expectedTop)
+  })
+
+  it('returns safe null/empty states when no active cutoff covers the current date', async () => {
+    // Clear all cutoffs so none is active
+    await db.salary_cutoffs.clear()
+
+    const dashboard = await dashboardService.loadDashboard()
+
+    expect(dashboard.currentCutoff).toBeNull()
+    expect(dashboard.healthScore).toBeNull()
+    expect(dashboard.healthStatus).toBeNull()
+    expect(dashboard.summaryNarrative).toBeNull()
+    expect(dashboard.topRecommendations).toEqual([])
+    expect(dashboard.budgetAlert.title).toBe('No Active Cutoff')
+  })
+})
+
 
