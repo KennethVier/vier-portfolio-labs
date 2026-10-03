@@ -101,3 +101,16 @@ export {
   getInsightPriorityWeight,
 } from './utils/insightPriority.js'
 export { INSIGHT_SEVERITY } from './utils/insightSeverity.js'
+export {
+  createRecommendation,
+  RECOMMENDATION_DOMAINS,
+} from './models/recommendation.js'
+export { createRecommendationBundle } from './models/recommendationBundle.js'
+export { generateRecommendations } from './rules/recommendation/recommendationEngine.js'
+export { recommendationRuleRegistry } from './rules/recommendation/recommendationRuleRegistry.js'
+export {
+  DOMAINS_ORDER,
+  RECOMMENDATION_ACTION_KEYS,
+  RECOMMENDATION_RULE_IDS,
+} from './rules/recommendation/recommendationRuleConstants.js'
+
