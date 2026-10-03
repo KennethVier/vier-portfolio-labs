@@ -9,7 +9,7 @@ import {
   CompletionScreen,
   ParsedPreview,
   ParserInputCard,
-} from '../pages/ManualAiExpensePage.jsx'
+} from './ManualAiExpenseFlow.jsx'
 
 export function AiQuickAddModal({ isOpen, onClose }) {
   const [inputText, setInputText] = useState('')

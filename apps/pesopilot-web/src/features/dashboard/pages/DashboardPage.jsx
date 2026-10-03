@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -12,9 +12,16 @@ import { useHeader } from '@/components/layout/headerContext.js'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
-import { AiQuickAddModal } from '@/features/manual-ai-expense/components/AiQuickAddModal.jsx'
 
 import { useDashboard } from '../hooks/useDashboard.js'
+
+const AiQuickAddModal = lazy(() =>
+  import('@/features/manual-ai-expense/components/AiQuickAddModal.jsx').then(
+    (module) => ({
+      default: module.AiQuickAddModal,
+    }),
+  ),
+)
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   currency: 'PHP',
@@ -585,10 +592,12 @@ export function DashboardPage() {
           <QuickActions onAiQuickAdd={() => setIsAiQuickAddOpen(true)} />
 
           {isAiQuickAddOpen ? (
-            <AiQuickAddModal
-              isOpen={isAiQuickAddOpen}
-              onClose={() => setIsAiQuickAddOpen(false)}
-            />
+            <Suspense fallback={null}>
+              <AiQuickAddModal
+                isOpen={isAiQuickAddOpen}
+                onClose={() => setIsAiQuickAddOpen(false)}
+              />
+            </Suspense>
           ) : null}
 
           <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
