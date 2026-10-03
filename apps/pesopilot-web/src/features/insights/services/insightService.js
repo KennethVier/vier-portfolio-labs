@@ -9,6 +9,7 @@ import { generateRecommendations } from '../rules/recommendation/recommendationE
 import { generateSavingsInsight } from '../rules/savings/savingsEngine.js'
 import { generateFinancialSummary } from '../summary/summaryEngine.js'
 import { DEFAULT_INSIGHT_SCOPE } from '../utils/insightConstants.js'
+import { summaryHistoryService } from './summaryHistoryService.js'
 
 export const insightService = {
   async loadInsights({ scope = DEFAULT_INSIGHT_SCOPE } = {}) {
@@ -29,6 +30,14 @@ export const insightService = {
       insightBundle: bundle,
       recommendationBundle,
     })
+
+    const currentCutoff = bundle.cutoff?.metrics?.currentCutoff
+    if (bundle.summary?.diagnostics?.state === 'ready' && currentCutoff) {
+      await summaryHistoryService.captureSummary({
+        summary: bundle.summary,
+        cutoff: currentCutoff,
+      })
+    }
 
     return bundle
   },

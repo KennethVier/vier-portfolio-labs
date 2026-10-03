@@ -131,4 +131,7 @@ export {
   SUMMARY_SECTION_TYPES,
 } from './summary/summaryConstants.js'
 export { generateFinancialSummary } from './summary/summaryEngine.js'
-
+export {
+  summaryHistoryService,
+  SUMMARY_HISTORY_TYPES,
+} from './services/summaryHistoryService.js'
