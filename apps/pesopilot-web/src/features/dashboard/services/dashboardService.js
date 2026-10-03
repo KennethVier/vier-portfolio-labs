@@ -68,7 +68,11 @@ function getInsightExplanation(insights, fallback) {
   return insights?.expenses?.explanation || insights?.health?.explanation || fallback
 }
 
-function getHealthScore(cashflow, insights) {
+function getHealthScore(cashflow, insights, hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff) {
+    return null
+  }
+
   const insightScore = Number(insights?.health?.score)
 
   if (Number.isFinite(insightScore)) {
@@ -76,6 +80,18 @@ function getHealthScore(cashflow, insights) {
   }
 
   return calculateHealthScore(cashflow)
+}
+
+function createNoCutoffStatus() {
+  return {
+    actionLabel: 'Create Cutoff',
+    actionTo: '/salary-cutoff',
+    icon: 'calendar_add_on',
+    insight: 'Current-cycle financial status is unavailable until a salary cutoff covers today.',
+    message: 'Create a salary cutoff that covers today to start current-cycle cashflow tracking.',
+    title: 'No Active Cutoff',
+    tone: 'neutral',
+  }
 }
 
 export function calculateHealthScore(cashflow) {
@@ -125,6 +141,7 @@ export function deriveBudgetAlert(cashflow, insights = null) {
   if (remainingCash < 0) {
     return {
       actionLabel: 'Review Spending',
+      actionTo: '/expenses',
       icon: 'warning',
       insight: getInsightExplanation(
         insights,
@@ -139,6 +156,7 @@ export function deriveBudgetAlert(cashflow, insights = null) {
   if (expenseRate >= 90) {
     return {
       actionLabel: 'Review Expenses',
+      actionTo: '/expenses',
       icon: 'warning',
       insight: getInsightExplanation(
         insights,
@@ -153,6 +171,7 @@ export function deriveBudgetAlert(cashflow, insights = null) {
   if (expenseRate >= 75) {
     return {
       actionLabel: 'Check Categories',
+      actionTo: '/reports',
       icon: 'priority_high',
       insight: getInsightExplanation(
         insights,
@@ -165,7 +184,8 @@ export function deriveBudgetAlert(cashflow, insights = null) {
   }
 
   return {
-    actionLabel: 'View Details',
+    actionLabel: 'View Cashflow',
+    actionTo: '/cashflow',
     icon: 'check_circle',
     insight: getInsightExplanation(
       insights,
@@ -255,7 +275,20 @@ export function buildAllocationMatrix(expenses, categories, currentCutoff) {
     })
 }
 
-export function deriveCoachMessages(cashflow) {
+export function deriveCoachMessages(cashflow, hasCurrentCutoff = true) {
+  if (!hasCurrentCutoff) {
+    return [
+      {
+        label: 'No Current Cycle',
+        message: 'Create a salary cutoff that covers today to enable current-cycle insights.',
+      },
+      {
+        label: 'Historical Data',
+        message: 'Existing income, expenses, and savings remain available in Reports.',
+      },
+    ]
+  }
+
   const remainingCash = getCashflowValue(cashflow, 'remainingCash')
   const savingsRate = getCashflowValue(cashflow, 'savingsRate')
   const expenseRate = getCashflowValue(cashflow, 'expenseRate')
@@ -384,15 +417,22 @@ function buildDashboardModel({
   insights,
   savings,
 }) {
+  const hasCurrentCutoff = Boolean(currentCutoff)
+
   return {
     allocationRows: buildAllocationMatrix(expenses, categories, currentCutoff),
-    budgetAlert: deriveBudgetAlert(cashflow, insights),
+    budgetAlert: hasCurrentCutoff
+      ? deriveBudgetAlert(cashflow, insights)
+      : createNoCutoffStatus(),
     cashflow,
-    coachMessages: deriveCoachMessages(cashflow),
+    coachMessages: deriveCoachMessages(cashflow, hasCurrentCutoff),
     currentCutoff,
     cutoffProgress: calculateCutoffProgress(currentCutoff),
-    expenseHelperText: deriveExpenseHelperText(cashflow),
-    healthScore: getHealthScore(cashflow, insights),
+    expenseHelperText: hasCurrentCutoff
+      ? deriveExpenseHelperText(cashflow)
+      : 'No active cutoff',
+    healthScore: getHealthScore(cashflow, insights, hasCurrentCutoff),
+    healthStatus: hasCurrentCutoff ? insights?.health?.status ?? null : null,
     insights,
     recentTransactions: buildRecentTransactions({ expenses, income, savings }),
     spendingOverview: buildSpendingOverview(expenses, currentCutoff),
@@ -433,6 +473,7 @@ export const dashboardService = {
 
 export const dashboardServiceInternals = {
   buildDashboardModel,
+  createNoCutoffStatus,
   getCurrentCutoffExpenses,
   getDayIndex,
   getHealthScore,
