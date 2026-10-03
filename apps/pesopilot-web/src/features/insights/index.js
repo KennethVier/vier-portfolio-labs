@@ -33,6 +33,21 @@ export {
   INCOME_RULE_STATUS,
 } from './models/incomeRuleResult.js'
 export {
+  CUTOFF_TREND,
+  createCutoffInsight,
+  createEmptyCutoffMetrics,
+} from './models/cutoffInsight.js'
+export {
+  CUTOFF_RULE_STATUS,
+  createCutoffRuleResult,
+} from './models/cutoffRuleResult.js'
+export { generateCutoffInsight } from './rules/cutoff/cutoffEngine.js'
+export {
+  CUTOFF_RULE_IDS,
+  CUTOFF_RULE_WEIGHTS,
+  cutoffRuleRegistry,
+} from './rules/cutoff/cutoffRuleRegistry.js'
+export {
   createEmptySavingsMetrics,
   createSavingsInsight,
   SAVINGS_CONSISTENCY,

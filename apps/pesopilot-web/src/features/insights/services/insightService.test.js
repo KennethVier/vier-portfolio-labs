@@ -196,6 +196,20 @@ vi.mock('../rules/goal/goalEngine.js', () => ({
   })),
 }))
 
+vi.mock('../rules/cashflow/cashflowEngine.js', () => ({
+  generateCashflowInsight: vi.fn(async ({ scope }) => ({
+    category: 'cashflow',
+    scope,
+  })),
+}))
+
+vi.mock('../rules/cutoff/cutoffEngine.js', () => ({
+  generateCutoffInsight: vi.fn(async ({ scope }) => ({
+    category: 'cutoff',
+    scope,
+  })),
+}))
+
 describe('insightService', () => {
   it('loads an InsightBundle with health, expenses, income, savings, and goals populated by default', async () => {
     await expect(insightService.loadInsights()).resolves.toEqual({
@@ -378,8 +392,14 @@ describe('insightService', () => {
           warnings: [],
         },
       },
-      cashflow: null,
-      cutoff: null,
+      cashflow: {
+        category: 'cashflow',
+        scope: INSIGHT_SCOPES.currentCutoff,
+      },
+      cutoff: {
+        category: 'cutoff',
+        scope: INSIGHT_SCOPES.currentCutoff,
+      },
       recommendations: [],
       summary: null,
     })
@@ -396,8 +416,8 @@ describe('insightService', () => {
     expect(bundle.income.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.savings.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.goals.scope).toBe(INSIGHT_SCOPES.specificCutoff)
-    expect(bundle.cashflow).toBeNull()
-    expect(bundle.cutoff).toBeNull()
+    expect(bundle.cashflow.scope).toBe(INSIGHT_SCOPES.specificCutoff)
+    expect(bundle.cutoff.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.summary).toBeNull()
     expect(bundle.recommendations).toEqual([])
   })
