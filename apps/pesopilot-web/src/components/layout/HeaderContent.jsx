@@ -8,6 +8,10 @@ import {
 } from './headerContext.js'
 
 function getNextCutoffLabel(data) {
+  if (!data?.currentCutoff) {
+    return '--'
+  }
+
   const daysLeft = data?.cutoffProgress?.daysLeft
 
   if (daysLeft === undefined || daysLeft === null) {
