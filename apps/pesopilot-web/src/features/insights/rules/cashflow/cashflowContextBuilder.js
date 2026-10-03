@@ -1,8 +1,16 @@
 import { cashflowService } from '@/features/cashflow/services/cashflowService.js'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
 
+function toIsoDate(value) {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10)
+  }
+
+  return String(value).slice(0, 10)
+}
+
 export async function buildCashflowContext({ scope, today = new Date() } = {}) {
-  const currentCutoff = await cutoffService.findCurrentCutoff(today)
+  const currentCutoff = await cutoffService.findCurrentCutoff(toIsoDate(today))
   const warnings = []
 
   if (!currentCutoff) {
@@ -34,4 +42,8 @@ export async function buildCashflowContext({ scope, today = new Date() } = {}) {
       warnings,
     },
   }
+}
+
+export const cashflowContextBuilderInternals = {
+  toIsoDate,
 }
