@@ -7,6 +7,7 @@ import { generateHealthInsight } from '../rules/health/healthEngine.js'
 import { generateIncomeInsight } from '../rules/income/incomeEngine.js'
 import { generateRecommendations } from '../rules/recommendation/recommendationEngine.js'
 import { generateSavingsInsight } from '../rules/savings/savingsEngine.js'
+import { generateFinancialSummary } from '../summary/summaryEngine.js'
 import { DEFAULT_INSIGHT_SCOPE } from '../utils/insightConstants.js'
 
 export const insightService = {
@@ -23,6 +24,11 @@ export const insightService = {
 
     const recommendationBundle = generateRecommendations(bundle)
     bundle.recommendations = recommendationBundle.recommendations
+
+    bundle.summary = generateFinancialSummary({
+      insightBundle: bundle,
+      recommendationBundle,
+    })
 
     return bundle
   },

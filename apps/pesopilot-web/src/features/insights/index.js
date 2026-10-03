@@ -113,4 +113,22 @@ export {
   RECOMMENDATION_ACTION_KEYS,
   RECOMMENDATION_RULE_IDS,
 } from './rules/recommendation/recommendationRuleConstants.js'
+export {
+  createFinancialSummary,
+  ENGINE_VERSION,
+  NARRATIVE_VERSION,
+  SUMMARY_TYPE,
+  SUMMARY_VERSION,
+} from './models/financialSummary.js'
+export {
+  createSummaryParagraph,
+  createSummarySection,
+} from './models/summarySection.js'
+export {
+  CANONICAL_SECTION_ORDER,
+  SECTION_CAPS,
+  SUMMARY_SECTION_TITLES,
+  SUMMARY_SECTION_TYPES,
+} from './summary/summaryConstants.js'
+export { generateFinancialSummary } from './summary/summaryEngine.js'
 

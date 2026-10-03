@@ -401,7 +401,10 @@ describe('insightService', () => {
         scope: INSIGHT_SCOPES.currentCutoff,
       },
       recommendations: [],
-      summary: null,
+      summary: expect.objectContaining({
+        version: '1.0.0',
+        scope: INSIGHT_SCOPES.currentCutoff,
+      }),
     })
   })
 
@@ -418,7 +421,20 @@ describe('insightService', () => {
     expect(bundle.goals.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.cashflow.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.cutoff.scope).toBe(INSIGHT_SCOPES.specificCutoff)
-    expect(bundle.summary).toBeNull()
+    expect(bundle.summary).toEqual(
+      expect.objectContaining({
+        version: '1.0.0',
+        scope: INSIGHT_SCOPES.specificCutoff,
+      }),
+    )
     expect(bundle.recommendations).toEqual([])
+  })
+
+  it('generates a financial summary reusing the exact generated recommendation bundle', async () => {
+    const bundle = await insightService.loadInsights()
+    expect(bundle.summary).toBeDefined()
+    expect(bundle.summary.version).toBe('1.0.0')
+    expect(bundle.summary.diagnostics.state).toBe('ready')
+    expect(bundle.summary.sections.length).toBeGreaterThanOrEqual(3)
   })
 })
