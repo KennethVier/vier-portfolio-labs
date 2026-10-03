@@ -1,6 +1,6 @@
 ---
 name: vier-portfolio-implement-task
-description: Default implementation-only workflow for Vier Portfolio Labs. Execute an approved implementation prompt directly with minimal context, Ponytail-style laziness, Caveman-style low ceremony, no broad reconnaissance, changed-test-only execution when eligible, and a terse user-validation handoff.
+description: Default implementation-only workflow for Vier Portfolio Labs. Execute an approved implementation prompt directly with minimal context, Ponytail-style laziness, Caveman-style low ceremony, no broad reconnaissance, changed-test-only execution when eligible, OWASP-aligned security review, and a terse user-validation handoff.
 ---
 
 # Implement a Vier Portfolio Labs Task
@@ -22,9 +22,10 @@ This repository is a portfolio monorepo. Frontends live under `apps/`, backend s
 5. Implement the smallest complete change.
 6. Add/update focused behavior-oriented tests only when they materially support the change.
 7. Run only an eligible test created or modified by this implementation, following the command policy below.
-8. Return a terse implementation report with exact user/CI validation commands.
+8. Perform a concise secure-code review of the changed surface against the relevant OWASP Top 10:2025 risks and applicable OWASP ASVS 5.0 controls.
+9. Return a terse implementation report with exact user/CI validation commands and at least one exact project-appropriate vulnerability-scan command.
 
-Do not invoke a separate planning, review, or validation workflow during ordinary implementation.
+Do not invoke a separate planning, broad review, or broad validation workflow during ordinary implementation.
 
 ## Approved Prompt Is Controlling
 
@@ -131,6 +132,8 @@ Use the narrowest practical target:
 
 The test must be cheap/local.
 
+A vulnerability/dependency scan is **not auto-run by default** because it can be network-dependent, slow, noisy, or require tooling that is not installed. It is mandatory to include the exact non-mutating scan command in the implementation report so the user or CI can run it deliberately.
+
 ### Not permitted by default
 
 Do not run:
@@ -146,17 +149,61 @@ Do not run:
 - Playwright/browser/E2E journeys;
 - deployment commands;
 - Git diff/status/check/stat/history commands solely for routine validation;
+- broad security scanners or penetration tests unless explicitly authorized;
 - any other broad command not explicitly authorized.
 
-Put required broad checks in `USER VALIDATION` instead.
+Put required broad checks in `USER VALIDATION` and security checks in `SECURITY VALIDATION`.
 
-## Security / Safety
+## Security / Safety — OWASP Baseline
+
+Every implementation must receive a concise changed-surface security review. Use **OWASP Top 10:2025** as the primary risk-awareness baseline and **OWASP ASVS 5.0** as the verification-oriented reference where applicable.
+
+Review only risks relevant to the changed surface; do not manufacture findings merely to fill every category. At minimum consider:
+
+- access-control and authorization boundary changes;
+- authentication/session behavior when touched;
+- input validation, injection, unsafe parsing, and untrusted data flow;
+- secrets, credentials, tokens, and sensitive financial/personal data exposure;
+- security configuration and environment-dependent behavior;
+- dependency/supply-chain impact when dependencies or build configuration change;
+- cryptographic use when touched;
+- integrity/trust boundaries, including imported/generated data;
+- logging/error handling that could leak sensitive data or hide failures;
+- exceptional-condition handling and fail-safe behavior.
+
+Additional rules:
 
 - Never commit secrets, passwords, tokens, API keys, or private connection strings.
 - Preserve existing auth and authorization boundaries.
 - Security-sensitive uncertainty fails closed.
 - Do not weaken tests or validation behavior to make a change appear successful.
 - Do not commit, push, deploy, or create/update a PR unless the current user instruction explicitly authorizes publication/deployment.
+- Do not claim that a dependency scanner or any single tool proves full OWASP Top 10 compliance.
+- When the task touches LLM/AI/agent behavior, also call out prompt/data-boundary, untrusted-output, excessive-agency, sensitive-information, and supply-chain concerns relevant to the AI surface.
+
+### Vulnerability-scan command selection
+
+Choose the narrowest correct command for the project and report it under `SECURITY VALIDATION`.
+
+For npm/React/Vite projects, normally use:
+
+```bash
+npm audit --audit-level=high
+```
+
+For Maven/Spring Boot projects with a Maven wrapper, normally use an OWASP Dependency-Check invocation such as:
+
+```bash
+./mvnw org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7
+```
+
+On Windows PowerShell, use the repository's Windows wrapper when present:
+
+```powershell
+.\mvnw.cmd org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7
+```
+
+If the project already has an established security scanner/script, prefer that instead of introducing another tool. Never run an autofix command such as `npm audit fix` as part of validation.
 
 ## Communication Policy — Quiet by Default
 
@@ -205,6 +252,14 @@ Agent-run tests:
 Then include:
 
 ```text
+SECURITY REVIEW
+- OWASP references: Top 10:2025 + applicable ASVS 5.0 controls
+- Changed-surface findings: <none identified | concise findings>
+- Security-sensitive boundaries checked: <concise list>
+
+SECURITY VALIDATION
+- <exact non-mutating vulnerability/dependency scan command>
+
 USER VALIDATION
 - <exact command or manual flow>
 - <exact command or manual flow>
@@ -212,7 +267,7 @@ USER VALIDATION
 
 Optionally add one short `Notes:` line for a material caveat or blocker.
 
-Do not claim broad validation, production readiness, or completion merely because one changed test passed.
+Do not claim broad validation, OWASP compliance, production readiness, or completion merely because one changed test or dependency scan passed.
 
 ## Stop Conditions
 
