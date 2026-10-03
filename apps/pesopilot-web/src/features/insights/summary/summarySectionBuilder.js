@@ -2,7 +2,12 @@ import {
   BASELINE_LABELS,
   METRIC_LABELS,
   METRIC_POLARITY,
+  SEVERITY_WEIGHT,
 } from './summaryConstants.js'
+import { CASHFLOW_RULE_IDS } from '../rules/cashflow/cashflowRuleConstants.js'
+import { GOAL_RULE_IDS } from '../rules/goal/goalRuleConstants.js'
+import { INCOME_RULE_IDS } from '../rules/income/incomeRuleConstants.js'
+import { SAVINGS_RULE_IDS } from '../rules/savings/savingsRuleConstants.js'
 
 export function formatCurrency(amount) {
   if (typeof amount !== 'number' || !Number.isFinite(amount)) return '₱0'
@@ -50,12 +55,39 @@ export function hasSufficientFinancialData(bundle) {
   )
 }
 
+function getHighestSeverity(items) {
+  if (!Array.isArray(items) || items.length === 0) return null
+
+  let highest = null
+  let maxWeight = -1
+  for (const item of items) {
+    const sev = item?.severity
+    if (typeof sev !== 'string') continue
+    const weight = Object.prototype.hasOwnProperty.call(SEVERITY_WEIGHT, sev)
+      ? SEVERITY_WEIGHT[sev]
+      : -1
+    if (weight > maxWeight) {
+      maxWeight = weight
+      highest = sev
+    } else if (highest === null) {
+      highest = sev
+    }
+  }
+  return highest
+}
+
 function findBreakdownSeverity(breakdown, ruleIds) {
   if (!Array.isArray(breakdown)) return null
-  const item = breakdown.find(
-    (b) => ruleIds.includes(b?.id) && typeof b?.severity === 'string',
+  const matching = breakdown.filter((b) => ruleIds.includes(b?.id))
+  return getHighestSeverity(matching)
+}
+
+function findHealthRiskSeverity(breakdown) {
+  if (!Array.isArray(breakdown)) return null
+  const negativeItems = breakdown.filter(
+    (b) => b?.status === 'warning' || b?.status === 'fail',
   )
-  return item?.severity ?? null
+  return getHighestSeverity(negativeItems)
 }
 
 export function buildCandidateSections({
@@ -295,11 +327,10 @@ export function buildCandidateSections({
   // ==========================================
   // Rule-based risks: copy existing RuleResult severity from breakdown
   if (cashflow?.metrics?.position === 'Negative') {
-    const sev =
-      findBreakdownSeverity(cashflow.breakdown, [
-        'cashflow_remaining_cash',
-        'cashflow_net_cashflow',
-      ]) ?? 'critical'
+    const sev = findBreakdownSeverity(cashflow.breakdown, [
+      CASHFLOW_RULE_IDS.remainingCash,
+      CASHFLOW_RULE_IDS.netCashflow,
+    ])
     candidates.push({
       domain: 'cashflow',
       evidence: [
@@ -323,10 +354,9 @@ export function buildCandidateSections({
   }
 
   if (cashflow?.metrics?.spendingPace?.status === 'Fast') {
-    const sev =
-      findBreakdownSeverity(cashflow.breakdown, [
-        'cashflow_spending_pace',
-      ]) ?? 'warning'
+    const sev = findBreakdownSeverity(cashflow.breakdown, [
+      CASHFLOW_RULE_IDS.spendingPace,
+    ])
     candidates.push({
       domain: 'cashflow',
       evidence: [
@@ -350,10 +380,9 @@ export function buildCandidateSections({
   }
 
   if (cashflow?.metrics?.incomeCoverage?.status === 'Uncovered') {
-    const sev =
-      findBreakdownSeverity(cashflow.breakdown, [
-        'cashflow_income_coverage',
-      ]) ?? 'warning'
+    const sev = findBreakdownSeverity(cashflow.breakdown, [
+      CASHFLOW_RULE_IDS.incomeCoverage,
+    ])
     candidates.push({
       domain: 'cashflow',
       evidence: [
@@ -375,10 +404,9 @@ export function buildCandidateSections({
     })
     hasCurrent = true
   } else if (cashflow?.metrics?.incomeCoverage?.status === 'Partial') {
-    const sev =
-      findBreakdownSeverity(cashflow.breakdown, [
-        'cashflow_income_coverage',
-      ]) ?? 'info'
+    const sev = findBreakdownSeverity(cashflow.breakdown, [
+      CASHFLOW_RULE_IDS.incomeCoverage,
+    ])
     candidates.push({
       domain: 'cashflow',
       evidence: [
@@ -403,10 +431,9 @@ export function buildCandidateSections({
 
   const stabilityStatus = cashflow?.metrics?.stability?.status
   if (stabilityStatus === 'Strained' || stabilityStatus === 'Unstable') {
-    const sev =
-      findBreakdownSeverity(cashflow.breakdown, [
-        'cashflow_stability',
-      ]) ?? 'warning'
+    const sev = findBreakdownSeverity(cashflow.breakdown, [
+      CASHFLOW_RULE_IDS.cashflowStability,
+    ])
     candidates.push({
       domain: 'cashflow',
       evidence: [
@@ -430,9 +457,9 @@ export function buildCandidateSections({
   }
 
   if (income?.metrics?.missingIncome?.missing === true) {
-    const sev =
-      findBreakdownSeverity(income.breakdown, ['income_missing_income']) ??
-      'warning'
+    const sev = findBreakdownSeverity(income.breakdown, [
+      INCOME_RULE_IDS.missingIncomeDetection,
+    ])
     candidates.push({
       domain: 'income',
       evidence: [
@@ -456,9 +483,9 @@ export function buildCandidateSections({
   }
 
   if (income?.metrics?.stability?.status === 'Unstable') {
-    const sev =
-      findBreakdownSeverity(income.breakdown, ['income_stability']) ??
-      'warning'
+    const sev = findBreakdownSeverity(income.breakdown, [
+      INCOME_RULE_IDS.incomeStability,
+    ])
     candidates.push({
       domain: 'income',
       evidence: [
@@ -482,8 +509,9 @@ export function buildCandidateSections({
   }
 
   if (savings?.metrics?.savingsRate?.status === 'Low') {
-    const sev =
-      findBreakdownSeverity(savings.breakdown, ['savings_rate']) ?? 'warning'
+    const sev = findBreakdownSeverity(savings.breakdown, [
+      SAVINGS_RULE_IDS.savingsRate,
+    ])
     const rate = savings.metrics.savingsRate.rate ?? 0
     candidates.push({
       domain: 'savings',
@@ -509,9 +537,9 @@ export function buildCandidateSections({
 
   if (goals?.metrics?.goalsWithoutContributions?.length > 0) {
     const count = goals.metrics.goalsWithoutContributions.length
-    const sev =
-      findBreakdownSeverity(goals.breakdown, ['goal_contributions']) ??
-      'warning'
+    const sev = findBreakdownSeverity(goals.breakdown, [
+      GOAL_RULE_IDS.goalsWithoutContributions,
+    ])
     candidates.push({
       domain: 'goal',
       evidence: [
@@ -535,7 +563,7 @@ export function buildCandidateSections({
   }
 
   if (health?.status === 'Critical' || health?.status === 'Needs Attention') {
-    const sev = health.status === 'Critical' ? 'critical' : 'warning'
+    const sev = findHealthRiskSeverity(health.breakdown)
     candidates.push({
       domain: 'health',
       evidence: [
