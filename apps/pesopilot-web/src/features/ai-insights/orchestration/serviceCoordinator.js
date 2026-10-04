@@ -1,5 +1,6 @@
 import { promptBuilder as defaultPromptBuilder } from '../prompt/promptBuilder.js'
 import { providerLayer as defaultProviderLayer } from '../providers/providerLayer.js'
+import { memoryService as defaultMemoryService } from '../memory/memoryService.js'
 import { getWorkflowTemplate } from './workflowTemplates.js'
 import { workflowManager } from './workflowManager.js'
 import { createWorkflowDiagnostics } from './workflowDiagnostics.js'
@@ -34,7 +35,7 @@ const DEFAULT_ID_GENERATOR = () => {
   return `wf-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-function validateOrchestrationInput(input) {
+function validateOrchestrationInput(input, memoryService = defaultMemoryService) {
   if (!input || typeof input !== 'object') {
     throw new WorkflowError({
       code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
@@ -90,11 +91,34 @@ function validateOrchestrationInput(input) {
       message: `Unsupported provider "${input.provider.id}". Phase 11B.4 supports provider "ollama" only.`,
     })
   }
+
+  if (
+    input.memory !== undefined ||
+    input.memoryDto !== undefined ||
+    input.memories !== undefined
+  ) {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message:
+        'Unsupported memory alias. Orchestration input only accepts canonical "memoryState".',
+    })
+  }
+
+  if (input.memoryState !== undefined && input.memoryState !== null) {
+    const memValidation = memoryService.validateMemoryDto(input.memoryState)
+    if (!memValidation.valid) {
+      throw new WorkflowError({
+        code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+        message: `Invalid memoryState: ${memValidation.errors.join('; ')}`,
+      })
+    }
+  }
 }
 
 export function createServiceCoordinator({
   promptBuilder = defaultPromptBuilder,
   providerLayer = defaultProviderLayer,
+  memoryService = defaultMemoryService,
   clock = DEFAULT_CLOCK,
   timer = DEFAULT_TIMER,
   idGenerator = DEFAULT_ID_GENERATOR,
@@ -103,7 +127,7 @@ export function createServiceCoordinator({
   return Object.freeze({
     async executeWorkflow(input) {
       // 1. Validate Orchestration Input
-      validateOrchestrationInput(input)
+      validateOrchestrationInput(input, memoryService)
 
       // 2. Resolve Workflow Template
       const template = getWorkflowTemplate(input.templateId)
@@ -147,7 +171,19 @@ export function createServiceCoordinator({
         // 7. Resolve Provider Adapter
         const adapter = providerLayer.getProvider(providerId)
 
-        // 8. Build PromptPackage via Prompt Builder
+        // 8. Retrieve Memory Context if memoryState is supplied
+        let memoryContext = null
+        if (input.memoryState != null) {
+          memoryContext = memoryService.retrieveContext({
+            memoryDto: input.memoryState,
+            query: {
+              workflowType: template.id,
+              topic: input.conversationContext?.topic?.current ?? 'general',
+            },
+          })
+        }
+
+        // 9. Build PromptPackage via Prompt Builder
         let promptPackage
         try {
           promptPackage = promptBuilder.build({
@@ -155,6 +191,7 @@ export function createServiceCoordinator({
             recommendationBundle: input.recommendationBundle,
             financialSummary: input.financialSummary,
             conversationContext: input.conversationContext ?? null,
+            memoryContext,
             templateId: template.promptTemplateId,
           })
         } catch (pbErr) {

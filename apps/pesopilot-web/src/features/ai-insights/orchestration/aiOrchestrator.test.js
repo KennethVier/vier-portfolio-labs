@@ -29,6 +29,11 @@ import {
 } from './retryManager.js'
 import { createServiceCoordinator } from './serviceCoordinator.js'
 import { ProviderError, PROVIDER_ERROR_CODES } from '../providers/providerErrors.js'
+import {
+  createMemoryDto,
+  createMemoryRecord,
+  MEMORY_TYPES,
+} from '../memory/memoryService.js'
 
 describe('Phase 11B.4 — AI Orchestration Engine', () => {
   const sampleFinancialSummary = Object.freeze({
@@ -508,6 +513,7 @@ describe('Phase 11B.4 — AI Orchestration Engine', () => {
         recommendationBundle: sampleRecommendationBundle,
         financialSummary: sampleFinancialSummary,
         conversationContext: sampleConversationContext,
+        memoryContext: null,
         templateId: 'financial-summary-explanation',
       })
 
@@ -915,6 +921,234 @@ describe('Phase 11B.4 — AI Orchestration Engine', () => {
       expect(() => {
         aiOrchestrator.newProp = 'illegal'
       }).toThrow()
+    })
+  })
+
+  // 10. AI Orchestrator Memory Integration (Phase 11B.5)
+  describe('AI Orchestrator Memory Integration (Phase 11B.5)', () => {
+    const validCandidate = {
+      type: MEMORY_TYPES.communicationPreference,
+      content: 'Prefers bulleted summaries.',
+      topics: ['expenses'],
+      workflowTypes: ['financial-summary-explanation'],
+      explicitlyConfirmed: true,
+      importance: 'medium',
+      source: { type: 'user', referenceId: null },
+    }
+
+    const testRecord = createMemoryRecord({
+      candidate: validCandidate,
+      memoryId: 'mem-orch-1',
+      createdAt: '2026-10-05T00:00:00.000Z',
+    })
+
+    const testMemoryDto = createMemoryDto({ records: [testRecord] })
+
+    it('does not invoke retrieveContext when memoryState is absent/null', async () => {
+      const mockPromptBuilder = {
+        build: vi.fn().mockReturnValue({ template: {} }),
+      }
+      const mockMemoryService = {
+        retrieveContext: vi.fn(),
+        validateMemoryDto: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+      }
+
+      const coordinator = createServiceCoordinator({
+        promptBuilder: mockPromptBuilder,
+        memoryService: mockMemoryService,
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn().mockResolvedValue({ content: 'OK' }) }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      await coordinator.executeWorkflow({
+        templateId: 'financial-summary-explanation',
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        financialSummary: sampleFinancialSummary,
+        provider: { model: 'llama3.2' },
+      })
+
+      expect(mockMemoryService.retrieveContext).not.toHaveBeenCalled()
+      expect(mockPromptBuilder.build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          memoryContext: null,
+        }),
+      )
+    })
+
+    it('invokes retrieveContext and passes memoryContext to promptBuilder when memoryState is supplied', async () => {
+      const mockPromptBuilder = {
+        build: vi.fn().mockReturnValue({ template: {} }),
+      }
+      const expectedMemContext = {
+        version: '1.0.0',
+        items: [{ type: 'communication_preference', content: 'Prefers bulleted summaries.' }],
+      }
+      const mockMemoryService = {
+        retrieveContext: vi.fn().mockReturnValue(expectedMemContext),
+        validateMemoryDto: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+      }
+
+      const coordinator = createServiceCoordinator({
+        promptBuilder: mockPromptBuilder,
+        memoryService: mockMemoryService,
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn().mockResolvedValue({ content: 'OK' }) }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      const convContext = {
+        version: '1.0.0',
+        topic: { current: 'expenses' },
+        clarification: { required: false, reason: null, missingFields: [] },
+        recentMessages: [],
+      }
+
+      await coordinator.executeWorkflow({
+        templateId: 'financial-summary-explanation',
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        financialSummary: sampleFinancialSummary,
+        conversationContext: convContext,
+        memoryState: testMemoryDto,
+        provider: { model: 'llama3.2' },
+      })
+
+      expect(mockMemoryService.retrieveContext).toHaveBeenCalledWith({
+        memoryDto: testMemoryDto,
+        query: {
+          workflowType: 'financial-summary-explanation',
+          topic: 'expenses',
+        },
+      })
+
+      expect(mockPromptBuilder.build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          memoryContext: expectedMemContext,
+        }),
+      )
+    })
+
+    it('defaults query topic to "general" if conversationContext is omitted', async () => {
+      const mockPromptBuilder = {
+        build: vi.fn().mockReturnValue({ template: {} }),
+      }
+      const mockMemoryService = {
+        retrieveContext: vi.fn().mockReturnValue(null),
+        validateMemoryDto: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+      }
+
+      const coordinator = createServiceCoordinator({
+        promptBuilder: mockPromptBuilder,
+        memoryService: mockMemoryService,
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn().mockResolvedValue({ content: 'OK' }) }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      await coordinator.executeWorkflow({
+        templateId: 'financial-summary-explanation',
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        financialSummary: sampleFinancialSummary,
+        memoryState: testMemoryDto,
+        provider: { model: 'llama3.2' },
+      })
+
+      expect(mockMemoryService.retrieveContext).toHaveBeenCalledWith({
+        memoryDto: testMemoryDto,
+        query: {
+          workflowType: 'financial-summary-explanation',
+          topic: 'general',
+        },
+      })
+    })
+
+    it('rejects unsupported memory aliases (e.g. memory, memoryDto, memories)', async () => {
+      const coordinator = createServiceCoordinator({
+        promptBuilder: { build: vi.fn() },
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn() }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      await expect(
+        coordinator.executeWorkflow({
+          templateId: 'financial-summary-explanation',
+          insightBundle: sampleInsightBundle,
+          recommendationBundle: sampleRecommendationBundle,
+          financialSummary: sampleFinancialSummary,
+          provider: { model: 'llama3.2' },
+          memory: testMemoryDto,
+        }),
+      ).rejects.toThrow(/Unsupported memory alias/)
+    })
+
+    it('fails explicitly when invalid memoryState is provided', async () => {
+      const coordinator = createServiceCoordinator({
+        promptBuilder: { build: vi.fn() },
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn() }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      await expect(
+        coordinator.executeWorkflow({
+          templateId: 'financial-summary-explanation',
+          insightBundle: sampleInsightBundle,
+          recommendationBundle: sampleRecommendationBundle,
+          financialSummary: sampleFinancialSummary,
+          provider: { model: 'llama3.2' },
+          memoryState: { version: '1.0.0', records: 'not-an-array' },
+        }),
+      ).rejects.toThrow(/Invalid memoryState/)
+    })
+
+    it('does not mutate memoryState or financial bundles during execution', async () => {
+      const coordinator = createServiceCoordinator({
+        promptBuilder: { build: vi.fn().mockReturnValue({ template: {} }) },
+        providerLayer: {
+          getProvider: () => ({ id: 'ollama', locality: 'local', generate: vi.fn().mockResolvedValue({ content: 'OK' }) }),
+          createProviderRequest: () => ({}),
+          validateProviderResponse: () => ({ valid: true }),
+        },
+        clock: { nowMs: () => 1700000000000 },
+        timer: { setTimeout: vi.fn(), clearTimeout: vi.fn() },
+      })
+
+      const originalRecordsCount = testMemoryDto.records.length
+
+      await coordinator.executeWorkflow({
+        templateId: 'financial-summary-explanation',
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        financialSummary: sampleFinancialSummary,
+        memoryState: testMemoryDto,
+        provider: { model: 'llama3.2' },
+      })
+
+      expect(testMemoryDto.records).toHaveLength(originalRecordsCount)
     })
   })
 })

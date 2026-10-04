@@ -834,13 +834,13 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
         ),
       ).toBe(true)
 
-      // Non-null memoryContext fails
-      const nonNullMemoryContext = {
+      // Malformed memoryContext fails
+      const malformedMemoryContext = {
         ...validContext,
         memoryContext: { userPreferences: {} },
       }
       const pkg2 = createPromptPackage({
-        context: nonNullMemoryContext,
+        context: malformedMemoryContext,
         systemPrompt: 'sys',
         task: template.task,
         template: { id: template.id, version: template.version },
@@ -850,7 +850,7 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       expect(res2.valid).toBe(false)
       expect(
         res2.errors.some((e) =>
-          e.includes('memoryContext must be null in Phase 11B.2'),
+          e.includes('Context memoryContext validation failed'),
         ),
       ).toBe(true)
     })
@@ -1024,6 +1024,129 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       // Verified: no generated timestamps in PromptPackage
       expect(pkg.timestamp).toBeUndefined()
       expect(pkg.createdAt).toBeUndefined()
+    })
+  })
+
+  describe('Prompt Builder Memory Context Integration (Phase 11B.5)', () => {
+    const validMemoryContext = {
+      version: '1.0.0',
+      items: [
+        {
+          type: 'communication_preference',
+          content: 'User prefers concise summaries.',
+        },
+      ],
+    }
+
+    it('accepts memoryContext: null and omits UNTRUSTED_MEMORY_CONTEXT_JSON', () => {
+      const pkg = buildPromptPackage({
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        memoryContext: null,
+      })
+
+      expect(pkg.context.memoryContext).toBeNull()
+      expect(pkg.userPrompt).not.toContain('UNTRUSTED_MEMORY_CONTEXT_JSON:')
+      expect(pkg.userPrompt).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:')
+    })
+
+    it('accepts valid MemoryContext and serializes UNTRUSTED_MEMORY_CONTEXT_JSON', () => {
+      const pkg = buildPromptPackage({
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        memoryContext: validMemoryContext,
+      })
+
+      expect(pkg.context.memoryContext).toBeDefined()
+      expect(pkg.context.memoryContext.version).toBe('1.0.0')
+      expect(pkg.context.memoryContext.items).toHaveLength(1)
+      expect(pkg.userPrompt).toContain('UNTRUSTED_MEMORY_CONTEXT_JSON:')
+      expect(pkg.userPrompt).toContain('User prefers concise summaries.')
+    })
+
+    it('ensures memory is NOT serialized inside DETERMINISTIC_FINANCIAL_CONTEXT_JSON', () => {
+      const pkg = buildPromptPackage({
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        memoryContext: validMemoryContext,
+      })
+
+      // Extract DETERMINISTIC_FINANCIAL_CONTEXT_JSON section
+      const financialSection = pkg.userPrompt.split('UNTRUSTED_')[0]
+      expect(financialSection).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:')
+      expect(financialSection).not.toContain('User prefers concise summaries.')
+      expect(financialSection).not.toContain('communication_preference')
+    })
+
+    it('maintains stable ordering: financial -> conversation -> memory', () => {
+      const convContext = {
+        version: '1.0.0',
+        topic: { current: 'expenses' },
+        clarification: { required: false, reason: null, missingFields: [] },
+        recentMessages: [{ role: 'user', content: 'What about expenses?' }],
+      }
+
+      const pkg = buildPromptPackage({
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+        conversationContext: convContext,
+        memoryContext: validMemoryContext,
+      })
+
+      const finIdx = pkg.userPrompt.indexOf('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:')
+      const convIdx = pkg.userPrompt.indexOf('UNTRUSTED_CONVERSATION_CONTEXT_JSON:')
+      const memIdx = pkg.userPrompt.indexOf('UNTRUSTED_MEMORY_CONTEXT_JSON:')
+
+      expect(finIdx).toBeGreaterThan(-1)
+      expect(convIdx).toBeGreaterThan(finIdx)
+      expect(memIdx).toBeGreaterThan(convIdx)
+    })
+
+    it('rejects invalid MemoryContext before minimization', () => {
+      const invalidMem = {
+        version: '1.0.0',
+        items: [
+          {
+            type: 'unsupported_memory_type',
+            content: 'Bad type content',
+          },
+        ],
+      }
+
+      expect(() => {
+        buildPromptPackage({
+          financialSummary: sampleFinancialSummary,
+          insightBundle: sampleInsightBundle,
+          recommendationBundle: sampleRecommendationBundle,
+          memoryContext: invalidMem,
+        })
+      }).toThrow(/buildPromptPackage requires a valid memoryContext/)
+    })
+
+    it('rejects MemoryContext containing internal fields', () => {
+      const dirtyMem = {
+        version: '1.0.0',
+        items: [
+          {
+            type: 'communication_preference',
+            content: 'Valid content',
+            memoryId: 'illegal_id',
+          },
+        ],
+      }
+
+      expect(() => {
+        buildPromptPackage({
+          financialSummary: sampleFinancialSummary,
+          insightBundle: sampleInsightBundle,
+          recommendationBundle: sampleRecommendationBundle,
+          memoryContext: dirtyMem,
+        })
+      }).toThrow(/disallowed field "memoryId"/)
     })
   })
 })

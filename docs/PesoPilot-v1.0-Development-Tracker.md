@@ -3697,7 +3697,7 @@ dependencies, or Phase 11B.5+ behavior were introduced.
 
 # Phase 11B.5 — Memory Service
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3708,12 +3708,73 @@ Status: ⬜
 
 ## Features
 
-* [ ] Memory DTO
-* [ ] Memory Context DTO
-* [ ] Memory evaluator
-* [ ] Memory retriever
-* [ ] Memory ranker
-* [ ] Memory policy manager
+* [x] Memory DTO
+* [x] Memory Context DTO
+* [x] Memory evaluator
+* [x] Memory retriever
+* [x] Memory ranker
+* [x] Memory policy manager
+
+## Action Notes
+
+```txt
+Phase 11B.5 Memory Service validated.
+
+Implemented caller-owned/stateless Memory DTO and Memory Context DTO
+contracts with deterministic memory evaluation, retrieval, ranking, and
+a fixed immutable Memory Policy.
+
+Memory is curated contextual knowledge and does not represent
+conversation history or deterministic financial truth.
+
+Only explicitly confirmed user-sourced qualitative preference candidates
+are eligible for promotion. Current memory types are
+communication_preference, coaching_preference, and user_preference.
+
+Memory Records use caller-supplied IDs and timestamps and are managed
+immutably. Duplicate record IDs are rejected without silent repair.
+
+Retrieval uses structured workflow/topic metadata only. Ranking is
+deterministic using topic relevance, importance, recency, and memoryId
+as a stable final tie-breaker.
+
+Memory Context exposes only type/content to Prompt Builder and is bounded
+to 5 items, 300 characters per item, and 1500 total item characters.
+
+Prompt Builder now keeps memory structurally separate from deterministic
+financial intelligence using UNTRUSTED_MEMORY_CONTEXT_JSON.
+
+AI Orchestration optionally accepts caller-owned memoryState, retrieves
+relevant Memory Context, and forwards it to Prompt Builder. Workflows
+without memory remain backward-compatible with Phase 11B.4 behavior.
+
+Phase 11B.5 does not persist memory. No Dexie store, database migration,
+schema version change, Memory Repository, or Knowledge Repository was
+introduced.
+
+Phase 11B.5 provides structural trust separation only. PII detection,
+prompt-injection detection, memory security validation, and other
+Guardrail Engine responsibilities remain Phase 11B.6.
+
+Section 12.5 — Conversation Memory Architecture was materialized.
+
+Validation:
+57/57 Memory Service tests passed.
+31/31 Prompt Builder tests passed.
+37/37 Conversation Engine tests passed.
+39/39 Provider Layer tests passed.
+30/30 AI Orchestrator tests passed.
+25/25 AI Platform Foundation tests passed.
+75/75 test files passed.
+684/684 tests passed.
+ESLint passed with 0 errors and 0 warnings.
+Production Vite build passed.
+
+No database/schema changes, persistent memory repository, automatic
+memory promotion, LLM/heuristic extraction, semantic financial detector,
+confidence subsystem, Guardrail Engine behavior, cloud providers,
+Spring Boot AI API, streaming, or Phase 11B.6+ behavior were introduced.
+```
 
 ---
 

@@ -176,6 +176,7 @@ function selectFinancialSummary(financialSummary) {
 
 export function selectPromptContext({
   conversationContext = null,
+  memoryContext = null,
   financialSummary,
   insightBundle,
   recommendationBundle,
@@ -230,6 +231,19 @@ export function selectPromptContext({
     }
   }
 
+  let selectedMemoryContext = null
+  if (memoryContext && typeof memoryContext === 'object') {
+    selectedMemoryContext = {
+      version: memoryContext.version ?? '1.0.0',
+      items: Array.isArray(memoryContext.items)
+        ? memoryContext.items.map((item) => ({
+            type: item?.type ?? '',
+            content: item?.content ?? '',
+          }))
+        : [],
+    }
+  }
+
   return {
     version: CONTEXT_VERSION,
     scope,
@@ -238,7 +252,7 @@ export function selectPromptContext({
     recommendations,
     insights,
     conversationContext: selectedConversationContext,
-    memoryContext: null,
+    memoryContext: selectedMemoryContext,
   }
 }
 

@@ -2,6 +2,7 @@ import { selectPromptContext } from './contextSelector.js'
 import { composePrompts } from './promptComposer.js'
 import { createPromptPackage } from './promptPackage.js'
 import { validatePromptPackage } from './promptValidator.js'
+import { validateMemoryContext } from '../memory/memoryValidator.js'
 import {
   getPromptTemplate,
   PROMPT_TEMPLATE_IDS,
@@ -9,6 +10,7 @@ import {
 
 export function buildPromptPackage({
   conversationContext = null,
+  memoryContext = null,
   financialSummary,
   insightBundle,
   recommendationBundle,
@@ -30,10 +32,20 @@ export function buildPromptPackage({
     )
   }
 
+  if (memoryContext !== null) {
+    const memValidation = validateMemoryContext(memoryContext)
+    if (!memValidation.valid) {
+      throw new Error(
+        `buildPromptPackage requires a valid memoryContext: ${memValidation.errors.join('; ')}`,
+      )
+    }
+  }
+
   const template = getPromptTemplate(templateId)
 
   const context = selectPromptContext({
     conversationContext,
+    memoryContext,
     financialSummary,
     insightBundle,
     recommendationBundle,

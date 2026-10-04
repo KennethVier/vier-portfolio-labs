@@ -62,7 +62,8 @@ describe('AI Platform Foundation', () => {
       c.exportName !== 'promptBuilder' &&
       c.exportName !== 'conversationEngine' &&
       c.exportName !== 'providerLayer' &&
-      c.exportName !== 'aiOrchestrator',
+      c.exportName !== 'aiOrchestrator' &&
+      c.exportName !== 'memoryService',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -280,6 +281,65 @@ describe('AI Platform Foundation', () => {
       'status',
       'validateWorkflow',
       'validateWorkflowDiagnostics',
+    ])
+  })
+
+  // Memory Service 11B.5 Assertions
+  it('ensures memoryService has canonical name "memory-service", status "ready", and approved interface functions', () => {
+    expect(memoryService).toBeDefined()
+    expect(memoryService.name).toBe('memory-service')
+    expect(memoryService.status).toBe('ready')
+    expect(typeof memoryService.addMemoryRecord).toBe('function')
+    expect(typeof memoryService.createMemoryDto).toBe('function')
+    expect(typeof memoryService.createMemoryRecord).toBe('function')
+    expect(typeof memoryService.evaluateCandidate).toBe('function')
+    expect(typeof memoryService.getPolicy).toBe('function')
+    expect(typeof memoryService.retrieveContext).toBe('function')
+    expect(typeof memoryService.validateMemoryContext).toBe('function')
+    expect(typeof memoryService.validateMemoryDto).toBe('function')
+  })
+
+  it('ensures memoryService is frozen and immutable', () => {
+    expect(Object.isFrozen(memoryService)).toBe(true)
+
+    expect(() => {
+      memoryService.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      memoryService.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures memoryService exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'persist',
+      'save',
+      'delete',
+      'repository',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(memoryService[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(memoryService).sort()).toEqual([
+      'addMemoryRecord',
+      'createMemoryDto',
+      'createMemoryRecord',
+      'evaluateCandidate',
+      'getPolicy',
+      'name',
+      'retrieveContext',
+      'status',
+      'validateMemoryContext',
+      'validateMemoryDto',
     ])
   })
 

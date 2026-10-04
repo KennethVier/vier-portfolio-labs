@@ -1616,7 +1616,7 @@ When a workflow fails or times out:
 
 ## Memory & Guardrail Boundaries
 
-* `memoryContext` remains strictly `null` (Phase 11B.5).
+* `memoryContext` is coordinated by the AI Orchestrator and formatted into `UNTRUSTED_MEMORY_CONTEXT_JSON` by the Prompt Builder (Phase 11B.5).
 * Guardrails (prompt injection defense, PII scanning, moderation) remain pass-through boundaries (Phase 11B.6).
 
 ## Explicit Non-Goals
@@ -1629,6 +1629,179 @@ Phase 11B.4 explicitly excludes:
 * AI evaluation testing harness (Phase 11B.9);
 * Cloud LLM provider execution (OpenAI, Gemini, Claude);
 * Modifying deterministic finance engines or database schemas.
+
+---
+
+# 12.5 — Conversation Memory Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.5
+
+## Purpose & Core Philosophy
+
+The Memory Service manages curated, qualitative personalization context across AI workflows.
+
+Core Rules:
+
+```txt
+AI explains.
+PesoPilot decides.
+```
+
+And:
+
+```txt
+Memory is curated contextual knowledge,
+not conversation history
+and not financial truth.
+```
+
+Conversation Engine (Phase 11B.2) owns active dialogue, recent message history, turn sequencing, and clarification states. The Memory Service owns curated, cross-workflow qualitative preferences and confirmed user context. Memory never stores complete conversation transcripts.
+
+## Authority Boundary: Contextual Knowledge vs. Financial Truth
+
+Memory is strictly qualitative personalization context (e.g., communication style, coaching preference, confirmed user context).
+
+Memory MUST NOT become authoritative for:
+* Account balances or remaining cash;
+* Income, expense, or savings totals;
+* Cutoff calculations, budgets, or goal progress;
+* Health scores or financial shock risk levels;
+* Deterministic recommendation ranking or financial summaries;
+* Transaction history.
+
+If memory content contradicts deterministic financial artifacts (`InsightBundle`, `RecommendationBundle`, `FinancialSummary`), the deterministic financial artifacts remain strictly authoritative.
+
+## Persistence Boundary: Caller-Owned / Stateless Memory State
+
+Phase 11B.5 defines caller-owned curated memory state and workflow-specific Memory Context. Persistence is not implemented in this phase.
+
+* **No new Dexie stores**: The authoritative 13-store database schema (`docs/PesoPilot-v1.0-Domain-Model-and-Database .md`) is unchanged.
+* **No database migrations or schema version bumps**: `db.version(1)` is strictly preserved.
+* **No store repurposing**: Neither `ai_insights` nor `settings` are repurposed for conversational memory.
+* **No Memory Repository**: Memory state is owned by the caller (application state, UI feature store, or orchestration caller) and passed as an immutable `MemoryDTO`.
+* **No durable persistence claims**: Phase 11B.5 implements memory evaluation, retrieval, ranking, and context injection contracts; it does not persist memories across browser sessions or sync them across devices.
+
+## Domain Model & Data Contracts
+
+### 1. Memory DTO
+Represents the caller-supplied collection of curated qualitative records:
+
+```javascript
+{
+  version: '1.0.0',
+  records: [
+    {
+      memoryId: 'mem-1728000000000-a1b2c3d4',
+      type: 'communication_preference',
+      content: 'User prefers concise cutoff explanations.',
+      topics: ['general', 'cutoff'],
+      workflowTypes: ['financial-summary-explanation'],
+      importance: 'medium',
+      source: {
+        type: 'user',
+        referenceId: null,
+      },
+      createdAt: '2026-10-05T00:00:00.000Z',
+    },
+  ],
+}
+```
+
+* Duplicate `memoryId` entries are strictly rejected (no silent deduplication during DTO creation).
+* All records and array fields are deep/shallow frozen upon creation.
+* Prohibited fields: `confidence`, `status`, `expiresAt`, `updatedAt`, `lastUsed`, `usageFrequency`, `collectionId`, `knowledgeProfile`, `embedding`, and `vector` are excluded from the MVP MemoryRecord.
+
+### 2. Allowed Memory Types
+Whitelisted MVP types:
+* `communication_preference`: Tone, brevity, and presentation preferences (e.g., bulleted summaries).
+* `coaching_preference`: Guidance style and motivation focus (e.g., prioritize debt elimination).
+* `user_preference`: User-stated lifestyle habits or preferences.
+
+Broad categories (e.g., `financial_fact`, `financial_goal`, `financial_behavior`, `confirmed_context`) are strictly excluded to prevent competing financial authority.
+
+### 3. Explicit Candidate Contract & User Confirmation
+Memory Evaluator requires a structured candidate with explicit confirmation:
+
+```javascript
+{
+  type: 'communication_preference',
+  content: 'User prefers bulleted summaries.',
+  topics: ['general'],
+  workflowTypes: ['financial-summary-explanation'],
+  explicitlyConfirmed: true, // Strictly required
+  importance: 'medium',      // 'high' | 'medium' | 'low'
+  source: {
+    type: 'user',            // Strictly required
+    referenceId: null,
+  },
+}
+```
+
+Assistant-authored text, provider completions, and unconfirmed dialogue are never automatically promoted into memory.
+
+## Evaluation & Policy Management
+
+* **Memory Evaluator (`memoryEvaluator.js`)**: Pure, deterministic evaluator. Enforces structural and policy validity: object shape, allowed memory type, user source, explicit confirmation (`true`), content length (`1 <= length <= 300`), allowed topics (from Conversation Engine topic taxonomy), and allowed workflow type (`financial-summary-explanation`).
+* **Fixed Memory Policy (`memoryPolicy.js`)**: Immutable policy definition (`DEFAULT_MEMORY_POLICY`). Enforces maximum content length (300), maximum retrieved items (5), and maximum total context characters (1500). Runtime policy overrides that bypass approved limits are prohibited.
+* **No Semantic NLP Detection**: The Evaluator does not parse free text with heuristic regexes or keyword matching to detect financial claims. Semantic safety analysis is deferred to Guardrails (Phase 11B.6).
+
+## Deterministic Retrieval & Ranking Pipeline
+
+1. **Retrieval (`memoryRetriever.js`)**:
+   - Query: `{ workflowType: string, topic?: string }`.
+   - Records must match the query `workflowType`.
+   - Topic matching: If `query.topic === 'general'`, only records explicitly assigned to `general` match. If `query.topic !== 'general'`, records matching `query.topic` OR `general` match. Unrelated topics are excluded.
+2. **Ranking (`memoryRanker.js`)**:
+   - Deterministic 4-tier sort:
+     1. Exact topic match ranks before `general` (when `query.topic !== 'general'`);
+     2. Importance: `high` > `medium` > `low`;
+     3. Recency: `createdAt` descending (newest first);
+     4. Final tie-break: `memoryId` ascending (lexicographical).
+3. **Memory Context Construction (`memoryContext.js`)**:
+   - Caps item count at 5 (`maxRetrievedItems`).
+   - Caps individual item content at 300 chars (`maxContentLength`).
+   - Caps total item content characters at 1500 chars (`maxTotalContextChars`). Excludes whole lower-ranked items once the ceiling is reached (no silent truncation).
+   - Deduplicates identical `memoryId`s and exact normalized content (`trim()`, lowercase, exact equality), preserving the highest-ranked item.
+   - Minimizes output to `{ version: '1.0.0', items: [{ type, content }] }`. Internal IDs, timestamps, sources, and importance are never exposed to the LLM.
+   - Returns `null` when no relevant memories match.
+
+## Prompt Builder Integration & Trust Separation
+
+* **Prompt Builder Input**: Accepts optional `memoryContext = null`.
+* **Validation Before Minimization**: `buildPromptPackage` validates `memoryContext` via `validateMemoryContext` before cloning in `contextSelector.js`. Malformed context fails immediately with descriptive errors.
+* **Structural Trust Separation**:
+  - `DETERMINISTIC_FINANCIAL_CONTEXT_JSON`: Strictly financial data only. Conversation and memory contexts are stripped before serialization.
+  - `UNTRUSTED_CONVERSATION_CONTEXT_JSON`: Active dialogue context (if present).
+  - `UNTRUSTED_MEMORY_CONTEXT_JSON`: Curated memory context (if present).
+* **Memory Absence**: If `memoryContext` is `null` or empty, `UNTRUSTED_MEMORY_CONTEXT_JSON` is completely omitted, maintaining 100% backward compatibility with Phase 11B.4 prompts.
+
+## AI Orchestration Integration
+
+* **Service Coordinator**: Injects default `memoryService`.
+* **Public Input**: Accepts canonical `memoryState?: MemoryDTO | null`. Aliases (`memory`, `memoryDto`, `memories`) are rejected with `WorkflowError('INVALID_ORCHESTRATION_INPUT')`.
+* **Retrieval Flow**: If `memoryState` is provided, coordinator queries `retrieveContext({ memoryDto, query: { workflowType: template.id, topic } })` before invoking Prompt Builder.
+* **Invalid Memory State**: Fails explicitly with typed `WorkflowError` if supplied `memoryState` is malformed.
+* **Separation of Promotion and Retrieval**: `executeWorkflow()` only retrieves from caller-supplied memory state. Workflow execution never automatically writes, promotes, or updates memories.
+
+## Security & Guardrail Boundary (Phase 11B.6 Handoff)
+
+* **Structural Validation Only**: Phase 11B.5 validates DTO schemas and deterministic policy boundaries.
+* **Untrusted Memory Warning**: Phase 11B.5 provides structural trust separation and bounded context. It does NOT provide prompt injection detection, PII scanning, memory security classification, or content moderation. Those controls belong exclusively to Phase 11B.6 (Guardrail Engine).
+
+## Explicit Non-Goals
+
+Phase 11B.5 explicitly excludes:
+* Persistent Dexie stores, IndexedDB schemas, or database migrations;
+* Memory Repository or Knowledge Repository abstractions;
+* LLM-driven memory extraction or keyword NLP heuristic parsing;
+* Semantic conflict detection in free text;
+* PII classification, jailbreak detection, or prompt injection scanning (Phase 11B.6);
+* Vector embeddings, vector databases, or semantic search;
+* Memory decay, adaptive confidence models, or knowledge graphs;
+* Streaming or WebSocket transports (Phase 11B.8);
+* Cloud LLM providers (OpenAI, Gemini, Claude);
+* Modifying deterministic finance engines or financial calculations.
 
 ---
 

@@ -1,6 +1,7 @@
 import { PROMPT_PACKAGE_VERSION } from './promptPackage.js'
 import { PROMPT_TEMPLATE_IDS } from './templateRegistry.js'
 import { validateConversationContext } from '../conversation/conversationValidator.js'
+import { validateMemoryContext } from '../memory/memoryValidator.js'
 
 const REQUIRED_INSIGHT_DOMAINS = [
   'health',
@@ -143,7 +144,12 @@ export function validatePromptPackage(promptPackage) {
       }
     }
     if (context.memoryContext !== null) {
-      errors.push('Context memoryContext must be null in Phase 11B.2.')
+      const memValidation = validateMemoryContext(context.memoryContext)
+      if (!memValidation.valid) {
+        errors.push(
+          `Context memoryContext validation failed: ${memValidation.errors.join('; ')}`,
+        )
+      }
     }
   }
 

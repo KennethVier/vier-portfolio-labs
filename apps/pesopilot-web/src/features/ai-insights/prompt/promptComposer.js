@@ -14,6 +14,7 @@ export function composePrompts({
   const templateInstruction = template?.instruction ?? ''
 
   const conversationContext = context?.conversationContext ?? null
+  const memoryContext = context?.memoryContext ?? null
   const deterministicFinancialContext = { ...(context ?? {}) }
   delete deterministicFinancialContext.conversationContext
   delete deterministicFinancialContext.memoryContext
@@ -29,6 +30,15 @@ export function composePrompts({
   if (conversationContext) {
     const serializedConversation = JSON.stringify(conversationContext, null, 2)
     userPrompt += `\n\nUNTRUSTED_CONVERSATION_CONTEXT_JSON:\n${serializedConversation}`
+  }
+
+  if (
+    memoryContext &&
+    Array.isArray(memoryContext.items) &&
+    memoryContext.items.length > 0
+  ) {
+    const serializedMemory = JSON.stringify(memoryContext, null, 2)
+    userPrompt += `\n\nUNTRUSTED_MEMORY_CONTEXT_JSON:\n${serializedMemory}`
   }
 
   return {
