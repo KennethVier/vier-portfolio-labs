@@ -60,7 +60,8 @@ describe('AI Platform Foundation', () => {
   const PLACEHOLDER_CAPABILITIES = EXPECTED_CAPABILITIES.filter(
     (c) =>
       c.exportName !== 'promptBuilder' &&
-      c.exportName !== 'conversationEngine',
+      c.exportName !== 'conversationEngine' &&
+      c.exportName !== 'providerLayer',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -172,6 +173,62 @@ describe('AI Platform Foundation', () => {
       'updateTopic',
       'validateConversation',
       'validateConversationContext',
+    ])
+  })
+
+  // Provider Layer 11B.3 Assertions
+  it('ensures providerLayer has canonical name "provider-layer", status "ready", and approved interface functions', () => {
+    expect(providerLayer).toBeDefined()
+    expect(providerLayer.name).toBe('provider-layer')
+    expect(providerLayer.status).toBe('ready')
+    expect(typeof providerLayer.getProvider).toBe('function')
+    expect(typeof providerLayer.getProviderDescriptor).toBe('function')
+    expect(typeof providerLayer.listProviders).toBe('function')
+    expect(typeof providerLayer.createProviderRequest).toBe('function')
+    expect(typeof providerLayer.validateProviderRequest).toBe('function')
+    expect(typeof providerLayer.validateProviderResponse).toBe('function')
+    expect(typeof providerLayer.validateProviderDiagnostics).toBe('function')
+  })
+
+  it('ensures providerLayer is frozen and immutable', () => {
+    expect(Object.isFrozen(providerLayer)).toBe(true)
+
+    expect(() => {
+      providerLayer.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      providerLayer.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures providerLayer exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'orchestrate',
+      'retry',
+      'fallback',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(providerLayer[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(providerLayer).sort()).toEqual([
+      'createProviderRequest',
+      'getProvider',
+      'getProviderDescriptor',
+      'listProviders',
+      'name',
+      'status',
+      'validateProviderDiagnostics',
+      'validateProviderRequest',
+      'validateProviderResponse',
     ])
   })
 

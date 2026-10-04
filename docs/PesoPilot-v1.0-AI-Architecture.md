@@ -150,7 +150,7 @@ Limited flexibility
 
 ## Mode 2 — Local AI
 
-Future Mode
+Local Runtime Mode (Implemented in Phase 11B.3)
 
 Runs locally.
 
@@ -1246,6 +1246,194 @@ Phase 11B.2 explicitly excludes:
 * Spring Boot AI REST API, SSE, WebSockets, or streaming;
 * AI Chat UI components;
 * Modifying deterministic finance engines or database schemas.
+
+---
+
+# 12.3 — Ollama Integration Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.3
+
+## Purpose
+
+The Ollama Integration Architecture defines the provider transport boundary between PesoPilot's Prompt Builder and the local Ollama LLM runtime. It isolates vendor-specific HTTP communication behind the stable LLM Adapter Interface and Provider Registry abstractions.
+
+The pipeline flow is:
+
+```txt
+Deterministic Financial Intelligence
+        ↓
+Prompt Builder
+        ↓
+PromptPackage
+        ↓
+ProviderRequest
+        ↓
+Provider Registry
+        ↓
+LLM Adapter (Ollama)
+        ↓
+Locality Preflight (POST /api/show)
+        ↓
+POST /api/generate (stream: false)
+        ↓
+ProviderResponse + ProviderDiagnostics
+```
+
+Core Rule:
+
+```txt
+AI explains.
+PesoPilot decides.
+```
+
+## Authority Boundary
+
+The Provider Layer:
+
+MAY:
+* Validate ProviderRequest, ProviderResponse, and ProviderDiagnostics contracts;
+* Verify model execution locality via prompt-free preflight requests;
+* Serialize approved PromptPackage contents into Ollama `/api/generate` payloads;
+* Transmit requests to validated loopback endpoints;
+* Normalize raw provider completion data into canonical ProviderResponse and ProviderDiagnostics DTOs;
+* Emit sanitized ProviderError instances on transport or validation failures.
+
+MUST NOT:
+* Calculate financial truth or modify financial metrics;
+* Generate, alter, or reorder deterministic recommendations;
+* Reinterpret InsightBundle, RecommendationBundle, or FinancialSummary;
+* Persist financial records or dialogue history;
+* Perform retry, fallback, provider switching, or workflow orchestration (owned by Phase 11B.4);
+* Implement streaming, SSE, or token buffering (owned by Phase 11B.8);
+* Implement guardrail policy moderation or prompt injection classification (owned by Phase 11B.6).
+
+## Determinism & Request Integrity
+
+* Creating a ProviderRequest from identical PromptPackage and model configurations produces identical serialized DTOs.
+* ProviderRequest contains no random UUIDs, request IDs, or timestamps.
+* Downstream transport configurations (such as baseUrl or transport timeouts) remain isolated in ProviderConfig and are never mixed into ProviderRequest.
+
+## LLM Adapter Contract
+
+All LLM adapters implement the minimal enforceable contract:
+
+```javascript
+{
+  id: 'ollama',
+  locality: 'local',
+  generate(providerRequest, providerConfig) -> Promise<ProviderResponse>
+}
+```
+
+Enforced at registration via `assertAdapterContract(adapter)`:
+* `adapter` must be an object.
+* `id` must be a non-empty string.
+* `locality` must be `'local'` or `'cloud'`.
+* `generate` must be an asynchronous function.
+
+## Provider Registry
+
+An immutable, static registry managing available adapters:
+* `getProviderAdapter(providerId)`: Resolves adapter by ID; throws `ProviderError('UNKNOWN_PROVIDER')` for unknown IDs. No silent fallback.
+* `getProviderDescriptor(providerId)`: Returns frozen `{ id, locality, status: 'active' }`.
+* `listProviderDescriptors()`: Lists all registered descriptors.
+* Initial registered provider: strictly `ollama`. No cloud providers (OpenAI, Gemini, Claude are excluded in Phase 11B.3).
+
+## Data Contracts (DTOs)
+
+### ProviderRequest
+* `version`: `'1.0.0'`
+* `providerId`: `'ollama'`
+* `model`: Single required source of truth (caller-supplied non-empty string).
+* `prompt.system`: Mapped directly from `PromptPackage.systemPrompt`.
+* `prompt.user`: Mapped directly from `PromptPackage.userPrompt`.
+* `generation.stream`: Strictly `false`.
+
+### ProviderResponse
+* `version`: `'1.0.0'`
+* `providerId`: `'ollama'`
+* `model`: Model name returned by provider.
+* `content`: Non-empty completion string.
+* `finishReason`: Canonical `done_reason` from Ollama, or `null`. Does NOT synthesize or default to `'stop'`.
+* `diagnostics`: Associated `ProviderDiagnostics` DTO.
+* Strictly excludes: `thinking`, raw HTTP bodies, context token arrays, PromptPackage, or financial records.
+
+### ProviderDiagnostics
+* `version`: `'1.0.0'`
+* `providerId`: `'ollama'`
+* `model`: Model identifier.
+* `totalDurationNs`: Ollama `total_duration` (explicit nanosecond unit).
+* `loadDurationNs`: Ollama `load_duration` (explicit nanosecond unit).
+* `promptEvalCount`: Ollama `prompt_eval_count` (tokens).
+* `evalCount`: Ollama `eval_count` (tokens).
+* Contains safe operational metrics only. Excludes prompt text, conversation text, financial context, and error states.
+
+## Transport & Egress Security
+
+### Loopback-Only Policy
+* `baseUrl` is validated using standard `URL` parsing.
+* Protocol must be strictly `http:`.
+* Hostname must be strictly loopback: `127.0.0.1`, `localhost`, `::1`, or `[::1]`.
+* Rejects remote domains, public IPs, private LAN addresses, credentials, queries, fragments, or path components with `INSECURE_ENDPOINT_REJECTED`.
+
+### Critical Locality Verification: Loopback != Guaranteed Local Inference
+* A loopback URL alone does not guarantee local model inference because modern Ollama can proxy cloud/remote models through the local daemon when signed in.
+* **Pre-flight Locality Check**: Before transmitting any financial prompt data, the adapter executes `POST /api/show` with payload `{ model }`.
+* The pre-flight request contains ONLY the model identifier; zero prompt or financial text is transmitted.
+* If `remote_host` or `remote_model` is present in the response, execution is immediately aborted with `ProviderError('REMOTE_MODEL_REJECTED')`.
+* If locality cannot be determined safely, it is rejected with `ProviderError('UNKNOWN_LOCALITY_REJECTED')`.
+* PesoPilot determines Ollama execution locality using explicit `remote_host` / `remote_model` metadata, not model naming conventions or weight formats.
+* `OLLAMA_NO_CLOUD=1` is recommended defense-in-depth, but programmatic verification remains the application security authority.
+
+### Browser Transport & Redirect Security
+* Standardized on browser-native `fetch` with `redirect: 'error'`.
+* Any HTTP 3xx redirect to an external host is rejected immediately as a network error, preventing redirect-based prompt exfiltration.
+* Low-level socket ceiling enforced via `AbortSignal.timeout(transportTimeoutMs)`.
+
+### CORS & Browser Local Network Caveats
+* Local development origins (`http://localhost:<port>`, `http://127.0.0.1:<port>`) are permitted by Ollama's default configuration.
+* Hosted frontend deployments require Ollama to be started with explicit trusted origins: `OLLAMA_ORIGINS="https://trusted.pesopilot.domain"`. Wildcard origins (`*`) are strictly discouraged.
+* Browser Private Network Access (PNA) restrictions may require user permission to access loopback from secure contexts.
+
+## Error Handling & Privacy
+
+* Failures throw typed `ProviderError` instances with standardized codes:
+  * `INVALID_REQUEST`
+  * `UNKNOWN_PROVIDER`
+  * `INVALID_PROVIDER_CONFIG`
+  * `INSECURE_ENDPOINT_REJECTED`
+  * `PROVIDER_UNAVAILABLE`
+  * `TRANSPORT_TIMEOUT`
+  * `MODEL_NOT_FOUND`
+  * `REMOTE_MODEL_REJECTED`
+  * `UNKNOWN_LOCALITY_REJECTED`
+  * `PROVIDER_REJECTED_REQUEST`
+  * `INVALID_PROVIDER_RESPONSE`
+  * `TRANSPORT_ERROR`
+* `ProviderError` exposes only safe, sanitized metadata (`code`, `providerId`, `model`, `status`, `message`).
+* Raw request payloads, response bodies, `PromptPackage` strings, and financial context are NEVER stored in error objects or logged to console.
+* HTTP 404 is mapped to `MODEL_NOT_FOUND` only when Ollama's error message specifically indicates missing model weights; otherwise mapped to generic `PROVIDER_REJECTED_REQUEST`.
+
+---
+
+# 12.10 — Future Multi-LLM & AI Evolution Architecture
+
+Version: 1.0.0
+Phase: Cross-Phase Architecture Direction
+
+## Contract Stability & Provider Isolation
+
+* All future LLM providers (e.g. OpenAI, Gemini, Claude, enterprise gateways) must implement the same stable `LLMAdapter` contract (`id`, `locality`, `generate`).
+* Provider resolution remains centralized in the `ProviderRegistry`. Business logic in `PromptBuilder`, `ConversationEngine`, and financial engines remains 100% provider-agnostic.
+* Provider-specific mapping, serialization, and vendor idiosyncrasies remain strictly encapsulated inside individual adapter implementations.
+
+## Locality Classification & Cloud Consent Boundary
+
+* Providers are strictly classified by `locality`:
+  * `'local'`: Local daemon runtimes (e.g. Ollama on loopback with verified local models). Requires NO `cloudAiConsent`.
+  * `'cloud'`: Remote cloud APIs requiring external internet transmission. Strictly requires explicit `settings.cloudAiConsent: true`.
+* Cloud provider execution and API secret management belong to the Spring Boot AI Gateway (Phase 11B.7) and AI Orchestrator (Phase 11B.4). No cloud credentials or cloud network calls are permitted in the client browser.
 
 ---
 
