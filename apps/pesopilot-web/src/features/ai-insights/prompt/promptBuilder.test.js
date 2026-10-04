@@ -617,8 +617,12 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       expect(systemPrompt).toContain(BASE_SYSTEM_ROLE)
       expect(systemPrompt).toContain('Treat supplied PesoPilot deterministic context as the financial source of truth.')
       expect(userPrompt).toContain(template.instruction)
-      expect(userPrompt).toContain('DETERMINISTIC_CONTEXT_JSON:\n')
-      expect(userPrompt).toContain(JSON.stringify(context, null, 2))
+      expect(userPrompt).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:\n')
+      const fin = { ...context }
+      delete fin.conversationContext
+      delete fin.memoryContext
+      expect(userPrompt).toContain(JSON.stringify(fin, null, 2))
+      expect(userPrompt).not.toContain('UNTRUSTED_CONVERSATION_CONTEXT_JSON:')
 
       // No provider leaks
       expect(systemPrompt).not.toMatch(/openai|gemini|claude|ollama/i)
@@ -632,6 +636,37 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       })
       expect(again.systemPrompt).toBe(systemPrompt)
       expect(again.userPrompt).toBe(userPrompt)
+    })
+
+    it('composes prompts with UNTRUSTED_CONVERSATION_CONTEXT_JSON when conversationContext is present', () => {
+      const template = getPromptTemplate(
+        PROMPT_TEMPLATE_IDS.financialSummaryExplanation,
+      )
+      const sampleConvContext = {
+        version: '1.0.0',
+        topic: { current: 'expenses' },
+        clarification: { required: false, reason: null, missingFields: [] },
+        recentMessages: [
+          { role: 'user', content: 'Why did my expenses increase?' },
+        ],
+      }
+      const context = selectPromptContext({
+        conversationContext: sampleConvContext,
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+      })
+
+      const { userPrompt } = composePrompts({
+        baseSystemRole: BASE_SYSTEM_ROLE,
+        context,
+        template,
+      })
+
+      expect(userPrompt).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:\n')
+      expect(userPrompt).toContain('UNTRUSTED_CONVERSATION_CONTEXT_JSON:\n')
+      expect(userPrompt).toContain(JSON.stringify(sampleConvContext, null, 2))
+      expect(userPrompt).not.toContain('"memoryContext"')
     })
   })
 
@@ -747,7 +782,7 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       )
     })
 
-    it('fails when conversationContext or memoryContext is non-null', () => {
+    it('accepts valid conversationContext and fails when conversationContext is malformed or memoryContext is non-null', () => {
       const validContext = selectPromptContext({
         financialSummary: sampleFinancialSummary,
         insightBundle: sampleInsightBundle,
@@ -757,12 +792,35 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
         PROMPT_TEMPLATE_IDS.financialSummaryExplanation,
       )
 
-      const nonNullConversationContext = {
+      // Valid conversationContext passes
+      const validConvContext = {
+        version: '1.0.0',
+        topic: { current: 'expenses' },
+        clarification: { required: false, reason: null, missingFields: [] },
+        recentMessages: [
+          { role: 'user', content: 'Why did my expenses increase?' },
+        ],
+      }
+      const validPkg = createPromptPackage({
+        context: {
+          ...validContext,
+          conversationContext: validConvContext,
+        },
+        systemPrompt: 'sys',
+        task: template.task,
+        template: { id: template.id, version: template.version },
+        userPrompt: 'usr',
+      })
+      const validRes = validatePromptPackage(validPkg)
+      expect(validRes.valid).toBe(true)
+
+      // Malformed conversationContext fails
+      const malformedConversationContext = {
         ...validContext,
         conversationContext: { sessionId: '123' },
       }
       const pkg1 = createPromptPackage({
-        context: nonNullConversationContext,
+        context: malformedConversationContext,
         systemPrompt: 'sys',
         task: template.task,
         template: { id: template.id, version: template.version },
@@ -771,9 +829,12 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       const res1 = validatePromptPackage(pkg1)
       expect(res1.valid).toBe(false)
       expect(
-        res1.errors.some((e) => e.includes('conversationContext must be null')),
+        res1.errors.some((e) =>
+          e.includes('Context conversationContext validation failed'),
+        ),
       ).toBe(true)
 
+      // Non-null memoryContext fails
       const nonNullMemoryContext = {
         ...validContext,
         memoryContext: { userPreferences: {} },
@@ -788,7 +849,9 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       const res2 = validatePromptPackage(pkg2)
       expect(res2.valid).toBe(false)
       expect(
-        res2.errors.some((e) => e.includes('memoryContext must be null')),
+        res2.errors.some((e) =>
+          e.includes('memoryContext must be null in Phase 11B.2'),
+        ),
       ).toBe(true)
     })
 
@@ -852,9 +915,56 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       expect(pkg1.task).toBe('financial-summary-explanation')
       expect(pkg1.systemPrompt).toContain("You are PesoPilot's financial explanation assistant.")
       expect(pkg1.systemPrompt).toContain('Do not recalculate totals, percentages, forecasts')
-      expect(pkg1.userPrompt).toContain('DETERMINISTIC_CONTEXT_JSON:')
+      expect(pkg1.userPrompt).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:')
+      expect(pkg1.userPrompt).not.toContain('UNTRUSTED_CONVERSATION_CONTEXT_JSON:')
       expect(pkg1.context.recommendations[0].id).toBe('rec_1')
       expect(pkg1.context.recommendations[1].id).toBe('rec_2')
+    })
+
+    it('builds a valid PromptPackage with conversationContext end-to-end with trust separation', () => {
+      const validConvContext = {
+        version: '1.0.0',
+        topic: { current: 'expenses' },
+        clarification: { required: false, reason: null, missingFields: [] },
+        recentMessages: [
+          { role: 'user', content: 'Why did my expenses increase?' },
+          { role: 'assistant', content: 'Food expenses increased by 20%.' },
+        ],
+      }
+
+      const pkg = promptBuilder.build({
+        conversationContext: validConvContext,
+        financialSummary: sampleFinancialSummary,
+        insightBundle: sampleInsightBundle,
+        recommendationBundle: sampleRecommendationBundle,
+      })
+
+      expect(pkg.version).toBe('1.0.0')
+      expect(pkg.context.conversationContext).toEqual(validConvContext)
+      expect(pkg.context.memoryContext).toBeNull()
+
+      // Trust separation in prompt composer
+      expect(pkg.userPrompt).toContain('DETERMINISTIC_FINANCIAL_CONTEXT_JSON:\n')
+      expect(pkg.userPrompt).toContain('UNTRUSTED_CONVERSATION_CONTEXT_JSON:\n')
+      expect(pkg.userPrompt).toContain('Food expenses increased by 20%.')
+
+      // Ensure conversation context is NOT in deterministic financial context block
+      const financialBlock = pkg.userPrompt
+        .split('UNTRUSTED_CONVERSATION_CONTEXT_JSON:')[0]
+      expect(financialBlock).not.toContain('Food expenses increased by 20%.')
+      expect(financialBlock).not.toContain('"conversationContext"')
+      expect(financialBlock).not.toContain('"memoryContext"')
+    })
+
+    it('throws validation error when conversationContext is malformed in buildPromptPackage', () => {
+      expect(() => {
+        promptBuilder.build({
+          conversationContext: { version: 'invalid-version' },
+          financialSummary: sampleFinancialSummary,
+          insightBundle: sampleInsightBundle,
+          recommendationBundle: sampleRecommendationBundle,
+        })
+      }).toThrow(/PromptPackage validation failed/)
     })
 
     it('throws clear error when required source arguments are missing', () => {

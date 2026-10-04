@@ -1,5 +1,6 @@
 import { PROMPT_PACKAGE_VERSION } from './promptPackage.js'
 import { PROMPT_TEMPLATE_IDS } from './templateRegistry.js'
+import { validateConversationContext } from '../conversation/conversationValidator.js'
 
 const REQUIRED_INSIGHT_DOMAINS = [
   'health',
@@ -132,10 +133,17 @@ export function validatePromptPackage(promptPackage) {
     }
 
     if (context.conversationContext !== null) {
-      errors.push('Context conversationContext must be null in Phase 11B.1.')
+      const convValidation = validateConversationContext(
+        context.conversationContext,
+      )
+      if (!convValidation.valid) {
+        errors.push(
+          `Context conversationContext validation failed: ${convValidation.errors.join('; ')}`,
+        )
+      }
     }
     if (context.memoryContext !== null) {
-      errors.push('Context memoryContext must be null in Phase 11B.1.')
+      errors.push('Context memoryContext must be null in Phase 11B.2.')
     }
   }
 

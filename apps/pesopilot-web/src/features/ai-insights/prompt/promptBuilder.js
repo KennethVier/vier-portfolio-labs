@@ -8,6 +8,7 @@ import {
 } from './templateRegistry.js'
 
 export function buildPromptPackage({
+  conversationContext = null,
   financialSummary,
   insightBundle,
   recommendationBundle,
@@ -32,6 +33,7 @@ export function buildPromptPackage({
   const template = getPromptTemplate(templateId)
 
   const context = selectPromptContext({
+    conversationContext,
     financialSummary,
     insightBundle,
     recommendationBundle,

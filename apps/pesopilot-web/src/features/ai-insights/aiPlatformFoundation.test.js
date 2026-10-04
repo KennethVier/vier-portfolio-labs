@@ -58,7 +58,9 @@ describe('AI Platform Foundation', () => {
   ]
 
   const PLACEHOLDER_CAPABILITIES = EXPECTED_CAPABILITIES.filter(
-    (c) => c.exportName !== 'promptBuilder',
+    (c) =>
+      c.exportName !== 'promptBuilder' &&
+      c.exportName !== 'conversationEngine',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -116,7 +118,64 @@ describe('AI Platform Foundation', () => {
     ])
   })
 
-  // Preserved Placeholder Assertions for the other 7 modules
+  // Conversation Engine 11B.2 Assertions
+  it('ensures conversationEngine has canonical name "conversation-engine", status "ready", and lifecycle functions', () => {
+    expect(conversationEngine).toBeDefined()
+    expect(conversationEngine.name).toBe('conversation-engine')
+    expect(conversationEngine.status).toBe('ready')
+    expect(typeof conversationEngine.startConversation).toBe('function')
+    expect(typeof conversationEngine.appendMessage).toBe('function')
+    expect(typeof conversationEngine.updateTopic).toBe('function')
+    expect(typeof conversationEngine.requestClarification).toBe('function')
+    expect(typeof conversationEngine.resolveClarification).toBe('function')
+    expect(typeof conversationEngine.closeConversation).toBe('function')
+    expect(typeof conversationEngine.buildConversationContext).toBe('function')
+    expect(typeof conversationEngine.validateConversation).toBe('function')
+    expect(typeof conversationEngine.validateConversationContext).toBe('function')
+  })
+
+  it('ensures conversationEngine is frozen and immutable', () => {
+    expect(Object.isFrozen(conversationEngine)).toBe(true)
+
+    expect(() => {
+      conversationEngine.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      conversationEngine.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures conversationEngine exposes no unauthorized or operational AI methods', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(conversationEngine[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(conversationEngine).sort()).toEqual([
+      'appendMessage',
+      'buildConversationContext',
+      'closeConversation',
+      'name',
+      'requestClarification',
+      'resolveClarification',
+      'startConversation',
+      'status',
+      'updateTopic',
+      'validateConversation',
+      'validateConversationContext',
+    ])
+  })
+
+  // Preserved Placeholder Assertions for the remaining placeholder modules
   it.each(PLACEHOLDER_CAPABILITIES)(
     'ensures $exportName has canonical name "$canonicalName" and status "placeholder"',
     ({ instance, canonicalName }) => {

@@ -12,8 +12,24 @@ export function composePrompts({
 } = {}) {
   const systemPrompt = injectSafetyInstructions(baseSystemRole)
   const templateInstruction = template?.instruction ?? ''
-  const serializedContext = JSON.stringify(context, null, 2)
-  const userPrompt = `${templateInstruction}\n\nDETERMINISTIC_CONTEXT_JSON:\n${serializedContext}`
+
+  const conversationContext = context?.conversationContext ?? null
+  const deterministicFinancialContext = { ...(context ?? {}) }
+  delete deterministicFinancialContext.conversationContext
+  delete deterministicFinancialContext.memoryContext
+
+  const serializedFinancial = JSON.stringify(
+    deterministicFinancialContext,
+    null,
+    2,
+  )
+
+  let userPrompt = `${templateInstruction}\n\nDETERMINISTIC_FINANCIAL_CONTEXT_JSON:\n${serializedFinancial}`
+
+  if (conversationContext) {
+    const serializedConversation = JSON.stringify(conversationContext, null, 2)
+    userPrompt += `\n\nUNTRUSTED_CONVERSATION_CONTEXT_JSON:\n${serializedConversation}`
+  }
 
   return {
     systemPrompt,

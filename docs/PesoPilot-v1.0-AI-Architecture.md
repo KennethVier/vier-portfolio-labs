@@ -1025,13 +1025,13 @@ The validator `validatePromptPackage(promptPackage)` enforces package integrity:
 * Verifies non-empty system and user prompts.
 * Verifies metadata (`language === 'en'`, `contextVersion === '1.0.0'`, `safetyVersion === '1.0.0'`).
 * Verifies context structure, including the 7 insight domain keys and recommendation array.
-* Enforces that `conversationContext` and `memoryContext` are strictly `null`.
+* Enforces that `conversationContext` is either null or a valid conversation context, and `memoryContext` is strictly `null`.
 
 Failed validation throws an explicit error and aborts build.
 
 ## Conversation and Memory Placeholders
 
-`conversationContext` and `memoryContext` are reserved for future phases (Phase 11B.3 and Phase 11B.4). During Phase 11B.1, both fields MUST remain `null`. Validation explicitly rejects packages with non-null values for these fields.
+`conversationContext` is owned by Phase 11B.2 (Conversation Engine), and `memoryContext` is reserved for Phase 11B.5 (Memory Service). In Phase 11B.1, both fields were required to be null. In Phase 11B.2, `conversationContext` is accepted and validated as untrusted conversational context, while `memoryContext` remains strictly null.
 
 ## Explicit Non-Goals
 
@@ -1047,6 +1047,208 @@ Phase 11B.1 explicitly excludes:
 
 ---
 
+# 12.2 — Conversation Engine Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.2
+
+## Purpose
+
+The Conversation Engine manages conversational state and continuity for PesoPilot. It sits between user conversational turns and the Prompt Builder, maintaining ephemeral session state, message history, topic tracking, and clarification requirements.
+
+The pipeline flow is:
+
+```txt
+User Message
+     ↓
+Conversation Engine
+     ↓
+Conversation State (Session, Messages, Topic, Clarification)
+     ↓
+Conversation Context Builder
+     ↓
+conversationContext
+     ↓
+Prompt Builder (selectPromptContext)
+     ↓
+PromptPackage
+```
+
+Core Rule:
+
+```txt
+AI explains.
+PesoPilot decides.
+```
+
+## Authority Boundary
+
+The Conversation Engine:
+
+MAY:
+* Maintain in-memory conversational session lifecycle;
+* Track conversation topic across 10 allowed domains;
+* Model clarification requirements when structured intent is ambiguous or context is missing;
+* Record user and assistant dialogue messages in chronological order;
+* Extract and bound conversation context into a minimized, prompt-facing DTO;
+* Perform pure validation of conversation structures.
+
+MUST NOT:
+* Calculate financial metrics or evaluate financial rules;
+* Alter or reorder deterministic recommendations;
+* Execute LLM or provider requests;
+* Persist conversations to IndexedDB, Dexie, or backend storage (deferred to Phase 11B.5);
+* Implement long-term memory, cross-session recall, or vector search;
+* Automatically classify topics or generate clarification prose using heuristic NLP or LLMs.
+
+## Determinism & Clock Policy
+
+All Conversation Engine transformations are strictly deterministic. The engine does NOT call:
+* `new Date()`
+* `Date.now()`
+* `crypto.randomUUID()`
+* `Math.random()`
+
+All timestamps (`createdAt`, `updatedAt`, `startedAt`, `endedAt`) and IDs (`conversationId`, `messageId`) are caller-supplied valid ISO-8601 UTC strings. Identical inputs yield identical serialized outputs.
+
+## Conversation DTO
+
+The Conversation aggregate represents the in-memory state of an active dialogue turn:
+
+```javascript
+{
+  version: '1.0.0',
+  conversationId: 'conv_123',
+  session: {
+    status: 'active',
+    startedAt: '2026-10-04T12:00:00.000Z',
+    endedAt: null,
+  },
+  messages: [],
+  topicState: {
+    current: 'general',
+    previous: null,
+    updatedAt: '2026-10-04T12:00:00.000Z',
+  },
+  clarificationState: {
+    required: false,
+    reason: null,
+    missingFields: [],
+  },
+  createdAt: '2026-10-04T12:00:00.000Z',
+  updatedAt: '2026-10-04T12:00:00.000Z',
+}
+```
+
+* `conversationId`: The single aggregate and current-session identity.
+* Ephemeral: State is in-memory only; no persistence in Phase 11B.2.
+* Immutability: Conversation state and transitions return frozen objects (`Object.freeze`).
+
+## Session Model
+
+Lifecycle metadata for conversational engagement:
+* Status: `active` or `closed` (`SESSION_STATUSES`).
+* Invariant: `active` sessions require `endedAt === null`; `closed` sessions require caller-supplied `endedAt`.
+* Scope: Contains no financial data, model parameters, or API credentials.
+
+## Message Model
+
+Canonical message item:
+* Allowed roles: Strictly `'user'` and `'assistant'` (`MESSAGE_ROLES`). `'system'`, `'developer'`, `'tool'`, and `'function'` roles are strictly forbidden.
+* Character bound: Maximum 4,000 characters per message (`MAX_MESSAGE_CHARACTERS = 4000`).
+* Content preservation: Validates `content.trim().length > 0` but preserves original untrimmed `content`.
+* Sequence: Strictly increasing 1-indexed integers (1, 2, 3...) guaranteeing deterministic order.
+
+## Topic Model
+
+Deterministic state tracking across 10 allowed domains (`CONVERSATION_TOPICS`):
+1. `general`
+2. `summary`
+3. `recommendations`
+4. `health`
+5. `income`
+6. `expenses`
+7. `savings`
+8. `goals`
+9. `cashflow`
+10. `cutoff`
+
+The engine does not guess or infer topics via NLP or keyword matching; topic is explicitly caller-supplied. If intent is unresolvable, clarification state is used rather than an imaginary topic.
+
+## Clarification Model
+
+Deterministic state modeling for missing context or ambiguous caller intent:
+* Canonical schema: `{ required: boolean, reason: string | null, missingFields: string[] }`.
+* Allowed reasons: `missing_financial_context`, `ambiguous_intent`, `unsupported_topic` (`CLARIFICATION_REASONS`).
+* No silent repair: `required: false` strictly forbids non-null reason or non-empty `missingFields`.
+* No prose generation: The manager models state only; generating clarification dialogue is caller/UI responsibility.
+
+## Conversation Context & Minimization
+
+Prompt-facing DTO built by `buildConversationContext`:
+
+```javascript
+{
+  version: '1.0.0',
+  topic: {
+    current: 'expenses',
+  },
+  clarification: {
+    required: false,
+    reason: null,
+    missingFields: [],
+  },
+  recentMessages: [
+    {
+      role: 'user',
+      content: 'Why did my expenses increase this cutoff?',
+    },
+    {
+      role: 'assistant',
+      content: 'Your food spending increased by 20%.',
+    },
+  ],
+}
+```
+
+* Data Minimization: Strips `conversationId`, `sessionId`, timestamps, message IDs, sequence numbers, and previous topics.
+* Bounded History: Retains strictly the **last 10 messages** (`MAX_RECENT_MESSAGES = 10`) in chronological order.
+* Size Bound: 10 messages × 4,000 source characters bounds raw conversational content to at most 40,000 source characters.
+
+## Structural Trust Separation in Prompt Builder
+
+To defend against prompt injection and prevent untrusted user dialogue from impersonating deterministic financial facts:
+1. `promptComposer.js` outputs two structurally distinct sections in `userPrompt`:
+   * `DETERMINISTIC_FINANCIAL_CONTEXT_JSON:` containing financial summary, recommendations, and domain insights.
+   * `UNTRUSTED_CONVERSATION_CONTEXT_JSON:` containing minimized conversation context.
+2. `memoryContext` is explicitly excluded from `DETERMINISTIC_FINANCIAL_CONTEXT_JSON`.
+3. If `conversationContext` is null, the untrusted section is omitted entirely.
+4. User messages can never override system instructions, safety policy, financial calculations, or recommendation rankings.
+
+## Memory Boundary
+
+* `conversationContext` = current-session conversational continuity.
+* `memoryContext` = strictly `null` in Phase 11B.2.
+* Memory persistence, cross-session recall, IndexedDB storage, vector search, and ranking are deferred to Phase 11B.5 (Memory Service).
+
+## Security & Privacy Limitations (OWASP Baseline)
+
+* **What 11B.2 Does**: Enforces structural trust separation, disallows system roles, bounds message count (10) and character length (4,000), and excludes raw financial records.
+* **What 11B.2 Does NOT Do**: Does NOT perform prompt injection detection, jailbreak classification, PII redaction, or response moderation. User messages may contain sensitive personal data; sanitization belongs to Guardrails (Phase 11B.6).
+
+## Explicit Non-Goals
+
+Phase 11B.2 explicitly excludes:
+* LLM or provider invocations (Ollama, OpenAI, Gemini, Claude);
+* AI Gateway execution or orchestration workflows;
+* Long-term memory or IndexedDB persistence;
+* Guardrails runtime engine or jailbreak detection;
+* Spring Boot AI REST API, SSE, WebSockets, or streaming;
+* AI Chat UI components;
+* Modifying deterministic finance engines or database schemas.
+
+---
+
 # Approval Rule
 
 This document is approved only if it remains aligned with:
@@ -1056,4 +1258,5 @@ This document is approved only if it remains aligned with:
 * 05-backend-architecture.md
 
 Any AI implementation that conflicts with those documents must be corrected.
+
 

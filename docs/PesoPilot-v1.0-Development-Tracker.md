@@ -3468,7 +3468,7 @@ Phase 11A modifications, or Phase 11B.2+ behavior were introduced.
 
 # Phase 11B.2 — Conversation Engine
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3479,12 +3479,60 @@ Status: ⬜
 
 ## Features
 
-* [ ] Conversation DTO
-* [ ] Session model
-* [ ] Message model
-* [ ] Topic tracker
-* [ ] Clarification manager
-* [ ] Conversation context builder
+* [x] Conversation DTO
+* [x] Session model
+* [x] Message model
+* [x] Topic tracker
+* [x] Clarification manager
+* [x] Conversation context builder
+
+## Action Notes
+
+```txt
+Phase 11B.2 Conversation Engine validated.
+
+Implemented deterministic, ephemeral current-session conversation state
+with caller-supplied IDs/timestamps and immutable state transitions.
+
+Conversation Engine includes:
+Conversation DTO, Session model, Message model, Topic tracker,
+Clarification manager, and Conversation Context builder.
+
+Messages are limited to user/assistant roles, preserve exact content,
+and are bounded to 4,000 characters each.
+
+Prompt-facing ConversationContext is minimized to:
+current topic, clarification state, and the last 10 messages.
+Internal IDs, timestamps, sequence numbers, and session metadata
+are excluded from model context.
+
+Prompt Builder now structurally separates:
+DETERMINISTIC_FINANCIAL_CONTEXT_JSON
+from
+UNTRUSTED_CONVERSATION_CONTEXT_JSON.
+
+Conversation text remains untrusted and cannot become financial truth,
+system instructions, or recommendation authority.
+
+memoryContext remains null and Memory Service behavior is deferred
+to Phase 11B.5.
+
+Architecture reference 12.2 — Conversation Engine Architecture was
+materialized, and stale 12.1 phase references were corrected.
+
+Validation:
+37/37 Conversation Engine tests passed.
+25/25 Prompt Builder regression tests passed.
+25/25 AI Platform Foundation tests passed.
+72/72 test files passed.
+557/557 tests passed.
+ESLint passed with 0 errors and 0 warnings.
+Production Vite build passed.
+
+No provider/network calls, database/schema changes, dependencies,
+Phase 11A changes, memory behavior, guardrail behavior, or
+Phase 11B.3+ functionality were introduced.
+```
 
 ---
 

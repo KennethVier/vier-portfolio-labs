@@ -175,6 +175,7 @@ function selectFinancialSummary(financialSummary) {
 }
 
 export function selectPromptContext({
+  conversationContext = null,
   financialSummary,
   insightBundle,
   recommendationBundle,
@@ -204,6 +205,31 @@ export function selectPromptContext({
   const recommendations = selectRecommendations(recommendationBundle)
   const selectedFinancialSummary = selectFinancialSummary(financialSummary)
 
+  let selectedConversationContext = null
+  if (conversationContext && typeof conversationContext === 'object') {
+    selectedConversationContext = {
+      version: conversationContext.version ?? '1.0.0',
+      topic: {
+        current: conversationContext.topic?.current ?? 'general',
+      },
+      clarification: {
+        required: Boolean(conversationContext.clarification?.required),
+        reason: conversationContext.clarification?.reason ?? null,
+        missingFields: Array.isArray(
+          conversationContext.clarification?.missingFields,
+        )
+          ? [...conversationContext.clarification.missingFields]
+          : [],
+      },
+      recentMessages: Array.isArray(conversationContext.recentMessages)
+        ? conversationContext.recentMessages.map((m) => ({
+            role: m?.role ?? '',
+            content: m?.content ?? '',
+          }))
+        : [],
+    }
+  }
+
   return {
     version: CONTEXT_VERSION,
     scope,
@@ -211,7 +237,8 @@ export function selectPromptContext({
     financialSummary: selectedFinancialSummary,
     recommendations,
     insights,
-    conversationContext: null,
+    conversationContext: selectedConversationContext,
     memoryContext: null,
   }
 }
+
