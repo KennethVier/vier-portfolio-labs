@@ -9,6 +9,8 @@ import {
   aiOrchestrator,
   memoryService,
   streamingEngine,
+  createPromptPackage,
+  PROMPT_PACKAGE_VERSION,
 } from './index.js'
 
 describe('AI Platform Foundation', () => {
@@ -55,24 +57,76 @@ describe('AI Platform Foundation', () => {
     },
   ]
 
-  it('exports all eight canonical capabilities and no unrelated exports', () => {
+  const PLACEHOLDER_CAPABILITIES = EXPECTED_CAPABILITIES.filter(
+    (c) => c.exportName !== 'promptBuilder',
+  )
+
+  it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
     const exportedKeys = Object.keys(aiInsights).sort()
-    const expectedKeys = EXPECTED_CAPABILITIES.map((c) => c.exportName).sort()
+    const expectedKeys = [
+      ...EXPECTED_CAPABILITIES.map((c) => c.exportName),
+      'createPromptPackage',
+      'PROMPT_PACKAGE_VERSION',
+    ].sort()
 
     expect(exportedKeys).toEqual(expectedKeys)
-    expect(exportedKeys).toHaveLength(8)
+    expect(exportedKeys).toHaveLength(10)
+    expect(typeof createPromptPackage).toBe('function')
+    expect(PROMPT_PACKAGE_VERSION).toBe('1.0.0')
   })
 
-  it.each(EXPECTED_CAPABILITIES)(
+  // Prompt Builder 11B.1 Assertions
+  it('ensures promptBuilder has canonical name "prompt-builder", status "ready", and build function', () => {
+    expect(promptBuilder).toBeDefined()
+    expect(promptBuilder.name).toBe('prompt-builder')
+    expect(promptBuilder.status).toBe('ready')
+    expect(typeof promptBuilder.build).toBe('function')
+  })
+
+  it('ensures promptBuilder is frozen and immutable', () => {
+    expect(Object.isFrozen(promptBuilder)).toBe(true)
+
+    expect(() => {
+      promptBuilder.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      promptBuilder.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures promptBuilder exposes no unauthorized or operational AI methods', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(promptBuilder[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(promptBuilder).sort()).toEqual([
+      'build',
+      'name',
+      'status',
+    ])
+  })
+
+  // Preserved Placeholder Assertions for the other 7 modules
+  it.each(PLACEHOLDER_CAPABILITIES)(
     'ensures $exportName has canonical name "$canonicalName" and status "placeholder"',
     ({ instance, canonicalName }) => {
       expect(instance).toBeDefined()
       expect(instance.name).toBe(canonicalName)
       expect(instance.status).toBe('placeholder')
-    }
+    },
   )
 
-  it.each(EXPECTED_CAPABILITIES)(
+  it.each(PLACEHOLDER_CAPABILITIES)(
     'ensures $exportName is frozen and immutable',
     ({ instance }) => {
       expect(Object.isFrozen(instance)).toBe(true)
@@ -84,14 +138,14 @@ describe('AI Platform Foundation', () => {
       expect(() => {
         instance.newProp = 'illegal'
       }).toThrow()
-    }
+    },
   )
 
-  it.each(EXPECTED_CAPABILITIES)(
+  it.each(PLACEHOLDER_CAPABILITIES)(
     'ensures $exportName exposes no operational AI methods',
     ({ instance }) => {
       const functionProperties = Object.keys(instance).filter(
-        (key) => typeof instance[key] === 'function'
+        (key) => typeof instance[key] === 'function',
       )
       expect(functionProperties).toEqual([])
 
@@ -109,6 +163,6 @@ describe('AI Platform Foundation', () => {
       })
 
       expect(Object.keys(instance).sort()).toEqual(['name', 'status'])
-    }
+    },
   )
 })

@@ -3405,7 +3405,7 @@ or Phase 11A deterministic-finance modifications were introduced.
 
 # Phase 11B.1 — Prompt Builder
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3417,12 +3417,52 @@ Status: ⬜
 
 ## Features
 
-* [ ] PromptPackage DTO
-* [ ] Context selector
-* [ ] Template registry
-* [ ] Prompt composer
-* [ ] Safety injector
-* [ ] Prompt validator
+* [x] PromptPackage DTO
+* [x] Context selector
+* [x] Template registry
+* [x] Prompt composer
+* [x] Safety injector
+* [x] Prompt validator
+
+## Action Notes
+
+```txt
+Phase 11B.1 Prompt Builder validated.
+
+Implemented provider-independent PromptPackage generation over
+Phase 11A deterministic intelligence.
+
+Deterministic source hierarchy:
+InsightBundle → financial metrics
+RecommendationBundle → recommendation authority
+FinancialSummary → narrative authority
+
+Prompt context is explicitly minimized before future AI/provider use.
+Raw transaction history, raw notes, merchant history, individual goal
+records, diagnostics, breakdowns, and other unnecessary financial detail
+are excluded.
+
+Prompt Builder preserves deterministic values and recommendation order.
+It performs no financial recalculation, recommendation generation,
+provider calls, or network transmission.
+
+Conversation Context and Memory Context remain null and undefined
+until their dedicated Phase 11B subphases.
+
+Architecture reference 12.1 — Prompt Builder Architecture was
+materialized in PesoPilot-v1.0-AI-Architecture.md.
+
+Validation:
+22/22 focused Prompt Builder tests passed.
+25/25 AI Platform Foundation tests passed.
+71/71 test files passed.
+517/517 tests passed.
+ESLint passed with 0 errors and 0 warnings.
+Production Vite build passed.
+
+No provider/network calls, database/schema changes, dependency changes,
+Phase 11A modifications, or Phase 11B.2+ behavior were introduced.
+```
 
 ---
 

@@ -842,6 +842,211 @@ User Controlled
 
 ---
 
+# 12.1 — Prompt Builder Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.1
+
+## Purpose
+
+The Prompt Builder forms the boundary between PesoPilot's deterministic intelligence pipeline and the downstream AI explanation platform. It prepares structured, safety-governed, provider-independent prompt packages by selecting, minimizing, and serializing deterministic financial outputs.
+
+The pipeline principle is:
+
+```txt
+Financial Records
+       ↓
+Deterministic Engines
+       ↓
+InsightBundle
+       ↓
+RecommendationBundle
+       ↓
+FinancialSummary
+       ↓
+Prompt Builder
+       ↓
+PromptPackage
+       ↓
+Future AI Provider
+```
+
+Core Rule:
+
+```txt
+AI explains.
+PesoPilot decides.
+```
+
+## Authority Boundary
+
+The Prompt Builder:
+
+MAY:
+* Select deterministic context from authoritative sources;
+* Minimize context to aggregate metrics and active recommendations;
+* Serialize deterministic context without altering financial truth;
+* Add task instructions;
+* Add immutable safety constraints;
+* Compose provider-independent system and user prompts.
+
+MUST NOT:
+* Calculate or recompute financial truth;
+* Recalculate totals, averages, percentages, or health scores;
+* Generate recommendations;
+* Reorder or filter recommendations beyond deterministic conflict outputs;
+* Modify InsightBundle, RecommendationBundle, or FinancialSummary;
+* Query the database or local storage;
+* Call an AI provider or execute network requests.
+
+## Deterministic Source Hierarchy
+
+The Prompt Builder consumes three separate deterministic inputs, each authoritative for its own domain:
+
+1. `InsightBundle` — Authoritative source for deterministic financial metrics across seven domains:
+   * `health`
+   * `income`
+   * `expenses`
+   * `savings`
+   * `goals`
+   * `cashflow`
+   * `cutoff`
+2. `RecommendationBundle` — Authoritative source for deterministic recommendation rankings and content. The Prompt Builder strictly ignores `insightBundle.recommendations` to prevent conflicting or stale recommendation representations.
+3. `FinancialSummary` — Authoritative source for deterministic narrative sections and paragraphs. The Prompt Builder strictly ignores `insightBundle.summary`.
+
+## Context Minimization
+
+To preserve privacy and prevent hallucination, the Prompt Builder minimizes context before prompt composition:
+
+* Excludes raw transactions, raw records, merchant-level history, and notes.
+* Excludes domain-level diagnostics and rule breakdowns.
+* Excludes domain-level evidence arrays and individual goal arrays.
+* Income excludes `sourceBreakdown` and `primarySource`.
+* Expenses excludes `largestExpense`, `largestMerchant`, `anomalies`, and `categoryDistribution`.
+* Savings excludes `largestSavingsContribution`.
+* Goals excludes `highestFundedGoal`, `goalsWithoutContributions`, and individual `goals`.
+* Cutoff excludes `bestCutoff` and `worstCutoff`.
+* Suppressed recommendations and group definitions in `RecommendationBundle` are omitted; only surviving ranked recommendations are included.
+* FinancialSummary omits paragraph `variables`, `templateId`, and `evidence`, retaining only section structure, narrative text, and relationship keys (`relatedInsights`, `relatedRecommendations`).
+* If a domain insight is missing or null in the source, it remains `null` in context. The Prompt Builder never fabricates placeholder values or defaults.
+
+## PromptPackage Contract
+
+The Prompt Builder outputs an immutable, deterministic `PromptPackage` conforming to version `1.0.0`:
+
+```javascript
+{
+  version: '1.0.0',
+
+  template: {
+    id: 'financial-summary-explanation',
+    version: '1.0.0',
+  },
+
+  task: 'financial-summary-explanation',
+
+  systemPrompt: '',
+
+  userPrompt: '',
+
+  context: {
+    version: '1.0.0',
+    scope: '',
+    sourceTimestamps: {
+      insights: null,
+      recommendations: null,
+      summary: null,
+    },
+    financialSummary: {},
+    recommendations: [],
+    insights: {
+      health: null,
+      income: null,
+      expenses: null,
+      savings: null,
+      goals: null,
+      cashflow: null,
+      cutoff: null,
+    },
+    conversationContext: null,
+    memoryContext: null,
+  },
+
+  metadata: {
+    language: 'en',
+    contextVersion: '1.0.0',
+    safetyVersion: '1.0.0',
+  },
+}
+```
+
+Determinism Requirement:
+The `PromptPackage` contains no newly generated timestamps. Identical deterministic source inputs produce identical serialized outputs.
+
+Provider Independence:
+No provider-specific fields (e.g., `model`, `temperature`, `maxTokens`, `stream`, `apiKey`, `endpoint`) exist on `PromptPackage`. Those belong to downstream provider adapters.
+
+## Template Registry
+
+The template registry manages approved prompt task templates. The registry is frozen and immutable.
+* Initial template: `financial-summary-explanation` (version `1.0.0`, task `financial-summary-explanation`).
+* Purpose: Explain the supplied deterministic financial position in clear language without altering financial truth.
+* Strict resolution: `getPromptTemplate(templateId)` retrieves templates and throws explicitly on unknown IDs. No silent fallback is permitted.
+* Template instructions remain provider-agnostic and explicitly forbid financial calculations or inventing missing information.
+
+## Safety Injection
+
+Prompt safety instructions are injected via `injectSafetyInstructions`. Policy version: `1.0.0`.
+The safety policy enforces eight immutable system rules:
+1. Treat supplied PesoPilot deterministic context as the financial source of truth.
+2. Do not recalculate totals, percentages, forecasts, health scores, risk levels, spending pace, cashflow, or recommendation rankings.
+3. Do not invent financial facts, transactions, balances, goals, categories, income, expenses, savings, or recommendations.
+4. Do not override, reorder, replace, or contradict deterministic recommendations.
+5. If required information is unavailable, state that the available context is insufficient.
+6. Do not claim to spend money, approve expenses, modify records, delete records, mark payments complete, or perform financial actions.
+7. Do not provide investment advice, tax advice, legal advice, or loan recommendations.
+8. Explain and contextualize. Do not become the financial decision engine.
+
+No user-controlled string may override or displace these rules.
+
+## Prompt Composition
+
+The prompt composer generates:
+* `systemPrompt`: Base PesoPilot role definition (narrow financial explanation assistant) combined with injected safety policy.
+* `userPrompt`: Template task instructions followed by `DETERMINISTIC_CONTEXT_JSON:` containing formatted context JSON.
+
+Serialization preserves raw values, negative signs, and recommendation ordering without rounding or formatting transformations.
+
+## Prompt Validation
+
+The validator `validatePromptPackage(promptPackage)` enforces package integrity:
+* Verifies `version === '1.0.0'`.
+* Verifies known template ID and version.
+* Verifies non-empty system and user prompts.
+* Verifies metadata (`language === 'en'`, `contextVersion === '1.0.0'`, `safetyVersion === '1.0.0'`).
+* Verifies context structure, including the 7 insight domain keys and recommendation array.
+* Enforces that `conversationContext` and `memoryContext` are strictly `null`.
+
+Failed validation throws an explicit error and aborts build.
+
+## Conversation and Memory Placeholders
+
+`conversationContext` and `memoryContext` are reserved for future phases (Phase 11B.3 and Phase 11B.4). During Phase 11B.1, both fields MUST remain `null`. Validation explicitly rejects packages with non-null values for these fields.
+
+## Explicit Non-Goals
+
+Phase 11B.1 explicitly excludes:
+* Calling any AI model or provider (local or cloud);
+* Network requests or HTTP/SSE/WebSocket communication;
+* Database writes or IndexedDB schema alterations;
+* Conversation management, chat sessions, or message history;
+* Memory retrieval, vector search, or persistence;
+* Guardrail engine runtime checks, jailbreak detection, or response filtering;
+* Financial calculations or recommendation generation;
+* Cloud AI consent enforcement (evaluated at the provider gateway boundary before transmission).
+
+---
+
 # Approval Rule
 
 This document is approved only if it remains aligned with:
@@ -851,3 +1056,4 @@ This document is approved only if it remains aligned with:
 * 05-backend-architecture.md
 
 Any AI implementation that conflicts with those documents must be corrected.
+
