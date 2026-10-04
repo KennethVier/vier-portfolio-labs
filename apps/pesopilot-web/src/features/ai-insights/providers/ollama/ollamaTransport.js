@@ -80,6 +80,7 @@ export async function defaultFetchTransport(url, options = {}) {
     headers = {},
     timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
     fetchFn = globalThis.fetch,
+    signal: externalSignal = null,
   } = options
 
   if (typeof fetchFn !== 'function') {
@@ -89,15 +90,46 @@ export async function defaultFetchTransport(url, options = {}) {
     })
   }
 
-  let timeoutId = null
-  let signal = null
+  if (externalSignal && externalSignal.aborted) {
+    throw new ProviderError({
+      code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+      message: `Transport request timed out after ${timeoutMs}ms.`,
+    })
+  }
 
+  let timeoutId = null
+  let cleanupListeners = null
+  let effectiveSignal = null
+
+  let transportTimeoutSignal = null
   if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    signal = AbortSignal.timeout(timeoutMs)
+    transportTimeoutSignal = AbortSignal.timeout(timeoutMs)
   } else if (typeof AbortController !== 'undefined') {
     const controller = new AbortController()
-    signal = controller.signal
+    transportTimeoutSignal = controller.signal
     timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  }
+
+  if (externalSignal && typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+    effectiveSignal = transportTimeoutSignal
+      ? AbortSignal.any([externalSignal, transportTimeoutSignal])
+      : externalSignal
+  } else if (externalSignal) {
+    const compositeController = new AbortController()
+    const onAbort = () => compositeController.abort()
+    externalSignal.addEventListener('abort', onAbort, { once: true })
+    if (transportTimeoutSignal) {
+      transportTimeoutSignal.addEventListener('abort', onAbort, { once: true })
+    }
+    effectiveSignal = compositeController.signal
+    cleanupListeners = () => {
+      externalSignal.removeEventListener('abort', onAbort)
+      if (transportTimeoutSignal) {
+        transportTimeoutSignal.removeEventListener('abort', onAbort)
+      }
+    }
+  } else {
+    effectiveSignal = transportTimeoutSignal
   }
 
   try {
@@ -109,7 +141,7 @@ export async function defaultFetchTransport(url, options = {}) {
       },
       body: body ? JSON.stringify(body) : undefined,
       redirect: 'error',
-      signal,
+      signal: effectiveSignal,
     })
 
     let data = null
@@ -146,6 +178,9 @@ export async function defaultFetchTransport(url, options = {}) {
   } finally {
     if (timeoutId) {
       clearTimeout(timeoutId)
+    }
+    if (cleanupListeners) {
+      cleanupListeners()
     }
   }
 }

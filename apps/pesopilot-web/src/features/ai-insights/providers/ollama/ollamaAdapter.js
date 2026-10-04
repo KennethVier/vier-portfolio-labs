@@ -48,6 +48,17 @@ export function createOllamaAdapter({
           ? providerConfig.transportTimeoutMs
           : DEFAULT_OLLAMA_TIMEOUT_MS
 
+      const signal = providerConfig?.signal || undefined
+
+      if (signal && signal.aborted) {
+        throw new ProviderError({
+          code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+          message: 'Operation was aborted before starting.',
+          providerId: 'ollama',
+          model: providerRequest?.model ?? null,
+        })
+      }
+
       // 1. Locality Preflight: POST /api/show { model }
       // CRITICAL: Preflight sends ONLY the model name. Zero prompt or financial text is transmitted.
       const showUrl = `${baseUrl}/api/show`
@@ -57,6 +68,7 @@ export function createOllamaAdapter({
           method: 'POST',
           body: { model: providerRequest.model },
           timeoutMs,
+          signal,
         })
       } catch (err) {
         if (err instanceof ProviderError) throw err
@@ -134,6 +146,15 @@ export function createOllamaAdapter({
         })
       }
 
+      if (signal && signal.aborted) {
+        throw new ProviderError({
+          code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+          message: 'Operation was aborted before generation.',
+          providerId: 'ollama',
+          model: providerRequest.model,
+        })
+      }
+
       // 2. Generation Request: POST /api/generate
       // Transmit PromptPackage payload only after model locality is verified
       const generateUrl = `${baseUrl}/api/generate`
@@ -145,6 +166,7 @@ export function createOllamaAdapter({
           method: 'POST',
           body: payload,
           timeoutMs,
+          signal,
         })
       } catch (err) {
         if (err instanceof ProviderError) throw err

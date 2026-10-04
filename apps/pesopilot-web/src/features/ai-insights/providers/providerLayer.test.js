@@ -23,7 +23,10 @@ import {
   mapToOllamaGeneratePayload,
   mapFromOllamaGenerateResponse,
 } from './ollama/ollamaMapper.js'
-import { validateLoopbackUrl } from './ollama/ollamaTransport.js'
+import {
+  validateLoopbackUrl,
+  defaultFetchTransport,
+} from './ollama/ollamaTransport.js'
 
 describe('Phase 11B.3 — Provider Layer / Ollama', () => {
   const samplePromptPackage = Object.freeze({
@@ -747,6 +750,144 @@ describe('Phase 11B.3 — Provider Layer / Ollama', () => {
       expect(adapter).toBeDefined()
       expect(adapter.id).toBe('ollama')
       expect(adapter.locality).toBe('local')
+    })
+  })
+
+  // 9. External Signal & Abort Propagation (Phase 11B.4 Extension)
+  describe('External Signal & Abort Propagation', () => {
+    it('passes external signal to both preflight and generate transport calls', async () => {
+      const controller = new AbortController()
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          data: { license: 'llama' },
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          data: {
+            response: 'Valid financial explanation.',
+            done: true,
+            done_reason: 'stop',
+            total_duration: 1000000,
+            load_duration: 100000,
+            prompt_eval_count: 10,
+            eval_count: 20,
+          },
+        })
+
+      const adapter = createOllamaAdapter({ transport: mockTransport })
+      const request = createProviderRequest({
+        promptPackage: samplePromptPackage,
+        model: 'llama3.2',
+      })
+
+      const res = await adapter.generate(request, { signal: controller.signal })
+      expect(res.content).toBe('Valid financial explanation.')
+      expect(mockTransport).toHaveBeenCalledTimes(2)
+      expect(mockTransport.mock.calls[0][1].signal).toBe(controller.signal)
+      expect(mockTransport.mock.calls[1][1].signal).toBe(controller.signal)
+    })
+
+    it('rejects immediately before preflight when signal is already aborted', async () => {
+      const controller = new AbortController()
+      controller.abort()
+      const mockTransport = vi.fn()
+      const adapter = createOllamaAdapter({ transport: mockTransport })
+      const request = createProviderRequest({
+        promptPackage: samplePromptPackage,
+        model: 'llama3.2',
+      })
+
+      await expect(
+        adapter.generate(request, { signal: controller.signal }),
+      ).rejects.toThrowError(
+        expect.objectContaining({
+          code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+        }),
+      )
+      expect(mockTransport).not.toHaveBeenCalled()
+    })
+
+    it('does not begin generation when aborted after preflight', async () => {
+      const controller = new AbortController()
+      const mockTransport = vi.fn().mockImplementation(async (url) => {
+        if (url.endsWith('/api/show')) {
+          controller.abort()
+          return { status: 200, ok: true, data: { license: 'llama' } }
+        }
+        return { status: 200, ok: true, data: {} }
+      })
+
+      const adapter = createOllamaAdapter({ transport: mockTransport })
+      const request = createProviderRequest({
+        promptPackage: samplePromptPackage,
+        model: 'llama3.2',
+      })
+
+      await expect(
+        adapter.generate(request, { signal: controller.signal }),
+      ).rejects.toThrowError(
+        expect.objectContaining({
+          code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+        }),
+      )
+      expect(mockTransport).toHaveBeenCalledTimes(1)
+    })
+
+    it('combines external signal with transport timeout in defaultFetchTransport', async () => {
+      const controller = new AbortController()
+      const mockFetch = vi.fn().mockImplementation((url, opts) => {
+        expect(opts.signal).toBeDefined()
+        expect(typeof opts.signal.aborted).toBe('boolean')
+        return Promise.resolve({
+          status: 200,
+          ok: true,
+          text: async () => JSON.stringify({ ok: true }),
+        })
+      })
+
+      const res = await defaultFetchTransport('http://127.0.0.1:11434/api/show', {
+        fetchFn: mockFetch,
+        signal: controller.signal,
+        timeoutMs: 5000,
+      })
+      expect(res.status).toBe(200)
+    })
+
+    it('aborts active fetch when external signal aborts and cleans up listeners', async () => {
+      const controller = new AbortController()
+      let observedSignal = null
+      const mockFetch = vi.fn().mockImplementation((url, opts) => {
+        observedSignal = opts.signal
+        return new Promise((_, reject) => {
+          opts.signal.addEventListener('abort', () => {
+            const err = new Error('The operation was aborted.')
+            err.name = 'AbortError'
+            reject(err)
+          })
+        })
+      })
+
+      const transportPromise = defaultFetchTransport(
+        'http://127.0.0.1:11434/api/show',
+        {
+          fetchFn: mockFetch,
+          signal: controller.signal,
+          timeoutMs: 10000,
+        },
+      )
+
+      controller.abort()
+
+      await expect(transportPromise).rejects.toThrowError(
+        expect.objectContaining({
+          code: PROVIDER_ERROR_CODES.TRANSPORT_TIMEOUT,
+        }),
+      )
+      expect(observedSignal.aborted).toBe(true)
     })
   })
 })

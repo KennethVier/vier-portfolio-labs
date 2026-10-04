@@ -1,0 +1,346 @@
+import { promptBuilder as defaultPromptBuilder } from '../prompt/promptBuilder.js'
+import { providerLayer as defaultProviderLayer } from '../providers/providerLayer.js'
+import { getWorkflowTemplate } from './workflowTemplates.js'
+import { workflowManager } from './workflowManager.js'
+import { createWorkflowDiagnostics } from './workflowDiagnostics.js'
+import {
+  createTimeoutManager,
+  DEFAULT_WORKFLOW_TIMEOUT_MS,
+} from './timeoutManager.js'
+import {
+  retryManager,
+  MAX_WORKFLOW_ATTEMPTS,
+  isRetryableProviderErrorCode,
+} from './retryManager.js'
+import {
+  WORKFLOW_ERROR_CODES,
+  WorkflowError,
+} from './workflowErrors.js'
+import { WORKFLOW_STATUSES } from './aiWorkflow.js'
+
+const DEFAULT_CLOCK = Object.freeze({
+  nowMs: () => Date.now(),
+})
+
+const DEFAULT_TIMER = Object.freeze({
+  setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
+  clearTimeout: (id) => globalThis.clearTimeout(id),
+})
+
+const DEFAULT_ID_GENERATOR = () => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `wf-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function validateOrchestrationInput(input) {
+  if (!input || typeof input !== 'object') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input must be a valid object.',
+    })
+  }
+
+  if (typeof input.templateId !== 'string' || !input.templateId.trim()) {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a non-empty string templateId.',
+    })
+  }
+
+  if (!input.insightBundle || typeof input.insightBundle !== 'object') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a valid insightBundle object.',
+    })
+  }
+
+  if (!input.recommendationBundle || typeof input.recommendationBundle !== 'object') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a valid recommendationBundle object.',
+    })
+  }
+
+  if (!input.financialSummary || typeof input.financialSummary !== 'object') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a valid financialSummary object.',
+    })
+  }
+
+  if (!input.provider || typeof input.provider !== 'object') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a provider configuration object.',
+    })
+  }
+
+  if (typeof input.provider.model !== 'string' || !input.provider.model.trim()) {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: 'Orchestration input requires a non-empty provider.model string.',
+    })
+  }
+
+  if (input.provider.id && input.provider.id !== 'ollama') {
+    throw new WorkflowError({
+      code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+      message: `Unsupported provider "${input.provider.id}". Phase 11B.4 supports provider "ollama" only.`,
+    })
+  }
+}
+
+export function createServiceCoordinator({
+  promptBuilder = defaultPromptBuilder,
+  providerLayer = defaultProviderLayer,
+  clock = DEFAULT_CLOCK,
+  timer = DEFAULT_TIMER,
+  idGenerator = DEFAULT_ID_GENERATOR,
+  workflowTimeoutMs = DEFAULT_WORKFLOW_TIMEOUT_MS,
+} = {}) {
+  return Object.freeze({
+    async executeWorkflow(input) {
+      // 1. Validate Orchestration Input
+      validateOrchestrationInput(input)
+
+      // 2. Resolve Workflow Template
+      const template = getWorkflowTemplate(input.templateId)
+
+      // 3. Resolve / Generate workflowId
+      const workflowId = typeof input.workflowId === 'string' && input.workflowId.trim()
+        ? input.workflowId.trim()
+        : idGenerator()
+
+      const providerId = input.provider.id || 'ollama'
+      const providerModel = input.provider.model.trim()
+
+      // 4. Create Pending Workflow
+      const pendingWorkflow = workflowManager.createWorkflow({
+        workflowId,
+        template,
+        provider: {
+          id: providerId,
+          model: providerModel,
+        },
+        startedAt: null,
+      })
+
+      // 5. Sample Started Time and Transition to Running (Attempt 1)
+      const startedMs = clock.nowMs()
+      const startedAt = new Date(startedMs).toISOString()
+      let currentWorkflow = workflowManager.startWorkflow(pendingWorkflow, { startedAt })
+
+      // 6. Start Timeout Manager with Master AbortController
+      const timeoutManager = createTimeoutManager({
+        timeoutMs: workflowTimeoutMs,
+        startedMs,
+        clock,
+        timer,
+      })
+
+      let finalResponse = null
+      let finalError = null
+
+      try {
+        // 7. Resolve Provider Adapter
+        const adapter = providerLayer.getProvider(providerId)
+
+        // 8. Build PromptPackage via Prompt Builder
+        let promptPackage
+        try {
+          promptPackage = promptBuilder.build({
+            insightBundle: input.insightBundle,
+            recommendationBundle: input.recommendationBundle,
+            financialSummary: input.financialSummary,
+            conversationContext: input.conversationContext ?? null,
+            templateId: template.promptTemplateId,
+          })
+        } catch (pbErr) {
+          throw new WorkflowError({
+            code: WORKFLOW_ERROR_CODES.INVALID_ORCHESTRATION_INPUT,
+            message: `Prompt Builder failed: ${pbErr.message}`,
+            workflowId,
+            templateId: template.id,
+            providerId,
+            model: providerModel,
+          })
+        }
+
+        // 9. Execution Loop with Retry & Timeout Policy
+        const configuredTransportTimeoutMs =
+          typeof input.provider?.config?.transportTimeoutMs === 'number' &&
+          input.provider.config.transportTimeoutMs > 0
+            ? input.provider.config.transportTimeoutMs
+            : 30000
+
+        while (currentWorkflow.attempt <= MAX_WORKFLOW_ATTEMPTS) {
+          const remainingMs = timeoutManager.getRemainingMs()
+          if (remainingMs <= 0 || timeoutManager.signal.aborted) {
+            finalError = {
+              code: WORKFLOW_ERROR_CODES.WORKFLOW_TIMEOUT,
+              message: `Workflow exceeded execution deadline of ${workflowTimeoutMs}ms.`,
+            }
+            break
+          }
+
+          const attemptTransportTimeoutMs = Math.min(
+            configuredTransportTimeoutMs,
+            remainingMs,
+          )
+
+          const providerRequest = providerLayer.createProviderRequest({
+            promptPackage,
+            model: providerModel,
+            providerId,
+          })
+
+          const providerConfig = {
+            ...input.provider.config,
+            transportTimeoutMs: attemptTransportTimeoutMs,
+            signal: timeoutManager.signal,
+          }
+
+          try {
+            const rawResponse = await adapter.generate(providerRequest, providerConfig)
+            const validation = providerLayer.validateProviderResponse(rawResponse)
+            if (!validation.valid) {
+              finalError = {
+                code: WORKFLOW_ERROR_CODES.PROVIDER_EXECUTION_FAILED,
+                message: `Provider returned invalid response: ${validation.errors.join(' ')}`,
+              }
+              break
+            }
+
+            finalResponse = rawResponse
+            break // Succeeded!
+          } catch (err) {
+            // A. Precedence: Check if master workflow signal was aborted
+            if (timeoutManager.signal.aborted) {
+              finalError = {
+                code: WORKFLOW_ERROR_CODES.WORKFLOW_TIMEOUT,
+                message: `Workflow exceeded execution deadline of ${workflowTimeoutMs}ms.`,
+              }
+              break
+            }
+
+            // B. Evaluate Retry Eligibility
+            const canRetry = retryManager.shouldRetry({
+              attempt: currentWorkflow.attempt,
+              error: err,
+              isWorkflowAborted: false,
+              remainingMs: timeoutManager.getRemainingMs(),
+            })
+
+            if (canRetry) {
+              currentWorkflow = workflowManager.incrementAttempt(currentWorkflow)
+              continue
+            }
+
+            // C. Non-retryable or Retries Exhausted
+            if (
+              isRetryableProviderErrorCode(err?.code) &&
+              currentWorkflow.attempt >= MAX_WORKFLOW_ATTEMPTS
+            ) {
+              finalError = {
+                code: WORKFLOW_ERROR_CODES.RETRIES_EXHAUSTED,
+                message: `Workflow retries exhausted after ${currentWorkflow.attempt} attempts: ${err.message}`,
+              }
+            } else {
+              finalError = {
+                code: WORKFLOW_ERROR_CODES.PROVIDER_EXECUTION_FAILED,
+                message: err?.message || 'Provider execution failed.',
+              }
+            }
+            break
+          }
+        }
+      } catch (pipelineErr) {
+        if (pipelineErr instanceof WorkflowError) {
+          finalError = {
+            code: pipelineErr.code,
+            message: pipelineErr.message,
+          }
+        } else {
+          finalError = {
+            code: WORKFLOW_ERROR_CODES.PROVIDER_EXECUTION_FAILED,
+            message: pipelineErr.message || 'Workflow pipeline execution failed.',
+          }
+        }
+      } finally {
+        timeoutManager.cancelTimer()
+      }
+
+      // 10. Sample Completed Time and Calculate Duration
+      const completedMs = clock.nowMs()
+      const completedAt = new Date(completedMs).toISOString()
+      const durationMs = Math.max(0, completedMs - startedMs)
+
+      // 11. Finalize Workflow State
+      if (finalResponse) {
+        const diagnostics = createWorkflowDiagnostics({
+          workflowId,
+          templateId: template.id,
+          providerId,
+          model: providerModel,
+          status: WORKFLOW_STATUSES.SUCCEEDED,
+          attempts: currentWorkflow.attempt,
+          durationMs,
+          finalErrorCode: null,
+        })
+
+        const completedWorkflow = workflowManager.completeWorkflow(currentWorkflow, {
+          completedAt,
+          diagnostics,
+        })
+
+        return Object.freeze({
+          workflow: completedWorkflow,
+          response: finalResponse,
+        })
+      }
+
+      // 12. Failure / Timeout Terminal Finalization
+      const finalStatus =
+        finalError?.code === WORKFLOW_ERROR_CODES.WORKFLOW_TIMEOUT
+          ? WORKFLOW_STATUSES.TIMED_OUT
+          : WORKFLOW_STATUSES.FAILED
+
+      const diagnostics = createWorkflowDiagnostics({
+        workflowId,
+        templateId: template.id,
+        providerId,
+        model: providerModel,
+        status: finalStatus,
+        attempts: currentWorkflow.attempt,
+        durationMs,
+        finalErrorCode: finalError?.code || WORKFLOW_ERROR_CODES.PROVIDER_EXECUTION_FAILED,
+      })
+
+      let terminalWorkflow
+      if (finalStatus === WORKFLOW_STATUSES.TIMED_OUT) {
+        terminalWorkflow = workflowManager.timeoutWorkflow(currentWorkflow, {
+          completedAt,
+          diagnostics,
+        })
+      } else {
+        terminalWorkflow = workflowManager.failWorkflow(currentWorkflow, {
+          completedAt,
+          diagnostics,
+        })
+      }
+
+      throw new WorkflowError({
+        code: finalError?.code || WORKFLOW_ERROR_CODES.PROVIDER_EXECUTION_FAILED,
+        message: finalError?.message || 'Workflow execution failed.',
+        workflowId,
+        templateId: template.id,
+        providerId,
+        model: providerModel,
+        diagnostics,
+        workflow: terminalWorkflow,
+      })
+    },
+  })
+}

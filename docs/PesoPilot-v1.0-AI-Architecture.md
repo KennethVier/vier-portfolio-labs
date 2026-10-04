@@ -1417,6 +1417,221 @@ An immutable, static registry managing available adapters:
 
 ---
 
+# 12.4 — AI Orchestration Engine Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.4
+
+## Purpose
+
+The AI Orchestration Engine coordinates deterministic financial intelligence, workflow templates, Prompt Builder (Phase 11B.1), Conversation Context (Phase 11B.2), and the Provider Layer / Ollama (Phase 11B.3) under strict timeout, bounded retry, and privacy-safe diagnostic policies.
+
+Core Rule:
+
+```txt
+AI explains.
+PesoPilot decides.
+```
+
+## Pipeline Flow
+
+```txt
+InsightBundle
+RecommendationBundle
+FinancialSummary
+ConversationContext?
+        ↓
+AI Orchestrator (aiOrchestrator.executeWorkflow)
+        ↓
+Workflow Template (workflowTemplates)
+        ↓
+Prompt Builder (promptBuilder.build)
+        ↓
+PromptPackage
+        ↓
+ProviderRequest (providerLayer.createProviderRequest)
+        ↓
+Provider Registry (providerLayer.getProvider)
+        ↓
+LLM Adapter (ollamaAdapter)
+        ↓
+Timeout + Retry Policy (timeoutManager + retryManager)
+        ↓
+Ollama Runtime (POST /api/show + POST /api/generate)
+        ↓
+ProviderResponse
+        ↓
+Workflow Result ({ workflow, response })
+```
+
+## Authority Boundary
+
+The AI Orchestrator:
+
+MAY:
+* Coordinate approved services (Prompt Builder, Conversation Context, Provider Layer);
+* Select approved workflow templates from the immutable template registry;
+* Enforce workflow execution deadlines via master `AbortController`;
+* Propagate cancellation signals to active provider transport requests;
+* Apply bounded, deterministic retry policy (maximum 2 attempts, zero jitter);
+* Collect privacy-safe workflow diagnostics (operational timing, status, error code);
+* Return normalized workflow results `{ workflow, response }` on success;
+* Throw typed `WorkflowError` with attached safe diagnostics on failure.
+
+MUST NOT:
+* Calculate financial truth or modify deterministic metrics;
+* Generate, alter, or reorder deterministic recommendations;
+* Reinterpret InsightBundle, RecommendationBundle, or FinancialSummary;
+* Fabricate synthetic AI fallback text upon workflow failure;
+* Persist financial records or dialogue history;
+* Perform automatic provider switching or fallback LLM invocation;
+* Implement guardrail moderation, PII scanning, or jailbreak classification (owned by Phase 11B.6);
+* Implement long-term memory, cross-session recall, or vector search (owned by Phase 11B.5).
+
+## AI Workflow DTO & Lifecycle State Transitions
+
+The `AIWorkflow` DTO represents orchestration lifecycle metadata only. It strictly excludes prompt strings, provider requests/responses, conversation history, and financial metrics.
+
+```javascript
+{
+  version: '1.0.0',
+  workflowId: 'wf-123',
+  template: {
+    id: 'financial-summary-explanation',
+    version: '1.0.0',
+  },
+  task: 'financial-summary-explanation',
+  provider: {
+    id: 'ollama',
+    model: 'llama3.2',
+  },
+  status: 'pending', // 'pending' | 'running' | 'succeeded' | 'failed' | 'timed_out'
+  attempt: 0,        // 0 (pending), 1 (initial attempt), 2 (single retry)
+  startedAt: null,   // ISO string timestamp
+  completedAt: null, // ISO string timestamp
+  diagnostics: null, // WorkflowDiagnostics DTO or null
+}
+```
+
+### Allowed Lifecycle Transitions
+
+```txt
+pending → running
+running → running (attempt increment from 1 to 2)
+running → succeeded
+running → failed
+running → timed_out
+```
+
+All other transitions (e.g. `succeeded` → `running`, `failed` → `succeeded`, `timed_out` → `running`) are strictly rejected with `WorkflowError('INVALID_WORKFLOW_STATE')`.
+
+## Workflow Template Registry
+
+An immutable, provider-independent registry in `workflowTemplates.js`:
+* `financial-summary-explanation`: Initial template mapping orchestration task to Prompt Builder template ID.
+* Templates contain zero provider names, models, loopback URLs, timeouts, or credentials.
+* Unknown template IDs throw `WorkflowError('UNKNOWN_WORKFLOW_TEMPLATE')`.
+
+## Workflow Manager & Service Coordinator Separation
+
+* **Workflow Manager (`workflowManager.js`)**: Pure synchronous state and lifecycle manager. Implements state transitions, validates DTO shapes, and increments attempts. Contains no network, timers, or retry logic.
+* **Service Coordinator (`serviceCoordinator.js`)**: Coordinates external dependencies, enforces deadlines, manages retry loops, invokes Prompt Builder, and interacts with Provider Layer.
+
+## Timeout Manager & Abort Propagation
+
+* **Two Timeout Tiers**:
+  * Low-level socket transport ceiling (`transportTimeoutMs`, default 30,000ms, owned by Phase 11B.3).
+  * Overall workflow execution deadline (`workflowTimeoutMs`, default 45,000ms, owned by Phase 11B.4).
+* **Abort Signal Propagation**:
+  1. `TimeoutManager` creates a master `AbortController`.
+  2. If deadline expires, `controller.abort()` fires.
+  3. `providerConfig.signal` propagates the abort signal to `ollamaAdapter` and `defaultFetchTransport`.
+  4. Native `fetch` receives the signal and aborts the active browser HTTP request.
+
+When the overall workflow deadline expires, PesoPilot aborts the active provider HTTP request through the propagated AbortSignal.
+
+The orchestrator does not begin another attempt until the aborted provider invocation has rejected through the Provider Layer.
+
+This prevents PesoPilot from intentionally overlapping workflow attempts or accepting stale results after the workflow deadline.
+
+PesoPilot does not claim a hardware-level guarantee that Ollama model or GPU execution has stopped at the exact instant the browser request is aborted.
+
+## Retry Policy & ProviderError Retryability Matrix
+
+* **Attempt Limit**: Maximum 2 attempts (1 initial + at most 1 retry).
+* **Retry Delay**: Fixed 0ms for MVP (deterministic, zero jitter).
+* **Error Retryability Matrix**:
+
+| Provider Error Code | Retryable? | Rationale |
+| :--- | :---: | :--- |
+| `INVALID_REQUEST` | NO | Request schema violation. Identical payload will fail again. |
+| `UNKNOWN_PROVIDER` | NO | Configuration error; provider ID not registered. |
+| `INVALID_PROVIDER_CONFIG` | NO | Invalid URL or configuration parameters. |
+| `INSECURE_ENDPOINT_REJECTED` | NO | Security policy violation; non-loopback host rejected. |
+| `MODEL_NOT_FOUND` | NO | Missing model weights in Ollama daemon. |
+| `REMOTE_MODEL_REJECTED` | NO | Security policy violation; model hosted remotely. |
+| `UNKNOWN_LOCALITY_REJECTED` | NO | Security policy violation; locality unverified. |
+| `INVALID_PROVIDER_RESPONSE` | NO | Malformed response structure from provider. |
+| `PROVIDER_REJECTED_REQUEST` | NO | Provider application error (HTTP 4xx/5xx). |
+| `PROVIDER_UNAVAILABLE` | YES | Transient network or daemon startup issue. |
+| `TRANSPORT_TIMEOUT` | YES | Transient transport socket timeout on individual attempt. |
+| `TRANSPORT_ERROR` | YES | Transient socket/network-level exception. |
+
+### Abort Error Precedence
+
+Workflow timeout has precedence over retry classification.
+No retry occurs after the master workflow signal has aborted.
+
+If the master workflow `AbortSignal` is aborted, the failure is unconditionally classified as `WORKFLOW_TIMEOUT` and NO retry is scheduled, even if the underlying transport raised `TRANSPORT_TIMEOUT`.
+
+### Deadline Clamping
+
+Before each attempt:
+```javascript
+remainingMs = deadlineMs - clock.nowMs()
+attemptTransportTimeoutMs = Math.min(configuredTransportTimeoutMs, remainingMs)
+```
+If `remainingMs <= 0`, no attempt begins and the workflow terminates as `WORKFLOW_TIMEOUT`.
+
+## Workflow Diagnostics & Error Privacy
+
+* `WorkflowDiagnostics` DTO contains safe operational primitives only: `workflowId`, `templateId`, `providerId`, `model`, `status`, `attempts` (1 or 2), `durationMs` (non-negative integer), and `finalErrorCode` (string or null).
+* `WorkflowError` exposes safe metadata (`code`, `workflowId`, `templateId`, `providerId`, `model`, `diagnostics`, `workflow`, and sanitized `message`). It retains no raw `cause` objects, prompts, completions, or financial metrics.
+
+## Graceful Degradation to Deterministic Intelligence
+
+If the AI workflow fails or times out, PesoPilot does not fabricate an AI replacement response and does not invoke another provider.
+
+The deterministic InsightBundle, RecommendationBundle, and FinancialSummary produced by Phase 11A remain valid and available to the caller/UI.
+
+Therefore AI failure does not make PesoPilot's deterministic financial intelligence unavailable.
+
+Phase 11B.4 does not implement a separate fallback engine or fallback provider.
+
+When a workflow fails or times out:
+* The orchestrator throws typed `WorkflowError` with diagnostics and terminal workflow state attached.
+* The orchestrator does NOT fabricate replacement AI text or invoke secondary providers.
+* Phase 11A deterministic financial intelligence (`FinancialSummary`, `RecommendationBundle`, `InsightBundle`) remains intact and unmodified.
+* The application continues displaying deterministic financial intelligence without degradation of core financial features.
+
+## Memory & Guardrail Boundaries
+
+* `memoryContext` remains strictly `null` (Phase 11B.5).
+* Guardrails (prompt injection defense, PII scanning, moderation) remain pass-through boundaries (Phase 11B.6).
+
+## Explicit Non-Goals
+
+Phase 11B.4 explicitly excludes:
+* Long-term conversation memory or vector search (Phase 11B.5);
+* Guardrail engine runtime or jailbreak classification (Phase 11B.6);
+* Spring Boot AI REST API controllers (Phase 11B.7);
+* Streaming, SSE, or WebSocket transports (Phase 11B.8);
+* AI evaluation testing harness (Phase 11B.9);
+* Cloud LLM provider execution (OpenAI, Gemini, Claude);
+* Modifying deterministic finance engines or database schemas.
+
+---
+
 # 12.10 — Future Multi-LLM & AI Evolution Architecture
 
 Version: 1.0.0

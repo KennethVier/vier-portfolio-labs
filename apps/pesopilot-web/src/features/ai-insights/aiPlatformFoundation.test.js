@@ -61,7 +61,8 @@ describe('AI Platform Foundation', () => {
     (c) =>
       c.exportName !== 'promptBuilder' &&
       c.exportName !== 'conversationEngine' &&
-      c.exportName !== 'providerLayer',
+      c.exportName !== 'providerLayer' &&
+      c.exportName !== 'aiOrchestrator',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -229,6 +230,56 @@ describe('AI Platform Foundation', () => {
       'validateProviderDiagnostics',
       'validateProviderRequest',
       'validateProviderResponse',
+    ])
+  })
+
+  // AI Orchestrator 11B.4 Assertions
+  it('ensures aiOrchestrator has canonical name "ai-orchestrator", status "ready", and approved interface functions', () => {
+    expect(aiOrchestrator).toBeDefined()
+    expect(aiOrchestrator.name).toBe('ai-orchestrator')
+    expect(aiOrchestrator.status).toBe('ready')
+    expect(typeof aiOrchestrator.executeWorkflow).toBe('function')
+    expect(typeof aiOrchestrator.getWorkflowTemplate).toBe('function')
+    expect(typeof aiOrchestrator.listWorkflowTemplates).toBe('function')
+    expect(typeof aiOrchestrator.validateWorkflow).toBe('function')
+    expect(typeof aiOrchestrator.validateWorkflowDiagnostics).toBe('function')
+  })
+
+  it('ensures aiOrchestrator is frozen and immutable', () => {
+    expect(Object.isFrozen(aiOrchestrator)).toBe(true)
+
+    expect(() => {
+      aiOrchestrator.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      aiOrchestrator.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures aiOrchestrator exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'retry',
+      'fallback',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(aiOrchestrator[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(aiOrchestrator).sort()).toEqual([
+      'executeWorkflow',
+      'getWorkflowTemplate',
+      'listWorkflowTemplates',
+      'name',
+      'status',
+      'validateWorkflow',
+      'validateWorkflowDiagnostics',
     ])
   })
 

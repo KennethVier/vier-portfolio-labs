@@ -3612,7 +3612,7 @@ introduced.
 
 # Phase 11B.4 — AI Orchestration Engine
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3623,13 +3623,75 @@ Status: ⬜
 
 ## Features
 
-* [ ] AI Workflow DTO
-* [ ] Workflow manager
-* [ ] Workflow templates
-* [ ] Service coordinator
-* [ ] Timeout manager
-* [ ] Retry manager
-* [ ] Workflow diagnostics
+* [x] AI Workflow DTO
+* [x] Workflow manager
+* [x] Workflow templates
+* [x] Service coordinator
+* [x] Timeout manager
+* [x] Retry manager
+* [x] Workflow diagnostics
+
+## Action Notes
+
+```txt
+Phase 11B.4 AI Orchestration Engine validated.
+
+Implemented the AI Workflow DTO, immutable workflow template registry,
+pure Workflow Manager, Service Coordinator, Workflow Timeout Manager,
+bounded Retry Manager, and privacy-safe WorkflowDiagnostics.
+
+The current workflow coordinates the existing Prompt Builder,
+Conversation Context, Provider Layer, and registered Ollama adapter
+without recalculating or modifying deterministic financial truth.
+
+One provider-independent workflow template is registered:
+financial-summary-explanation.
+
+Workflow lifecycle states are pending, running, succeeded, failed, and
+timed_out. The initial attempt is attempt 1 and at most one retry is
+allowed, for a maximum of 2 total attempts.
+
+Workflow timeout is distinct from Provider Layer transport timeout.
+The overall workflow owns a master AbortController whose signal is
+propagated through the Ollama adapter and transport into fetch.
+
+If the overall workflow signal aborts, WORKFLOW_TIMEOUT takes precedence
+over ProviderError retry classification and no retry occurs.
+
+Provider retries are limited to transient PROVIDER_UNAVAILABLE,
+TRANSPORT_TIMEOUT, and TRANSPORT_ERROR failures. Security, locality,
+configuration, model, provider-rejection, and malformed-response errors
+are not retried.
+
+WorkflowDiagnostics contain only safe operational metadata and exclude
+prompt text, provider completion text, conversation messages, and
+financial values.
+
+WorkflowError is the single workflow failure authority. AIWorkflow does
+not maintain a competing error object.
+
+On AI failure or timeout, PesoPilot does not fabricate replacement AI
+output or invoke another provider. Existing deterministic InsightBundle,
+RecommendationBundle, and FinancialSummary outputs remain valid and
+available.
+
+Section 12.4 — AI Orchestration Engine Architecture was materialized.
+
+Validation:
+24/24 AI Orchestrator tests passed.
+39/39 Provider Layer tests passed.
+25/25 Prompt Builder tests passed.
+37/37 Conversation Engine tests passed.
+25/25 AI Platform Foundation tests passed.
+74/74 test files passed.
+620/620 tests passed.
+ESLint passed with 0 errors and 0 warnings.
+Production Vite build passed with 905 modules transformed.
+
+No Memory Service, Guardrail Engine, cloud provider, Spring Boot AI API,
+streaming, financial truth changes, database/schema changes,
+dependencies, or Phase 11B.5+ behavior were introduced.
+```
 
 ---
 
