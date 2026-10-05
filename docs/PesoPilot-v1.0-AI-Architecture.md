@@ -2242,6 +2242,81 @@ Stream diagnostics expose execution metadata without content leakage:
 
 ---
 
+# 12.9 — AI Testing Strategy
+
+Version: 1.0.0  
+Phase: 11B.9 Implementation  
+
+## Developer & Test-Only Boundary
+
+The AI Testing Harness is strictly developer and test infrastructure. It is not part of the production AI runtime, product capabilities, or user interface.
+* **Location**: All testing infrastructure resides under `apps/pesopilot-web/src/features/ai-insights/testing/`.
+* **Export Isolation**: Harness utilities and simulators are exported exclusively via `features/ai-insights/testing/index.js`.
+* **Facade Protection**: The production public entrypoint (`features/ai-insights/index.js`) and `aiPlatformFoundation` do NOT export or reference testing modules. Production code must never import from `/testing/`.
+
+## Offline Deterministic Execution
+
+The test harness guarantees complete determinism and zero network dependencies:
+* **No Live AI / No Network**: No calls to live Ollama instances, cloud APIs, network sockets, or `fetch()`.
+* **Deterministic Runtime**: All time, random IDs, and execution timers are decoupled from wall-clock time and system entropy via `createDeterministicRuntime({ now, idGenerator, timer })`.
+* **Controllable Fake Timers**: Timeouts and delayed cancellations are driven through deterministic clock advancement (`advanceTime(ms)`), never real sleep or polling loops.
+
+## Provider Mock & Test Provider Layer
+
+To thoroughly verify orchestration without live model daemons, the harness introduces a scripted, production-compliant provider mock and registry-backed layer:
+* **Production Adapter Contract**: `createProviderMock` implements the canonical `LLMAdapter` interface (`id`, `locality`, `generate(...)`, and optional `stream(...)`).
+* **Provider Identity & Policy Conformity**: Mock adapters default to `{ id: 'ollama', locality: 'local' }`. Production guardrail policies and provider rules remain authoritative and are never weakened or bypassed for tests.
+* **Canonical Responses**: Scripted completions return real `ProviderResponse` and `ProviderDiagnostics` instances using production constructors.
+* **Request Immutability**: All incoming `ProviderRequest`, `ProviderStreamRequest`, and `providerConfig` objects are verified to be immutable and unmutated during execution.
+* **Safe Call History**: An in-memory, test-local call log captures invocations, requests, and abort statuses for assertions without recording credentials or persisting state.
+* **AbortSignal Compliance**: Both sync generation and streaming iterables observe `providerConfig.signal` and abort deterministically upon cancellation.
+* **Test Provider Layer Wrapper**: `createMockProviderLayer(mockAdapter)` registers the mock adapter inside a real `ProviderRegistry` and preserves all production validation functions (`createProviderRequest`, `createProviderStreamRequest`, `validateProviderRequest`, `validateProviderStreamRequest`, `validateProviderResponse`, `validateProviderDiagnostics`). The Service Coordinator always receives a fully compliant `providerLayer`.
+
+## Workflow, Prompt, Conversation & Memory Simulators
+
+Simulators drive real production modules rather than reimplementing business logic:
+* **Workflow Simulator (`createWorkflowSimulator`)**: Executes real `createServiceCoordinator` and `executeStreamingWorkflow`. Verifies end-to-end orchestration, retry loops, timeout handling, and guardrail enforcement through the real production coordination path.
+* **Prompt Simulator (`createPromptSimulator`)**: Drives the real `promptBuilder.build(...)`. Confirms context selection, template resolution, and `PromptPackage` creation without duplicating prompt composition logic.
+* **Conversation Simulator (`createConversationSimulator`)**: Translates test operation scripts (`message`, `topic`, `clarification`, `resolveClarification`) directly into calls on the real `conversationEngine`. Validates message bounds, role policies, and canonical `ConversationContext` generation.
+* **Memory Simulator (`createMemorySimulator`)**: Exercises real `memoryService` candidate evaluation, record creation, ranking, and bounded context retrieval using production `MEMORY_TYPES` and policies.
+
+## Synthetic Fixtures & Curated Golden Scenarios
+
+* **Synthetic Fixtures**: Test fixtures (`syntheticFixtures.js`) generate clearly synthetic, fictitious financial summaries, recommendations, insight bundles, conversation messages, and memory records. Real user transactions, salaries, and sensitive data are forbidden.
+* **Curated Golden Scenarios**: Scenarios (`goldenScenarios.js`) define an immutable, declarative suite covering key architectural invariants:
+  1. Successful synchronous financial explanation workflow.
+  2. Response Guardrail rejection (action claim detection).
+  3. Financial Guidance Guardrail rejection (guaranteed return detection).
+  4. Retryable provider failure leading to successful recovery.
+  5. Memory retrieval resulting in a bounded prompt context.
+  6. Conversation context propagation into the prompt package.
+  7. Successful streaming workflow through the Safe Publication Gate.
+  8. Streaming safety rejection when provider fragments trigger guardrails.
+* **Contract Clarity**: The scenario suite is a curated set of high-value deterministic invariants; scenario count is an implementation detail and not an architectural contract.
+
+## Regression Runner & Privacy-Safe Reporting
+
+* **Sequential Execution**: `runRegressionSuite` executes scenarios sequentially in frozen order to guarantee predictable diagnostics, clock consistency, and deterministic test outcomes.
+* **Aggregation**: The runner continues on scenario failures, collecting all invariant diagnostics in an immutable `RegressionReport`.
+* **Privacy & Diagnostics Sanitization**: Regression reports record only structural metadata (scenario ID, invariant ID, failure code, message). Raw prompts, system instructions, generated text, conversation history, memory content, financial numbers, credentials, and stack traces are strictly excluded.
+
+## Financial Source-of-Truth Invariants
+
+A primary invariant verified by the test harness is that AI workflows are strictly non-authoritative:
+* Deterministic financial inputs (`InsightBundle`, `RecommendationBundle`, `FinancialSummary`) are deep-frozen or verified before and after workflow execution.
+* AI orchestration cannot modify, overwrite, or re-calculate underlying financial balances, spending calculations, or transaction history.
+
+## Limitations & Non-Goals
+
+The v1 AI Testing Harness explicitly avoids:
+* Evaluation engines, semantic benchmark scoring, or LLM-as-judge frameworks.
+* Chaos testing, performance/load testing frameworks, or latency benchmarking.
+* Historical replay databases or telemetry tracking.
+* Live provider integration requirements in CI/CD.
+* Multi-cloud compatibility matrices or Phase 12 forecasting.
+
+---
+
 # 12.10 — Future Multi-LLM & AI Evolution Architecture
 
 Version: 1.0.0

@@ -4326,7 +4326,7 @@ The existing synchronous AI execution path remains preserved.
 
 # Phase 11B.9 — AI Testing Harness
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -4336,12 +4336,241 @@ Status: ⬜
 
 ## Features
 
-* [ ] Provider mock
-* [ ] Workflow simulator
-* [ ] Prompt simulator
-* [ ] Conversation simulator
-* [ ] Memory simulator
-* [ ] Regression runner
+* [x] Provider mock
+* [x] Workflow simulator
+* [x] Prompt simulator
+* [x] Conversation simulator
+* [x] Memory simulator
+* [x] Regression runner
+
+## Action Notes
+
+```txt
+Phase 11B.9 AI Testing Harness validated.
+
+Implemented a developer/test-only deterministic AI harness under:
+
+apps/pesopilot-web/src/features/ai-insights/testing/
+
+The harness is not part of production runtime and is not exported through
+the production AI facade or AI Platform capability registry.
+
+The harness runs fully offline and requires no:
+
+- Ollama daemon;
+- cloud provider;
+- network;
+- API key;
+- production backend inference.
+
+No production runtime AI files were modified.
+
+Provider Mock:
+
+- satisfies the production adapter contract;
+- defaults to provider ID `ollama` and locality `local` so production
+  Provider Guardrails remain authoritative;
+- supports deterministic synchronous generate() scripts;
+- supports deterministic streaming scripts;
+- emits normalized production-compatible streaming fragment objects;
+- supports canonical ProviderError failures;
+- observes AbortSignal cancellation;
+- keeps safe in-memory call history for test assertions only.
+
+The test Provider Layer uses:
+
+createProviderRegistry([mockAdapter])
+
+and preserves the production Provider Layer abstraction.
+
+Registry-bound operations delegate to:
+
+- getProviderAdapter();
+- getProviderDescriptor();
+- listProviderDescriptors().
+
+The test layer reuses production:
+
+- createProviderRequest;
+- createProviderStreamRequest;
+- validateProviderRequest;
+- validateProviderStreamRequest;
+- validateProviderResponse;
+- validateProviderDiagnostics.
+
+No provider validation logic was duplicated.
+
+Workflow Simulator executes the real:
+
+createServiceCoordinator(...)
+
+and calls:
+
+- executeWorkflow(...);
+- executeStreamingWorkflow(...).
+
+It does not reproduce orchestration, retry, guardrail, streaming, Prompt
+Builder, or Memory logic.
+
+Deterministic injected runtime provides:
+
+- controllable clock;
+- controllable timer;
+- deterministic sequential IDs.
+
+No sleep-based or wall-clock-dependent workflow tests are required.
+
+Prompt Simulator directly executes:
+
+promptBuilder.build(...)
+
+using canonical production financial, conversation, and memory context.
+
+It does not duplicate context selection, template resolution, prompt
+composition, PromptPackage construction, or validation.
+
+Conversation Simulator drives the real Conversation Engine:
+
+- startConversation;
+- appendMessage;
+- updateTopic;
+- requestClarification;
+- resolveClarification;
+- closeConversation;
+- buildConversationContext;
+- production validators.
+
+It does not duplicate conversation rules.
+
+Memory Simulator drives the real Memory Service:
+
+- evaluateCandidate;
+- createMemoryRecord;
+- addMemoryRecord;
+- retrieveContext;
+- production memory validators.
+
+Ranking, retrieval, policy limits, and prompt-facing MemoryContext behavior
+remain production-owned.
+
+The initial curated regression suite contains 8 Golden Scenarios.
+
+The number 8 is not an architectural requirement; v1 requires a small,
+curated, deterministic scenario set.
+
+Current scenarios cover:
+
+1. successful synchronous financial explanation;
+2. Response Guardrail rejection;
+3. Financial Guidance Guardrail rejection;
+4. retryable provider failure and recovery;
+5. bounded MemoryContext propagation;
+6. ConversationContext propagation;
+7. successful streaming Safe Publication Gate;
+8. streaming guardrail rejection with zero unsafe publication.
+
+Regression Runner executes scenarios sequentially and aggregates all
+scenario outcomes into an immutable versioned RegressionReport.
+
+Scenario failures are structural and privacy-safe.
+
+Regression reports do not contain:
+
+- system prompts;
+- user prompts;
+- generated provider content;
+- financial values;
+- memory text;
+- conversation history;
+- credentials;
+- raw provider configuration;
+- stack traces.
+
+Unexpected exceptions are converted to safe structural failure codes and
+generic diagnostic messages rather than copying arbitrary exception text.
+
+Provider Mock call history remains test-local and is never copied into
+RegressionReport output.
+
+Regression coverage verifies that AI does not become a financial
+source-of-truth.
+
+InsightBundle, RecommendationBundle, and FinancialSummary remain unchanged
+before and after orchestration.
+
+Grounding is validated architecturally through:
+
+deterministic financial source
+→ canonical Prompt Context
+→ PromptPackage
+→ ProviderRequest
+
+No subjective LLM scoring, LLM-as-judge, or hallucination scoring model was
+introduced.
+
+Real production Guardrails remain active during harness workflows.
+
+The harness does not mock the guardrail under test.
+
+Streaming regression uses:
+
+scripted provider fragments
+→ real executeStreamingWorkflow(...)
+→ real Token Buffer
+→ real Safe Publication Gate
+→ real Response Guardrail
+→ real Financial Guidance Guardrail
+→ validated StreamChunks / StreamEvents.
+
+Browser-local streaming is not described as SSE.
+
+Spring SSE remains the separate 11B.8 backend transport boundary.
+
+No live-provider testing is required for automated regression.
+
+No Evaluation Engine, Benchmark Runner, Chaos Testing framework, load
+testing framework, historical benchmark database, LLM-as-judge,
+multi-provider compatibility matrix, testing dashboard, scenario DSL,
+new CLI framework, or Phase 12 behavior was introduced.
+
+No new npm or Maven dependencies were introduced.
+
+package.json remains unchanged.
+
+package-lock.json remains unchanged.
+
+CI/workflow files remain unchanged.
+
+Spring Boot backend remains unchanged.
+
+Decision Log remains unchanged.
+
+Database/schema remains unchanged.
+
+Validation:
+
+Focused AI Testing Harness:
+8/8 test files passed.
+38/38 tests passed.
+
+Frontend full regression:
+86/86 test files passed.
+822/822 tests passed.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+905 modules transformed.
+
+Backend:
+30/30 tests passed.
+0 failures.
+0 errors.
+BUILD SUCCESS.
+```
 
 ---
 
