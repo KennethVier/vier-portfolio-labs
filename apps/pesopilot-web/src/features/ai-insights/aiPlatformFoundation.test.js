@@ -64,7 +64,8 @@ describe('AI Platform Foundation', () => {
       c.exportName !== 'providerLayer' &&
       c.exportName !== 'aiOrchestrator' &&
       c.exportName !== 'memoryService' &&
-      c.exportName !== 'guardrailEngine',
+      c.exportName !== 'guardrailEngine' &&
+      c.exportName !== 'aiGateway',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -396,6 +397,51 @@ describe('AI Platform Foundation', () => {
       'validatePrompt',
       'validateProvider',
       'validateResponse',
+    ])
+  })
+
+  // AI Gateway 11B.7 Assertions
+  it('ensures aiGateway has canonical name "ai-gateway", status "ready", and requestExplanation function', () => {
+    expect(aiGateway).toBeDefined()
+    expect(aiGateway.name).toBe('ai-gateway')
+    expect(aiGateway.status).toBe('ready')
+    expect(typeof aiGateway.requestExplanation).toBe('function')
+  })
+
+  it('ensures aiGateway is frozen and immutable', () => {
+    expect(Object.isFrozen(aiGateway)).toBe(true)
+
+    expect(() => {
+      aiGateway.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      aiGateway.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures aiGateway exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'persist',
+      'save',
+      'rewrite',
+      'sanitize',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(aiGateway[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(aiGateway).sort()).toEqual([
+      'name',
+      'requestExplanation',
+      'status',
     ])
   })
 

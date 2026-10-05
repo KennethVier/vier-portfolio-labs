@@ -1995,6 +1995,102 @@ Phase 11B.6 explicitly excludes:
 
 ---
 
+# 12.7 — Spring Boot AI REST API Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.7
+
+## Purpose
+
+The Spring Boot AI REST API establishes the external, provider-independent HTTP boundary and application contract for the PesoPilot AI Platform. It defines strongly typed, versioned request and response DTOs, coordinates validation and execution port dispatch through the Spring AI Gateway, and enforces fail-safe unavailable degradation in production without duplicating browser-owned AI execution engines into Java.
+
+## Authoritative Execution Ownership
+
+* **Separation of Contract Boundary vs. Real Inference Runtime**:
+  * **Real AI Execution Runtime**: The client browser currently owns the active, operational execution pipeline (`aiOrchestrator` -> `guardrailEngine` -> `promptBuilder` -> `providerLayer` -> local `ollamaAdapter` at loopback).
+  * **Spring AI REST API**: Acts as the versioned, provider-independent HTTP and application boundary for future backend execution capabilities.
+  * **Production Spring Execution Capability**: Intentionally unavailable in Phase 11B.7. The production execution port (`UnavailableAiExecutionPort`) fails closed with `503 Service Unavailable`.
+* **Zero Duplication / Zero Scope Drift**: Prompt construction (11B.1), conversation engine (11B.2), provider layer / Ollama integration (11B.3), workflow orchestration (11B.4), memory service (11B.5), and guardrail engine (11B.6) are NOT ported or duplicated into Java.
+* **No Synthetic Responses**: The backend never returns fake AI text, synthetic placeholders, or echoes user context on failure.
+
+## Ready Status Semantics
+
+* `aiGateway.status = 'ready'` in the browser denotes strictly that:
+  ```text
+  ready = the HTTP/API gateway contract is implemented and operational
+  ```
+* It does **NOT** mean Spring backend inference is active or that Spring executes the LLM workflow. The gateway can successfully execute HTTP transport and correctly surface the server's 503 execution-unavailable response.
+
+## Public Endpoint & API Versioning
+
+* Canonical Route: `POST /api/v1/ai/explanations`
+* Synchronous JSON only.
+* Unversioned routes (`/api/ai/explanations`) and `/api/v2/...` routes return 404 Not Found.
+* Constants centralized in `AiApiConstants`.
+
+## Request Contract & Canonical AI Context
+
+* Public request wrapper:
+  ```java
+  public record AiExplanationRequest(
+      @NotNull @Valid AiPromptContextDto context
+  ) {}
+  ```
+* **No Public Control Fields**: `templateId`, `providerId`, `provider`, `model`, `baseUrl`, `stream`, and credentials are strictly excluded from the public request. The Spring Gateway internally binds `WORKFLOW_TEMPLATE_ID = "financial-summary-explanation"`.
+* **Canonical Minimized Context**: Directly reflects the established Phase 11B.1 context (`contextSelector.js`):
+  * `version`, `scope`, `sourceTimestamps`
+  * `financialSummary`: sections, paragraphs, horizon, metadata, state
+  * `recommendations`: canonical fields (`id`, `domain`, `actionKey`, `title`, `explanation`, `severity`, `priority`, `rank`, `evidence`, `sourceRuleIds`)
+  * `insights`: all seven established domains (`health`, `income`, `expenses`, `savings`, `goals`, `cashflow`, `cutoff`)
+  * `conversationContext`: optional, bounded by 11B.2 rules (max 10 messages, max 4000 chars/message, allowed roles `user` and `assistant`, topic whitelist, clarification invariants)
+  * `memoryContext`: optional, bounded by 11B.5 rules (max 5 items, max 300 chars/item, max 1500 TOTAL chars, allowed types `communication_preference`, `coaching_preference`, `user_preference`)
+* **No Financial Recalculation**: Spring does not recalculate balances, health scores, or re-rank recommendations.
+
+## Response Contract & Envelope Compatibility
+
+* Preserves the global 3-field `ApiResponse<T>` envelope:
+  ```json
+  {
+    "success": true,
+    "message": "Success",
+    "data": {
+      "requestId": "UUID",
+      "explanation": "Explanation text...",
+      "generatedAt": "ISO-8601 timestamp"
+    }
+  }
+  ```
+* `AiExplanationResponse` contains `requestId`, `explanation`, and `generatedAt`.
+* Redundant `version` and provider/diagnostic internals are excluded.
+
+## Error Handling, Status Mapping, and Privacy
+
+* Exception Hierarchy:
+  * `AiApiException` (root runtime exception) -> 500 Internal Server Error
+  * `AiValidationException` -> 400 Bad Request
+  * `AiExecutionUnavailableException` -> 503 Service Unavailable
+* Global Exception Handler:
+  * Sanitized logging for validation and deserialization errors to prevent leaking raw user context or rejected JSON fragments.
+  * Zero prompt, financial, or sensitive data in client error responses or logs.
+
+## Frontend AI Gateway Role
+
+* `aiGateway.js` uses shared `apiClient` (`src/lib/api/client.js`).
+* Exposes `requestExplanation(context)`.
+* Does not replace `aiOrchestrator` -> local Ollama in UI components.
+* Normalizes API errors via `normalizeApiError`.
+
+## Explicit Non-Goals
+
+* No live Spring AI inference runtime or Java Ollama adapter;
+* No Java reimplementation of PromptBuilder, ConversationEngine, MemoryService, GuardrailEngine, or AI Orchestrator;
+* No streaming, SSE, WebFlux, or WebSockets (owned by Phase 11B.8);
+* No Spring Security, OAuth2, or JWT integration;
+* No database persistence, repositories, or Dexie modifications;
+* No product UI routing switch or automatic remote fallback.
+
+---
+
 # 12.10 — Future Multi-LLM & AI Evolution Architecture
 
 Version: 1.0.0

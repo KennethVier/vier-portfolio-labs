@@ -1,5 +1,8 @@
 package com.vier.pesopilot.common.exception;
 
+import com.vier.pesopilot.ai.exception.AiApiException;
+import com.vier.pesopilot.ai.exception.AiExecutionUnavailableException;
+import com.vier.pesopilot.ai.exception.AiValidationException;
 import com.vier.pesopilot.common.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -20,7 +23,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValid(
             MethodArgumentNotValidException exception
     ) {
-        LOGGER.warn("Request validation failed: {}", exception.getMessage());
+        LOGGER.warn("Request validation failed");
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(error -> error.getField() + " " + error.getDefaultMessage())
@@ -35,7 +38,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
             ConstraintViolationException exception
     ) {
-        LOGGER.warn("Constraint validation failed: {}", exception.getMessage());
+        LOGGER.warn("Constraint validation failed");
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -46,11 +49,44 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnreadableMessage(
             HttpMessageNotReadableException exception
     ) {
-        LOGGER.warn("Request body could not be read: {}", exception.getMessage());
+        LOGGER.warn("Request body could not be read");
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.failure("Invalid request body"));
+    }
+
+    @ExceptionHandler(AiValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAiValidationException(
+            AiValidationException exception
+    ) {
+        LOGGER.warn("AI request contract validation failed");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.failure(exception.getMessage()));
+    }
+
+    @ExceptionHandler(AiExecutionUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAiExecutionUnavailable(
+            AiExecutionUnavailableException exception
+    ) {
+        LOGGER.warn("AI execution service unavailable");
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.failure(exception.getMessage()));
+    }
+
+    @ExceptionHandler(AiApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAiApiException(
+            AiApiException exception
+    ) {
+        LOGGER.error("AI API internal error");
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.failure("AI processing error"));
     }
 
     @ExceptionHandler(BusinessException.class)
@@ -62,6 +98,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.failure(exception.getMessage()));
+    }
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure("Resource not found"));
     }
 
     @ExceptionHandler(Exception.class)

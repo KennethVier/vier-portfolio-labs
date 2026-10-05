@@ -3885,7 +3885,7 @@ Phase 11B.7+ behavior were introduced.
 
 # Phase 11B.7 — Spring Boot AI REST API
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3895,12 +3895,138 @@ Status: ⬜
 
 ## Features
 
-* [ ] AI Gateway
-* [ ] AI REST controllers
-* [ ] Request DTOs
-* [ ] Response DTOs
-* [ ] Error handling
-* [ ] API versioning
+* [x] AI Gateway
+* [x] AI REST controllers
+* [x] Request DTOs
+* [x] Response DTOs
+* [x] Error handling
+* [x] API versioning
+
+## Action Notes
+
+```txt
+Phase 11B.7 Spring Boot AI REST API validated.
+
+Implemented the versioned Spring Boot AI REST contract and application
+boundary for financial-summary explanation requests.
+
+The public endpoint is:
+
+POST /api/v1/ai/explanations
+
+Phase 11B.7 does not introduce a new Spring inference runtime.
+The existing browser AI Orchestrator and local Ollama Provider Layer
+remain the active real-AI execution path.
+
+The Spring REST path consists of:
+
+browser aiGateway
+→ Spring AiExplanationController
+→ Spring AiGateway
+→ AiExecutionPort
+→ UnavailableAiExecutionPort
+
+The production Spring execution port intentionally fails closed with
+HTTP 503 Service Unavailable until an authorized backend execution
+adapter is implemented.
+
+aiGateway status "ready" means the HTTP/API gateway contract is
+implemented and operational. It does not mean Spring inference is
+available.
+
+The REST API is provider-independent. Public requests do not expose
+template IDs, provider names, models, base URLs, prompts, retry policy,
+stream configuration, credentials, or provider internals.
+
+The public request uses the canonical minimized AI context established
+by the existing Prompt Builder architecture:
+
+- financialSummary
+- recommendations
+- all seven insight domains
+- optional ConversationContext
+- optional MemoryContext
+
+Spring does not recalculate financial values, derive financial truth,
+re-rank recommendations, or reinterpret deterministic intelligence.
+
+Prompt Context, Conversation Context, and Memory Context versions are
+strictly validated as 1.0.0. Unsupported or null required versions fail
+with HTTP 400 without version fallback or silent conversion.
+
+Conversation Context preserves the Phase 11B.2 contract:
+- maximum 10 recent messages;
+- maximum 4000 characters per message;
+- user/assistant roles only;
+- canonical topic taxonomy;
+- clarification-state invariants.
+
+Memory Context preserves the Phase 11B.5 contract:
+- communication_preference, coaching_preference, and user_preference;
+- maximum 5 items;
+- maximum 300 characters per item;
+- maximum 1500 total item characters.
+
+Canonical financial/context scalar DTO fields use nullable Java wrapper
+types so missing values remain null and are never silently converted into
+0, 0.0, or false.
+
+Response DTO exposes only requestId, explanation, and generatedAt and is
+wrapped in the existing three-field ApiResponse<T> envelope.
+
+ApiResponse<T> remains unchanged.
+
+Global exception handling was extended for AI validation, unavailable
+execution, and sanitized AI API errors. Validation and malformed-request
+logging no longer includes raw exception messages that may contain
+financial/context payloads.
+
+API versioning uses URI versioning under /api/v1. No unversioned AI route
+or /api/v2 AI route is exposed.
+
+The browser aiGateway reuses the existing shared API client and exposes
+requestExplanation(context). No new HTTP dependency was introduced.
+
+The existing product UI was not switched to the Spring REST path.
+No automatic backend fallback was introduced.
+
+Section 12.7 — Spring Boot AI REST API Architecture was materialized.
+
+Validation:
+
+Backend focused Phase 11B.7 tests:
+14/14 passed before final contract verification.
+
+Backend final regression after version/nullability verification:
+23/23 tests passed.
+BUILD SUCCESS.
+
+Frontend AI Gateway:
+7/7 tests passed.
+
+AI Platform Foundation:
+25/25 tests passed.
+
+Frontend full regression:
+77/77 test files passed.
+750/750 tests passed.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+905 modules transformed.
+
+No new Maven dependencies were added.
+
+No database/schema changes, Spring AI, live Spring provider,
+Java duplication of Prompt Builder/Conversation Engine/Memory Service/
+Guardrail Engine/AI Orchestrator/Provider Layer, streaming, SSE,
+WebFlux, Spring Security, authentication, cloud provider, UI execution
+switch, or Phase 11B.8+ behavior were introduced.
+```
 
 ---
 
