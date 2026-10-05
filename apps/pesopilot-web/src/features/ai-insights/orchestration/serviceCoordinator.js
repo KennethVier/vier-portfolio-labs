@@ -1,6 +1,9 @@
 import { promptBuilder as defaultPromptBuilder } from '../prompt/promptBuilder.js'
 import { providerLayer as defaultProviderLayer } from '../providers/providerLayer.js'
 import { memoryService as defaultMemoryService } from '../memory/memoryService.js'
+import { guardrailEngine as defaultGuardrailEngine } from '../guardrails/guardrailEngine.js'
+import { createAuditLogger as defaultCreateAuditLogger } from '../guardrails/auditLogger.js'
+import { GuardrailError } from '../guardrails/guardrailErrors.js'
 import { getWorkflowTemplate } from './workflowTemplates.js'
 import { workflowManager } from './workflowManager.js'
 import { createWorkflowDiagnostics } from './workflowDiagnostics.js'
@@ -115,10 +118,14 @@ function validateOrchestrationInput(input, memoryService = defaultMemoryService)
   }
 }
 
+const defaultAuditLogger = defaultCreateAuditLogger()
+
 export function createServiceCoordinator({
   promptBuilder = defaultPromptBuilder,
   providerLayer = defaultProviderLayer,
   memoryService = defaultMemoryService,
+  guardrailEngine = defaultGuardrailEngine,
+  auditLogger = defaultAuditLogger,
   clock = DEFAULT_CLOCK,
   timer = DEFAULT_TIMER,
   idGenerator = DEFAULT_ID_GENERATOR,
@@ -129,10 +136,37 @@ export function createServiceCoordinator({
       // 1. Validate Orchestration Input
       validateOrchestrationInput(input, memoryService)
 
-      // 2. Resolve Workflow Template
+      // 2. Guardrail Input Validation (before workflow creation)
+      const inputDecision = guardrailEngine.validateInput(input)
+      if (inputDecision.decision === 'reject') {
+        const inputWorkflowId = typeof input?.workflowId === 'string' && input.workflowId.trim()
+          ? input.workflowId.trim()
+          : null
+        const inputTemplateId = typeof input?.templateId === 'string' ? input.templateId : null
+        const inputProviderId = input?.provider?.id || null
+
+        auditLogger.logRejection({
+          stage: 'input',
+          code: inputDecision.primaryCode,
+          reasonCodes: inputDecision.reasonCodes,
+          workflowId: inputWorkflowId,
+          templateId: inputTemplateId,
+          providerId: inputProviderId,
+        })
+
+        throw new WorkflowError({
+          code: WORKFLOW_ERROR_CODES.GUARDRAIL_REJECTED,
+          message: `Workflow input rejected by guardrails: ${inputDecision.reasons.join('; ') || 'Input validation failed.'}`,
+          workflowId: inputWorkflowId,
+          templateId: inputTemplateId,
+          providerId: inputProviderId,
+        })
+      }
+
+      // 3. Resolve Workflow Template
       const template = getWorkflowTemplate(input.templateId)
 
-      // 3. Resolve / Generate workflowId
+      // 4. Resolve / Generate workflowId
       const workflowId = typeof input.workflowId === 'string' && input.workflowId.trim()
         ? input.workflowId.trim()
         : idGenerator()
@@ -140,7 +174,7 @@ export function createServiceCoordinator({
       const providerId = input.provider.id || 'ollama'
       const providerModel = input.provider.model.trim()
 
-      // 4. Create Pending Workflow
+      // 5. Create Pending Workflow
       const pendingWorkflow = workflowManager.createWorkflow({
         workflowId,
         template,
@@ -151,12 +185,12 @@ export function createServiceCoordinator({
         startedAt: null,
       })
 
-      // 5. Sample Started Time and Transition to Running (Attempt 1)
+      // 6. Sample Started Time and Transition to Running (Attempt 1)
       const startedMs = clock.nowMs()
       const startedAt = new Date(startedMs).toISOString()
       let currentWorkflow = workflowManager.startWorkflow(pendingWorkflow, { startedAt })
 
-      // 6. Start Timeout Manager with Master AbortController
+      // 7. Start Timeout Manager with Master AbortController
       const timeoutManager = createTimeoutManager({
         timeoutMs: workflowTimeoutMs,
         startedMs,
@@ -168,9 +202,6 @@ export function createServiceCoordinator({
       let finalError = null
 
       try {
-        // 7. Resolve Provider Adapter
-        const adapter = providerLayer.getProvider(providerId)
-
         // 8. Retrieve Memory Context if memoryState is supplied
         let memoryContext = null
         if (input.memoryState != null) {
@@ -183,7 +214,24 @@ export function createServiceCoordinator({
           })
         }
 
-        // 9. Build PromptPackage via Prompt Builder
+        // 9. Guardrail Memory Validation (if memoryContext retrieved)
+        if (memoryContext !== null) {
+          const memDecision = guardrailEngine.validateMemory(memoryContext)
+          if (memDecision.decision === 'reject') {
+            throw new GuardrailError({
+              stage: 'memory',
+              code: memDecision.primaryCode,
+              reasonCodes: memDecision.reasonCodes,
+              message: memDecision.reasons.join('; ') || 'Memory rejected by guardrails.',
+              workflowId,
+              templateId: template.id,
+              providerId,
+              model: providerModel,
+            })
+          }
+        }
+
+        // 10. Build PromptPackage via Prompt Builder
         let promptPackage
         try {
           promptPackage = promptBuilder.build({
@@ -205,7 +253,62 @@ export function createServiceCoordinator({
           })
         }
 
-        // 9. Execution Loop with Retry & Timeout Policy
+        // 11. Guardrail Prompt Validation
+        const promptDecision = guardrailEngine.validatePrompt(promptPackage)
+        if (promptDecision.decision === 'reject') {
+          throw new GuardrailError({
+            stage: 'prompt',
+            code: promptDecision.primaryCode,
+            reasonCodes: promptDecision.reasonCodes,
+            message: promptDecision.reasons.join('; ') || 'Prompt rejected by guardrails.',
+            workflowId,
+            templateId: template.id,
+            providerId,
+            model: providerModel,
+          })
+        }
+
+        // 12. Create ProviderRequest
+        const providerRequest = typeof providerLayer.createProviderRequest === 'function'
+          ? providerLayer.createProviderRequest({
+              promptPackage,
+              model: providerModel,
+              providerId,
+            })
+          : {
+              version: '1.0.0',
+              providerId,
+              model: providerModel,
+              prompt: { system: promptPackage.systemPrompt, user: promptPackage.userPrompt },
+            }
+
+        // 13. Guardrail Provider Validation
+        const providerDescriptor = typeof providerLayer.getProviderDescriptor === 'function'
+          ? providerLayer.getProviderDescriptor(providerId)
+          : { id: providerId, locality: 'local' }
+
+        const providerDecision = guardrailEngine.validateProvider({
+          providerRequest,
+          providerDescriptor,
+          model: providerModel,
+        })
+        if (providerDecision.decision === 'reject') {
+          throw new GuardrailError({
+            stage: 'provider',
+            code: providerDecision.primaryCode,
+            reasonCodes: providerDecision.reasonCodes,
+            message: providerDecision.reasons.join('; ') || 'Provider rejected by guardrails.',
+            workflowId,
+            templateId: template.id,
+            providerId,
+            model: providerModel,
+          })
+        }
+
+        // 14. Resolve Provider Adapter for Execution
+        const adapter = providerLayer.getProvider(providerId)
+
+        // 15. Execution Loop with Retry & Timeout Policy
         const configuredTransportTimeoutMs =
           typeof input.provider?.config?.transportTimeoutMs === 'number' &&
           input.provider.config.transportTimeoutMs > 0
@@ -227,12 +330,6 @@ export function createServiceCoordinator({
             remainingMs,
           )
 
-          const providerRequest = providerLayer.createProviderRequest({
-            promptPackage,
-            model: providerModel,
-            providerId,
-          })
-
           const providerConfig = {
             ...input.provider.config,
             transportTimeoutMs: attemptTransportTimeoutMs,
@@ -250,9 +347,57 @@ export function createServiceCoordinator({
               break
             }
 
+            // 15. Guardrail Response Validation
+            const responseDecision = guardrailEngine.validateResponse(rawResponse)
+            if (responseDecision.decision === 'reject') {
+              throw new GuardrailError({
+                stage: 'response',
+                code: responseDecision.primaryCode,
+                reasonCodes: responseDecision.reasonCodes,
+                message: responseDecision.reasons.join('; ') || 'Response rejected by guardrails.',
+                workflowId,
+                templateId: template.id,
+                providerId,
+                model: providerModel,
+              })
+            }
+
+            // 16. Guardrail Financial Guidance Validation
+            const financialGuidanceDecision = guardrailEngine.validateFinancialGuidance(rawResponse)
+            if (financialGuidanceDecision.decision === 'reject') {
+              throw new GuardrailError({
+                stage: 'financial_guidance',
+                code: financialGuidanceDecision.primaryCode,
+                reasonCodes: financialGuidanceDecision.reasonCodes,
+                message: financialGuidanceDecision.reasons.join('; ') || 'Financial guidance rejected by guardrails.',
+                workflowId,
+                templateId: template.id,
+                providerId,
+                model: providerModel,
+              })
+            }
+
             finalResponse = rawResponse
             break // Succeeded!
           } catch (err) {
+            // GuardrailError is NEVER retryable!
+            if (err instanceof GuardrailError) {
+              auditLogger.logRejection({
+                stage: err.stage,
+                code: err.code,
+                reasonCodes: err.reasonCodes,
+                workflowId: err.workflowId,
+                templateId: err.templateId,
+                providerId: err.providerId,
+                model: err.model,
+              })
+              finalError = {
+                code: WORKFLOW_ERROR_CODES.GUARDRAIL_REJECTED,
+                message: `Workflow ${err.stage} rejected by guardrails: ${err.message}`,
+              }
+              break
+            }
+
             // A. Precedence: Check if master workflow signal was aborted
             if (timeoutManager.signal.aborted) {
               finalError = {
@@ -294,7 +439,21 @@ export function createServiceCoordinator({
           }
         }
       } catch (pipelineErr) {
-        if (pipelineErr instanceof WorkflowError) {
+        if (pipelineErr instanceof GuardrailError) {
+          auditLogger.logRejection({
+            stage: pipelineErr.stage,
+            code: pipelineErr.code,
+            reasonCodes: pipelineErr.reasonCodes,
+            workflowId: pipelineErr.workflowId,
+            templateId: pipelineErr.templateId,
+            providerId: pipelineErr.providerId,
+            model: pipelineErr.model,
+          })
+          finalError = {
+            code: WORKFLOW_ERROR_CODES.GUARDRAIL_REJECTED,
+            message: `Workflow ${pipelineErr.stage} rejected by guardrails: ${pipelineErr.message}`,
+          }
+        } else if (pipelineErr instanceof WorkflowError) {
           finalError = {
             code: pipelineErr.code,
             message: pipelineErr.message,

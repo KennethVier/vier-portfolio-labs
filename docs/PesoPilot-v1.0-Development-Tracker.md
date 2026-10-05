@@ -3780,7 +3780,7 @@ Spring Boot AI API, streaming, or Phase 11B.6+ behavior were introduced.
 
 # Phase 11B.6 — Guardrail Engine
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -3790,13 +3790,96 @@ Status: ⬜
 
 ## Features
 
-* [ ] Input validator
-* [ ] Prompt validator
-* [ ] Memory validator
-* [ ] Provider validator
-* [ ] Response validator
-* [ ] Financial guidance validator
-* [ ] Audit logger
+* [x] Input validator
+* [x] Prompt validator
+* [x] Memory validator
+* [x] Provider validator
+* [x] Response validator
+* [x] Financial guidance validator
+* [x] Audit logger
+
+## Action Notes
+
+```txt
+Phase 11B.6 Guardrail Engine validated.
+
+Implemented deterministic application-level guardrails for Input,
+Prompt, Memory, Provider, Response, and Financial Guidance validation,
+plus sanitized rejection audit logging.
+
+Guardrails use immutable binary allow/reject decisions. No content
+rewriting, sanitization, regeneration, manual review, or escalation
+behavior is implemented.
+
+Public orchestration fields and provider configuration fields are
+strictly allowlisted. Caller-controlled execution fields such as signal,
+retry policy, and workflow timeout cannot be injected through public
+workflow input.
+
+Prompt and memory safety scanning uses explicit untrusted-text provenance
+rather than recursively treating deterministic platform-generated
+financial narratives as user instructions.
+
+Prompt Guardrail verifies the canonical mandatory safety block produced
+by the existing Prompt Builder safety injector and applies bounded
+high-confidence deterministic prompt-injection detection.
+
+Memory Guardrail validates only retrieved MemoryContext content and
+performs bounded sensitive-data/secret detection. It does not persist or
+automatically promote memory.
+
+Provider Guardrail enforces browser-phase execution policy for registered
+local Ollama providers but does not replace the Phase 11B.3 /api/show
+model locality preflight.
+
+Response Guardrail validates publication safety and rejects bounded
+high-confidence prompt disclosure, secret leakage, and unsupported
+platform action claims.
+
+Financial Guidance Guardrail permits budgeting, savings, expense,
+cashflow, goal, and educational coaching while rejecting bounded
+high-confidence regulated or unsupported guidance categories.
+
+All guardrail rejections normalize to WorkflowError
+GUARDRAIL_REJECTED with terminal workflow status failed and are never
+passed through Provider retry classification. Guardrail retry behavior is
+control-flow policy; WorkflowError contains no isRetryable field.
+
+Audit logging emits sanitized structured events for rejections only.
+No prompt, conversation, memory, response, financial value, secret value,
+unsanitized cause, or stack trace is propagated into audit events or
+sanitized workflow diagnostics.
+
+No audit persistence was introduced. The browser runtime uses a no-op
+sink by default, with a bounded in-memory sink available for tests/local
+diagnostics.
+
+Section 12.6 — AI Safety & Guardrails Architecture was materialized.
+
+Validation:
+48/48 Guardrail Engine tests passed.
+57/57 Memory Service tests passed.
+31/31 Prompt Builder tests passed.
+37/37 Conversation Engine tests passed.
+39/39 Provider Layer tests passed.
+36/36 AI Orchestrator tests passed.
+25/25 AI Platform Foundation tests passed.
+76/76 test files passed.
+743/743 tests passed.
+ESLint passed with 0 errors and 0 warnings.
+Production Vite build passed with 905 modules transformed.
+
+Final contract cleanup:
+48/48 Guardrail tests passed.
+36/36 Orchestrator tests passed.
+ESLint passed with 0 errors and 0 warnings.
+
+No database/schema changes, audit persistence, cloud providers,
+Spring Boot AI API, streaming, automatic rewriting, automatic
+regeneration, rate limiting, abuse subsystem, human escalation,
+semantic/ML safety classifier, financial-engine changes, or
+Phase 11B.7+ behavior were introduced.
+```
 
 ---
 

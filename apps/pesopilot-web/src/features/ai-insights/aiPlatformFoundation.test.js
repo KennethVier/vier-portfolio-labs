@@ -63,7 +63,8 @@ describe('AI Platform Foundation', () => {
       c.exportName !== 'conversationEngine' &&
       c.exportName !== 'providerLayer' &&
       c.exportName !== 'aiOrchestrator' &&
-      c.exportName !== 'memoryService',
+      c.exportName !== 'memoryService' &&
+      c.exportName !== 'guardrailEngine',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -340,6 +341,61 @@ describe('AI Platform Foundation', () => {
       'status',
       'validateMemoryContext',
       'validateMemoryDto',
+    ])
+  })
+
+  // Guardrail Engine 11B.6 Assertions
+  it('ensures guardrailEngine has canonical name "guardrail-engine", status "ready", and approved interface functions', () => {
+    expect(guardrailEngine).toBeDefined()
+    expect(guardrailEngine.name).toBe('guardrail-engine')
+    expect(guardrailEngine.status).toBe('ready')
+    expect(typeof guardrailEngine.validateInput).toBe('function')
+    expect(typeof guardrailEngine.validateMemory).toBe('function')
+    expect(typeof guardrailEngine.validatePrompt).toBe('function')
+    expect(typeof guardrailEngine.validateProvider).toBe('function')
+    expect(typeof guardrailEngine.validateResponse).toBe('function')
+    expect(typeof guardrailEngine.validateFinancialGuidance).toBe('function')
+  })
+
+  it('ensures guardrailEngine is frozen and immutable', () => {
+    expect(Object.isFrozen(guardrailEngine)).toBe(true)
+
+    expect(() => {
+      guardrailEngine.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      guardrailEngine.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures guardrailEngine exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'persist',
+      'save',
+      'rewrite',
+      'sanitize',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(guardrailEngine[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(guardrailEngine).sort()).toEqual([
+      'name',
+      'status',
+      'validateFinancialGuidance',
+      'validateInput',
+      'validateMemory',
+      'validatePrompt',
+      'validateProvider',
+      'validateResponse',
     ])
   })
 

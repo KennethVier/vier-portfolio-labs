@@ -1805,6 +1805,196 @@ Phase 11B.5 explicitly excludes:
 
 ---
 
+# 12.6 — AI Safety & Guardrails Architecture
+
+Version: 1.0.0
+Phase: 11B.6
+
+## Guardrail Philosophy & Core Principle
+
+```text
+AI explains.
+PesoPilot decides.
+```
+
+* **Deterministic Application-Policy Enforcement**: Guardrails provide deterministic application-level policy enforcement at runtime.
+* **Separation of Concerns**: Guardrails do NOT calculate finance, construct prompts, manage conversation history, manage memory state, execute providers, or generate recommendations.
+* **Complement to Safety Injector**: The existing `safetyInjector.js` provides behavioral instructions inside the LLM prompt. The Guardrail Engine provides actual deterministic runtime boundary enforcement before and after model invocation.
+
+## Decision Model
+
+The Guardrail Engine enforces a strict, fail-closed binary decision model:
+
+```javascript
+{
+  version: '1.0.0',
+  stage: 'input', // 'input' | 'memory' | 'prompt' | 'provider' | 'response' | 'financial_guidance'
+  decision: 'allow', // 'allow' | 'reject'
+  primaryCode: null, // null on allow; GuardrailErrorCode on reject
+  reasonCodes: [], // string[] (defensively copied and frozen)
+  reasons: [],     // string[] (defensively copied and frozen)
+}
+```
+
+* **Binary Decisions Only**: Every check returns strictly `allow` or `reject`.
+* **No Ambiguous States**: `rewrite`, `sanitize`, `warn`, `manual_review`, and `escalate` are explicitly excluded from this phase.
+* **Deep Immutability**: All decisions and nested arrays are defensively copied and recursively frozen (`Object.freeze`).
+
+## Exact Orchestration Lifecycle & Stage Ordering
+
+The Guardrail Engine integrates into the AI Orchestration Engine (`serviceCoordinator.js`) in an exact deterministic order:
+
+```text
+ 1. Existing structural orchestration input validation (DTO shape)
+ 2. Guardrail Input validation (validateInput)
+ 3. Resolve workflow template
+ 4. Resolve provider metadata
+ 5. Create and start workflow
+ 6. Retrieve MemoryContext
+ 7. Guardrail Memory validation (validateMemory, if non-null)
+ 8. Prompt Builder execution
+ 9. Existing PromptPackage structural validation
+10. Guardrail Prompt validation (validatePrompt)
+11. ProviderRequest creation
+12. Guardrail Provider validation (validateProvider)
+13. Provider execution (LLM Adapter call)
+14. Existing ProviderResponse structural validation
+15. Guardrail Response validation (validateResponse)
+16. Financial Guidance validation (validateFinancialGuidance)
+17. Complete workflow execution
+18. Return existing { workflow, response } contract
+```
+
+Input Guardrail validation runs before workflow record creation where practical. Public inputs failing allowlists are rejected immediately without creating an orphaned workflow record.
+
+## The Seven Guardrail Subsystems
+
+### 1. Input Guardrail (`inputGuardrail.js`)
+* **Strict Public Control Allowlists**: Only approved top-level fields are permitted (`templateId`, `insightBundle`, `recommendationBundle`, `financialSummary`, `conversationContext`, `memoryState`, `provider`, `workflowId`).
+* **Provider Control Allowlists**: Only `id`, `model`, and `config` are permitted for provider descriptor overrides; only `baseUrl` and `transportTimeoutMs` are permitted in `provider.config`.
+* **No Caller Bypass/Control Injections**: Caller-supplied `signal`, `maxAttempts`, `retryDelayMs`, `workflowTimeoutMs`, and guardrail bypass flags are rejected with `INPUT_REJECTED` and reason `UNRECOGNIZED_CONTROL_FIELDS`.
+
+### 2. Untrusted-Text Provenance & Threat Scanner (`untrustedTextExtractor.js`, `threatPatterns.js`)
+* **Explicit Untrusted Provenance Paths**: Untrusted text scanning is strictly restricted to proven user-controlled sources:
+  - `conversationContext.recentMessages[*].content`
+  - `memoryContext.items[*].content`
+  - `context.insights.expenses.topSpendingCategory` (explicit proven user category label)
+* **Zero Recursive Scanning**: Platform-generated strings (e.g. `recommendation.title`, `financialSummary` sections and paragraphs, domain status strings) are deterministic platform outputs and are never recursively walked or treated as prompt injections.
+* **High-Confidence Threat Scanner**: Scans untrusted text for:
+  - Instruction override / prompt reset attempts;
+  - System or developer prompt exfiltration attempts;
+  - Guardrail bypass and restriction removal instructions;
+  - Role impersonation and control override syntax;
+  - Provider or configuration manipulation commands;
+  - Credential and token disclosure requests.
+* **Context-Aware Evaluation**: Requires contextual intent rather than naive keyword matching, distinguishing malicious control attempts from academic or explanatory mentions.
+
+### 3. Memory Guardrail (`memoryGuardrail.js`)
+* **Content Safety Enforcement**: Evaluates retrieved `MemoryContextDTO` records for prompt injection attempts, exfiltration attempts, and sensitive data/PII before Prompt Builder invocation.
+* **Safe Null Bypass**: Safely skips validation if `memoryContext` is null.
+* **Read-Only Operation**: Does not mutate, delete, or promote memory records.
+
+### 4. Prompt Guardrail (`promptGuardrail.js`)
+* **Canonical Safety Block Integrity**: Imports `getSafetyInstructions()` from `safetyInjector.js` and asserts that the system prompt contains the canonical block `MANDATORY SAFETY RULES:\n${getSafetyInstructions()}` verbatim. If missing or altered, rejects with `PROMPT_SYSTEM_INTEGRITY_VIOLATION`.
+* **Task & Template Validation**: Ensures template ID matches whitelisted workflow templates.
+* **Prompt Size Ceilings**: Enforces maximum system prompt (4,000 chars) and user prompt (16,000 chars) limits.
+* **Untrusted Text Scan**: Scans all untrusted segments embedded in the prompt.
+
+### 5. Provider Guardrail (`providerGuardrail.js`)
+* **Browser-Phase Locality Policy**: Asserts provider is registered, provider ID is `ollama`, descriptor locality is `local`, and `stream` is `false`.
+* **Cloud Rejection**: Descriptors with `cloud` locality are rejected immediately (`PROVIDER_CLOUD_LOCALITY_PROHIBITED`).
+* **Locality Authority**: Descriptor locality check enforces client execution policy; physical model locality verification remains the sole authority of Provider Layer 11B.3 (`/api/show`).
+
+### 6. Response Guardrail (`responseGuardrail.js`)
+* **Post-Generation Publication Safety**: Executes immediately following `ProviderResponse` structural schema validation.
+* **Size Enforcement**: Enforces maximum response length (8,000 chars).
+* **System Prompt Disclosure Scanner**: Rejects responses that leak internal developer prompts, safety rules, or platform instructions.
+* **Secret & Token Leakage**: Scans for accidental leakage of authorization tokens, API keys, or credentials.
+* **Unsupported Action Claims**: Detects and rejects unauthorized claims that the AI performed financial mutations (e.g., "I transferred the money", "I deleted the expense", "I changed your budget") while preserving legitimate non-action explanations (e.g., "PesoPilot cannot transfer money").
+
+### 7. Financial Guidance Guardrail (`financialGuidanceGuardrail.js`)
+* **Permitted Financial Coaching**: Explicitly allows budget explanations, expense analyses, savings guidance, cashflow interpretations, goal coaching, financial education, and habit coaching.
+* **High-Confidence Prohibited Categories**:
+  - Direct buy/sell directives for securities, stocks, or cryptocurrencies;
+  - Guaranteed investment returns;
+  - Authoritative personalized tax or legal conclusions;
+  - Specific loan or credit-product endorsements;
+  - Guaranteed financial outcomes.
+
+## Sensitive Data & PII Detection
+
+The guardrail engine provides high-confidence deterministic detectors for sensitive data patterns:
+* Email addresses;
+* Phone-number-like identifiers;
+* Payment card numbers (validated against the Luhn checksum algorithm);
+* Bearer and Authorization tokens;
+* API key and private key patterns;
+* Secret and password assignment patterns.
+
+**Financial Number Exemption**: Ordinary numeric amounts (e.g., salary = 49,000, grocery expense = 1,200, cash balance = 7,000) are recognized as legitimate domain figures and are never falsely classified as PII.
+
+## Audit Logger Subsystem (`auditLogger.js`)
+
+* **Event DTO**:
+  ```javascript
+  {
+    version: '1.0.0',
+    eventId: 'uuid',
+    workflowId: 'wf-123' | null,
+    stage: 'prompt',
+    decision: 'reject',
+    code: 'PROMPT_REJECTED',
+    reasonCodes: ['PROMPT_SYSTEM_INTEGRITY_VIOLATION'],
+    createdAt: '2026-10-05T00:00:00.000Z',
+  }
+  ```
+* **Rejections Only**: Emits structured audit events strictly for rejections (`decision: 'reject'`). Successful validations do not produce audit records.
+* **No Database Persistence**: Audit logging uses an injected sink (`() => {}` default). No Dexie stores, IndexedDB tables, or schema migrations are created.
+* **In-Memory Diagnostic Sink**: `createInMemoryAuditSink({ maxEvents: 100 })` provides a bounded ring-buffer for test assertions and local debugging.
+* **Sink Failure Isolation**: If an audit sink throws an exception, the rejection decision remains authoritative and immutable.
+
+## Retry Boundary & Workflow Error Integration
+
+* **Zero-Retry Policy**: Guardrail rejections are never retryable. Rejections are intercepted outside provider retry classification, normalized to `GUARDRAIL_REJECTED`, and terminate the workflow immediately without invoking the retry manager. Retry semantics are control-flow policy, not a `WorkflowError` field.
+* **Interception Outside Provider Loop**: Post-generation guardrail rejections (`validateResponse` and `validateFinancialGuidance`) run strictly outside the provider retry loop. If a generated completion fails guardrail validation, the provider adapter is invoked exactly once, and no retry is attempted.
+* **Workflow Error Normalization**: All guardrail rejections throw a `GuardrailError` which normalizes at the orchestration boundary to:
+  - `WorkflowError.code = GUARDRAIL_REJECTED`
+  - `workflow.status = 'failed'`
+  - `workflow.finalErrorCode = 'GUARDRAIL_REJECTED'`
+
+## Privacy Guarantees & Safe Metadata
+
+* **Sanitized Messages & Metadata Only**: Guardrail errors use sanitized messages and safe metadata only.
+* **Zero Retention**: Raw rejected prompt, conversation, memory, provider response, financial values, detected credential values, and unsanitized causes are never copied into `WorkflowError`, workflow diagnostics, `AuditEvent` payloads, or audit sink metadata.
+* **Stack Trace Policy**: Internal JavaScript Error stack behavior is not part of the public guardrail contract. Stack traces are not propagated into sanitized cross-layer artifacts or audit events.
+* **Safe Diagnostics**: Only safe metadata (workflow ID, stage name, primary error code, sanitized reason codes, and high-level safe descriptions) is propagated into diagnostics, errors, and audits.
+
+## Residual Limitations & Bounded MVP Scope
+
+* **Bounded Deterministic MVP**: Guardrails detect a limited, high-confidence subset of deterministic policy violations.
+* **Explicit Residual Limitations**:
+  - Does NOT claim complete prompt-injection or jailbreak prevention;
+  - Does NOT claim complete PII detection;
+  - Does NOT claim complete hallucination prevention;
+  - Does NOT deterministically verify every model-generated number or sentence against source DTOs;
+  - Does NOT claim perfect financial-advice classification or regulatory compliance certification.
+
+## Explicit Non-Goals
+
+Phase 11B.6 explicitly excludes:
+* Rate limiters, abuse tracking, or throttling subsystems;
+* Manual human review, escalation queues, or admin review dashboards;
+* Dynamic remote policy loaders or administrative policy servers;
+* LLM-as-a-judge classifiers, ML embeddings, or semantic injection detectors;
+* Automatic prompt or response rewriting, or automatic regeneration after rejection;
+* Cloud LLM providers (OpenAI, Gemini, Claude);
+* Spring Boot AI Gateway or REST API additions;
+* Streaming or WebSocket transports (Phase 11B.8);
+* Persistent database storage, Dexie tables, or schema version bumps;
+* Modifying deterministic finance engines or financial calculations.
+
+---
+
 # 12.10 — Future Multi-LLM & AI Evolution Architecture
 
 Version: 1.0.0
