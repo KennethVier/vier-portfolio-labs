@@ -331,6 +331,41 @@ Cashflow and Dashboard phases must calculate actual income by summing income rec
 
 ---
 
+# ADR-013
+
+Title:
+Budget Shock Risk Threshold Policy
+
+Status:
+Accepted
+
+Decision:
+Adopt explicit deterministic threshold boundaries and ordinal risk scoring for Phase 13 Budget Shock Warning:
+1. Severity precedence is Red > Orange > Yellow > Green. The highest matching severity always wins.
+2. Risk scoring is an ORDINAL score:
+   - Green = 0
+   - Yellow = 1
+   - Orange = 2
+   - Red = 3
+   No 0–100 composite financial risk score or arbitrary weighted factors are used.
+3. Red (Score: 3, Meaning: Projected Deficit / Budget Overage):
+   Triggers when projectedDeficit > 0 OR projectedRemaining < 0 OR availableCash < 0 OR any valid category budget utilization > 100% (raw ratio > 1.00; exactly 100.00% is Orange, 100.01% is Red).
+4. Orange (Score: 2, Meaning: Likely Overspending):
+   Evaluated only if not Red. Triggers when remainingDays > 0 AND safeDailySpend > 0 AND dailyBurnRate > safeDailySpend, OR any valid category budget utilization >= 80% AND <= 100%.
+5. Yellow (Score: 1, Meaning: Monitor Spending):
+   Evaluated only if not Red or Orange. Triggers when remainingDays > 0 AND safeDailySpend > 0 AND (dailyBurnRate / safeDailySpend) > 0.90 AND (dailyBurnRate / safeDailySpend) <= 1.00, OR any valid category budget utilization >= 70% AND < 80%.
+6. Green (Score: 0, Meaning: Healthy):
+   Evaluated when no Red, Orange, or Yellow rule matches.
+7. Active alerts are persisted in budget_shock_alerts strictly for Orange and Red (one active alert per cutoff, updated/resolved deterministically; Green and Yellow remain purely computed UI states).
+
+Reason:
+Authoritative v1 documentation defined qualitative risk levels (Green: Healthy, Yellow: Monitor Spending, Orange: Likely Overspending, Red: Projected Deficit) and design system 80% budget cues, but did not define all quantitative boundaries or risk scoring mechanics. The 90% burn pressure and 70% category utilization watch thresholds provide a 10-point early warning buffer prior to primary overspending.
+
+Consequences:
+Budget Shock calculations are pure, deterministic, and local-first. Phase 12 ForecastResult is consumed directly without math duplication. Category budgets are optional; risk evaluates gracefully when no category budgets exist.
+
+---
+
 # Future Decision Template
 
 Copy for future decisions:

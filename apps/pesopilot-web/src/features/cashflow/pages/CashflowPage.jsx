@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 
+import { BudgetShockWarningCard } from '@/features/budget-shock/components/BudgetShockWarningCard.jsx'
+import { useBudgetShock } from '@/features/budget-shock/hooks/useBudgetShock.js'
 import { useCashflow } from '../hooks/useCashflow.js'
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -348,6 +350,7 @@ export function CashflowPage() {
     hasCurrentCutoff,
     isLoading,
   } = useCashflow()
+  const { recommendation, risk } = useBudgetShock(cashflow?.cutoff?.id)
   const cashflowStatus = getCashflowStatus(cashflow?.remainingCash)
 
   return (
@@ -426,11 +429,21 @@ export function CashflowPage() {
           </KpiGrid>
 
           {forecast ? (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <ForecastProjectionCard forecast={forecast} />
-              <ForecastExplanationCard explanation={explanation} forecast={forecast} />
+            <div className="space-y-6">
+              {risk ? (
+                <BudgetShockWarningCard
+                  risk={risk}
+                  forecast={forecast}
+                  recommendation={recommendation}
+                />
+              ) : null}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <ForecastProjectionCard forecast={forecast} />
+                <ForecastExplanationCard explanation={explanation} forecast={forecast} />
+              </div>
             </div>
           ) : null}
+
 
           <MetricsGrid cashflow={cashflow} />
 

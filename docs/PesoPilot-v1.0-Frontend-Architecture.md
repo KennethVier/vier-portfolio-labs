@@ -998,20 +998,27 @@ Folder:
 features/budget-shock/
 ```
 
-Should calculate:
+Responsibilities:
 
-* green
-* yellow
-* orange
-* red
+* Evaluate deterministic risk levels (`green`, `yellow`, `orange`, `red`)
+* Calculate ordinal risk score (`green: 0`, `yellow: 1`, `orange: 2`, `red: 3`)
+* Consume canonical `ForecastResult` from `features/cashflow` without recalculating forecast metrics
+* Optionally evaluate category budget utilization from `budgets` store
+* Manage active alert lifecycle in `budget_shock_alerts` (`orange` and `red` persisted; `green` and `yellow` computed)
+* Generate bounded, deterministic recommendations
 
-based on forecast risk.
+Threshold Policy (ADR-013):
 
-Warnings must explain:
+* Red (Score: 3, Projected Deficit / Budget Overage): `projectedDeficit > 0` OR `projectedRemaining < 0` OR `availableCash < 0` OR category budget `utilization > 100%`.
+* Orange (Score: 2, Likely Overspending): `remainingDays > 0` AND `safeDailySpend > 0` AND `dailyBurnRate > safeDailySpend`, OR category budget `utilization >= 80% && <= 100%`.
+* Yellow (Score: 1, Monitor Spending): `remainingDays > 0` AND `safeDailySpend > 0` AND `(dailyBurnRate / safeDailySpend) > 0.90 && <= 1.00`, OR category budget `utilization >= 70% && < 80%`.
+* Green (Score: 0, Healthy): No Red, Orange, or Yellow threshold breached.
 
-* level
-* cause
-* recommended action
+UI Placement:
+
+* `CashflowPage`: `BudgetShockWarningCard`
+* `Dashboard`: `CashflowStatusAlert` integration via `dashboardService.js`
+* Header Notifications: Active Orange/Red alerts via `notificationCenterService.js`
 
 ---
 

@@ -1,5 +1,6 @@
 import { INBOX_STATUS } from '@/features/expense-inbox/constants/expenseInboxConstants.js'
 import { cutoffWorkflowReminderService } from '@/features/salary-cutoff/services/cutoffWorkflowReminderService.js'
+import { budgetShockAlertRepository } from '@/lib/db/repositories/budgetShockAlertRepository.js'
 import { detectedExpenseRepository } from '@/lib/db/repositories/detectedExpenseRepository.js'
 
 const INDIVIDUAL_INBOX_NOTIFICATION_LIMIT = 3
@@ -76,19 +77,68 @@ function getBadgeLabel(count) {
   return count > NOTIFICATION_BADGE_CAP ? `${NOTIFICATION_BADGE_CAP}+` : String(count)
 }
 
+function buildBudgetShockNotification(alert) {
+  const isRed = alert.level === 'red'
+  return {
+    actionLabel: 'Review Cashflow',
+    dismissible: false,
+    id: `budget-shock-alert-${alert.id}`,
+    message: alert.message,
+    priority: isRed ? 1 : 2,
+    storageKey: null,
+    title: isRed ? 'Projected Deficit Warning' : 'Likely Overspending Warning',
+    to: '/cashflow',
+    type: 'budget_shock_alert',
+  }
+}
+
+function deduplicateActiveBudgetShockAlerts(alerts) {
+  const sorted = [...alerts].sort((a, b) => {
+    if (a.level !== b.level) {
+      return a.level === 'red' ? -1 : 1
+    }
+    const createdDiff = String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''))
+    if (createdDiff !== 0) {
+      return createdDiff
+    }
+    return (Number(b.id) || 0) - (Number(a.id) || 0)
+  })
+
+  const seenCutoffs = new Set()
+  const deduped = []
+  for (const alert of sorted) {
+    if (!seenCutoffs.has(alert.cutoffId)) {
+      seenCutoffs.add(alert.cutoffId)
+      deduped.push(alert)
+    }
+  }
+  return deduped
+}
+
 export const notificationCenterService = {
   async loadNotifications(options = {}) {
-    const [workflowNotifications, inboxRecords] = await Promise.all([
+    const [workflowNotifications, inboxRecords, shockAlerts] = await Promise.all([
       cutoffWorkflowReminderService.loadReminders(options),
       detectedExpenseRepository.findAll(),
+      budgetShockAlertRepository.findByLevel('red').then(async (reds) => {
+        const oranges = await budgetShockAlertRepository.findByLevel('orange')
+        const active = [...reds, ...oranges].filter((a) => a.status === 'active')
+        return deduplicateActiveBudgetShockAlerts(active)
+      }).catch(() => []),
     ])
     const inboxResult = buildInboxNotifications(inboxRecords)
-    const activeCount = workflowNotifications.length + inboxResult.activeCount
+    const shockNotifications = shockAlerts.map(buildBudgetShockNotification)
+    const activeCount =
+      workflowNotifications.length + inboxResult.activeCount + shockNotifications.length
 
     return {
       activeCount,
       badgeLabel: activeCount > 0 ? getBadgeLabel(activeCount) : '',
-      notifications: [...workflowNotifications, ...inboxResult.notifications],
+      notifications: [
+        ...shockNotifications,
+        ...workflowNotifications,
+        ...inboxResult.notifications,
+      ],
     }
   },
 
@@ -98,9 +148,11 @@ export const notificationCenterService = {
 }
 
 export const notificationCenterServiceInternals = {
+  buildBudgetShockNotification,
   buildGroupedInboxNotification,
   buildInboxNotification,
   buildInboxNotifications,
+  deduplicateActiveBudgetShockAlerts,
   getBadgeLabel,
   sortPendingInboxRecords,
 }

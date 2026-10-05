@@ -101,6 +101,56 @@ describe('dashboardService derivations', () => {
     })
   })
 
+  it('derives budget alert state from Phase 13 Budget Shock risk result', () => {
+    // Red risk -> critical tone
+    expect(
+      deriveBudgetAlert(null, null, true, {
+        risk: { level: 'red', projectedDeficit: 500 },
+        recommendation: { recommendedAction: 'Reduce spending immediately.' },
+      }),
+    ).toMatchObject({
+      actionTo: '/cashflow',
+      message: expect.stringContaining('shortfall of ₱500.00'),
+      title: 'Cashflow Deficit Risk',
+      tone: 'critical',
+    })
+
+    // Orange risk -> warning tone
+    expect(
+      deriveBudgetAlert(null, null, true, {
+        risk: { level: 'orange' },
+        recommendation: { recommendedAction: 'Keep spending at safe limit.' },
+      }),
+    ).toMatchObject({
+      actionTo: '/cashflow',
+      title: 'Cashflow Warning',
+      tone: 'warning',
+    })
+
+    // Yellow risk -> warning/caution tone
+    expect(
+      deriveBudgetAlert(null, null, true, {
+        risk: { level: 'yellow' },
+        recommendation: { recommendedAction: 'Monitor spending.' },
+      }),
+    ).toMatchObject({
+      actionTo: '/cashflow',
+      title: 'Cashflow Status',
+      tone: 'warning',
+    })
+
+    // Green risk -> stable tone
+    expect(
+      deriveBudgetAlert(null, null, true, {
+        risk: { level: 'green' },
+      }),
+    ).toMatchObject({
+      actionTo: '/cashflow',
+      title: 'Cashflow Stable',
+      tone: 'stable',
+    })
+  })
+
   it('derives total expense helper text from spending pace status', () => {
     expect(deriveExpenseHelperText({
       cashflow: { metrics: { spendingPace: { status: 'Fast' } } },

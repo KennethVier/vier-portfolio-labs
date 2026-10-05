@@ -4947,7 +4947,7 @@ APPROVED.
 
 # Phase 13 — Budget Shock Warning
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -4957,33 +4957,268 @@ Prevent overspending.
 
 ## Features
 
-[ ] Risk engine
+[x] Risk engine
 
-[ ] Risk scoring
+[x] Risk scoring
 
-[ ] Alerts
+[x] Alerts
 
-[ ] Recommendations
+[x] Recommendations
 
 ---
 
 ## Risk Levels
 
-[ ] Green
+[x] Green
 
-[ ] Yellow
+[x] Yellow
 
-[ ] Orange
+[x] Orange
 
-[ ] Red
+[x] Red
 
 ---
 
 ## Testing
 
-[ ] Threshold tests
+[x] Threshold tests
 
-[ ] Alert generation
+[x] Alert generation
+
+---
+
+## Action Notes
+
+Implemented deterministic Phase 13 Budget Shock Warning.
+
+Phase 13 consumes the canonical Phase 12 ForecastResult and does not
+recalculate cashflow forecasting.
+
+Risk scoring is ordinal:
+
+Green  = 0
+Yellow = 1
+Orange = 2
+Red    = 3
+
+Highest matching severity wins:
+
+Red
+> Orange
+> Yellow
+> Green
+
+ADR-013 records the accepted deterministic threshold policy.
+
+Red:
+
+- projectedDeficit > 0; or
+- projectedRemaining < 0; or
+- availableCash < 0; or
+- category budget utilization > 100%.
+
+Orange, when no Red condition exists:
+
+- remainingDays > 0;
+- safeDailySpend > 0;
+- dailyBurnRate > safeDailySpend;
+
+or:
+
+- category budget utilization >= 80% and <= 100%.
+
+Yellow, when no Red or Orange condition exists:
+
+- remainingDays > 0;
+- safeDailySpend > 0;
+- burn ratio > 90% and <= 100%;
+
+or:
+
+- category budget utilization >= 70% and < 80%.
+
+Green applies when no higher threshold matches.
+
+Risk threshold evaluation uses raw, unrounded ratios.
+
+Category budget boundaries:
+
+< 70%      → Green
+70%–<80%   → Yellow
+80%–100%   → Orange
+> 100%     → Red
+
+Burn-pressure boundaries:
+
+<= 90%     → Green
+>90%–100%  → Yellow
+>100%       → Orange
+
+subject to higher-severity Red conditions.
+
+RiskResult is immutable and includes:
+
+- cutoff ID;
+- as-of date;
+- risk level;
+- ordinal score;
+- primary reason code;
+- cause category ID when applicable;
+- projected deficit;
+- deterministic risk signals.
+
+Primary reason precedence:
+
+1. PROJECTED_DEFICIT
+2. NEGATIVE_AVAILABLE_CASH
+3. CATEGORY_OVER_BUDGET
+4. BURN_EXCEEDS_SAFE
+5. CATEGORY_BUDGET_WARNING
+6. BURN_NEAR_SAFE
+7. CATEGORY_BUDGET_WATCH
+
+Equal category signals use highest raw utilization, with deterministic
+category-ID tie-breaking.
+
+Phase 13 uses existing optional category budgets.
+
+Budget Shock continues to work when no category budgets are configured.
+
+Category utilization is:
+
+spentAmountSnapshot
+÷ plannedAmount
+
+for valid budgets with plannedAmount > 0.
+
+Malformed/non-finite budget values are excluded from risk evaluation.
+
+Persistent Budget Shock alerts are created only for:
+
+- Orange;
+- Red.
+
+Green and Yellow remain computed UI states.
+
+The existing budget_shock_alerts store was reused without schema changes.
+
+MVP invariant:
+
+one active Budget Shock alert per cutoff.
+
+Orange → Red updates the canonical active alert.
+
+Red → Orange updates the canonical active alert.
+
+Orange/Red → Yellow/Green resolves the active alert.
+
+A resolved alert can be reactivated when the same cutoff escalates again.
+
+Legacy duplicate active records are handled defensively so synchronization
+finishes with at most one active alert for the cutoff.
+
+Alert records preserve the existing fields:
+
+- id;
+- cutoffId;
+- level;
+- message;
+- causeCategoryId;
+- projectedDeficit;
+- recommendedAction;
+- status;
+- createdAt;
+- resolvedAt.
+
+createdAt remains stable during updates/reactivation.
+
+resolvedAt is set on resolution and cleared on reactivation.
+
+Recommendations are deterministic and bounded.
+
+They may instruct users to:
+
+- monitor remaining-cutoff spending;
+- review spending in a category approaching its budget;
+- keep discretionary spending within the current safe daily spend;
+- review remaining cutoff expenses;
+- reduce discretionary spending where possible.
+
+They do not provide:
+
+- investment advice;
+- loan/credit advice;
+- tax advice;
+- guaranteed financial outcomes.
+
+Budget Shock UI was added to the existing Cashflow page without replacing
+Phase 12 forecast functionality.
+
+Dashboard integration now consumes canonical Phase 13 risk rather than
+maintaining a competing production risk policy.
+
+The notification center surfaces only persisted active Orange/Red alerts.
+
+Resolved alerts and Green/Yellow states are not shown as notifications.
+
+Notification rendering defensively deduplicates legacy active records by
+cutoff.
+
+Risk level presentation does not rely on color alone.
+
+User-visible labels are:
+
+Green  → Healthy
+Yellow → Monitor Spending
+Orange → Likely Overspending
+Red    → Projected Deficit
+
+AI Platform remains unchanged.
+
+Spring Boot backend remains unchanged.
+
+Phase 12 forecast engine/model/service remain unchanged.
+
+Dexie schema remains unchanged.
+
+No new dependency was added.
+
+ADR-013 was added to the Decision Log.
+
+Frontend Architecture was updated to document the implemented deterministic
+Budget Shock contract.
+
+Final validation:
+
+Focused Phase 13:
+4/4 test files passed.
+53/53 tests passed.
+
+Dashboard / Notification integration:
+2/2 test files passed.
+24/24 tests passed.
+
+Frontend full regression:
+92/92 test files passed.
+918/918 tests passed.
+0 failures.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+
+Backend:
+30/30 tests passed.
+0 failures.
+0 errors.
+BUILD SUCCESS.
+
+Phase 13 implementation audit result:
+
+APPROVED.
 
 ---
 

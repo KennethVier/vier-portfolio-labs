@@ -1,3 +1,4 @@
+import { budgetShockService } from '@/features/budget-shock/services/budgetShockService.js'
 import { cashflowService } from '@/features/cashflow/services/cashflowService.js'
 import { expenseService } from '@/features/expenses/services/expenseService.js'
 import { incomeService } from '@/features/income/services/incomeService.js'
@@ -104,9 +105,75 @@ export function deriveExpenseHelperText(insights, hasCurrentCutoff = true) {
   return 'Within range'
 }
 
-export function deriveBudgetAlert(cashflow, insights = null, hasCurrentCutoff = true) {
+export function deriveBudgetAlert(
+  cashflow,
+  insights = null,
+  hasCurrentCutoff = true,
+  budgetShockResult = null,
+) {
   if (!hasCurrentCutoff) {
     return createNoCutoffStatus()
+  }
+
+  // Canonical Phase 13 Budget Shock risk evaluation takes precedence
+  const shockRisk = budgetShockResult?.risk
+  if (shockRisk) {
+    if (shockRisk.level === 'red') {
+      return {
+        actionLabel: 'View Cashflow',
+        actionTo: '/cashflow',
+        icon: 'warning',
+        insight:
+          budgetShockResult.recommendation?.recommendedAction ||
+          'Review expenses to address projected shortfall.',
+        message:
+          shockRisk.projectedDeficit > 0
+            ? `Current spending pace projects a cutoff shortfall of ₱${Number(shockRisk.projectedDeficit).toLocaleString('en-PH', { minimumFractionDigits: 2 })}.`
+            : 'Available cash or category budget is in critical deficit.',
+        title: 'Cashflow Deficit Risk',
+        tone: 'critical',
+      }
+    }
+
+    if (shockRisk.level === 'orange') {
+      return {
+        actionLabel: 'View Cashflow',
+        actionTo: '/cashflow',
+        icon: 'priority_high',
+        insight:
+          budgetShockResult.recommendation?.recommendedAction ||
+          'Keep discretionary spending at or below safe daily spend.',
+        message: 'Current daily burn rate is above safe daily spend for this cutoff.',
+        title: 'Cashflow Warning',
+        tone: 'warning',
+      }
+    }
+
+    if (shockRisk.level === 'yellow') {
+      return {
+        actionLabel: 'View Cashflow',
+        actionTo: '/cashflow',
+        icon: 'info',
+        insight:
+          budgetShockResult.recommendation?.recommendedAction ||
+          'Monitor spending for the remainder of the cutoff.',
+        message: 'Daily spending pace is approaching the safe daily allowance.',
+        title: 'Cashflow Status',
+        tone: 'warning',
+      }
+    }
+
+    if (shockRisk.level === 'green') {
+      return {
+        actionLabel: 'View Cashflow',
+        actionTo: '/cashflow',
+        icon: 'check_circle',
+        insight: 'Current spending is within sustainable cutoff boundaries.',
+        message: 'Cashflow is being tracked for the current cutoff.',
+        title: 'Cashflow Stable',
+        tone: 'stable',
+      }
+    }
   }
 
   const breakdown = Array.isArray(insights?.cashflow?.breakdown)
@@ -163,6 +230,7 @@ export function deriveBudgetAlert(cashflow, insights = null, hasCurrentCutoff = 
     tone,
   }
 }
+
 
 export function buildSpendingOverview(expenses, currentCutoff) {
   const currentExpenses = getCurrentCutoffExpenses(expenses, currentCutoff)
@@ -313,6 +381,7 @@ export function buildRecentTransactions({ expenses = [], income = [], savings = 
 }
 
 function buildDashboardModel({
+  budgetShockResult = null,
   cashflow,
   currentCutoff,
   expenses,
@@ -330,7 +399,8 @@ function buildDashboardModel({
       topSpendingCategory,
       currentCutoff,
     ),
-    budgetAlert: deriveBudgetAlert(cashflow, insights, hasCurrentCutoff),
+    budgetAlert: deriveBudgetAlert(cashflow, insights, hasCurrentCutoff, budgetShockResult),
+    budgetShock: budgetShockResult,
     cashflow,
     currentCutoff,
     cutoffPerformance: getCutoffPerformance(insights, hasCurrentCutoff),
@@ -355,6 +425,7 @@ export const dashboardService = {
       income,
       savings,
       insights,
+      budgetShockResult,
     ] = await Promise.all([
       cashflowService.getCurrentCashflow(),
       cutoffService.findCurrentCutoff(),
@@ -362,9 +433,11 @@ export const dashboardService = {
       incomeService.loadIncome(),
       savingsService.loadSavings(),
       insightService.loadInsights(),
+      budgetShockService.getCurrentBudgetShock().catch(() => null),
     ])
 
     return buildDashboardModel({
+      budgetShockResult,
       cashflow: cashflowResult.cashflow,
       currentCutoff,
       expenses,

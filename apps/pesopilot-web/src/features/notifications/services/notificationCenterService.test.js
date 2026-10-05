@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { INBOX_STATUS } from '@/features/expense-inbox/constants/expenseInboxConstants.js'
 import { clearDatabase } from '@/lib/db/devTools.js'
 import { db } from '@/lib/db/dexie.js'
+import { budgetShockAlertRepository } from '@/lib/db/repositories/budgetShockAlertRepository.js'
 import { detectedExpenseRepository } from '@/lib/db/repositories/detectedExpenseRepository.js'
 import { seedDatabase } from '@/lib/db/seed.js'
 
@@ -125,4 +126,58 @@ describe('notificationCenterService', () => {
       'pending_inbox_review',
     ])
   })
+
+  it('surfaces active budget shock alerts as notifications', async () => {
+    await budgetShockAlertRepository.create({
+      cutoffId: 10,
+      level: 'red',
+      message: 'Current spending pace projects a cutoff shortfall of ₱1,500.00.',
+      status: 'active',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      resolvedAt: null,
+    })
+
+    const result = await notificationCenterService.loadNotifications()
+
+    expect(result.activeCount).toBe(2) // 1 workflow + 1 shock alert (0 pending inbox)
+    expect(result.notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'budget_shock_alert',
+          title: 'Projected Deficit Warning',
+          message: 'Current spending pace projects a cutoff shortfall of ₱1,500.00.',
+          to: '/cashflow',
+        }),
+      ]),
+    )
+  })
+
+  it('deduplicates active budget shock alerts for the same cutoff, favoring red over orange', async () => {
+    // Insert both red and orange for cutoff 10
+    await budgetShockAlertRepository.create({
+      cutoffId: 10,
+      level: 'orange',
+      message: 'Burn rate exceeds safe spend.',
+      status: 'active',
+      createdAt: '2026-06-25T00:00:00.000Z',
+      resolvedAt: null,
+    })
+    await budgetShockAlertRepository.create({
+      cutoffId: 10,
+      level: 'red',
+      message: 'Projected deficit warning.',
+      status: 'active',
+      createdAt: '2026-06-26T00:00:00.000Z',
+      resolvedAt: null,
+    })
+
+    const result = await notificationCenterService.loadNotifications()
+    const shockAlertNotifications = result.notifications.filter(
+      (n) => n.type === 'budget_shock_alert',
+    )
+
+    expect(shockAlertNotifications).toHaveLength(1)
+    expect(shockAlertNotifications[0].title).toBe('Projected Deficit Warning')
+  })
 })
+
