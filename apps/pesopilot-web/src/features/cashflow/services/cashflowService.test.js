@@ -197,4 +197,90 @@ describe('cashflowService', () => {
     expect(result.cashflow.actualIncome).toBe(15000)
     await expect(cashflowSnapshotRepository.findAll()).resolves.toHaveLength(0)
   })
+
+  it('calculates deterministic forecast and explanation for a cutoff without persisting snapshots', async () => {
+    const cutoffId = await createCutoff({
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 30000,
+    })
+    await createIncome(cutoffId, 25000)
+    await createExpense(cutoffId, 5000)
+    await createSavings(cutoffId, 4000)
+
+    const result = await cashflowService.calculateForecastForCutoff(cutoffId, '2026-06-20')
+
+    expect(result.hasCurrentCutoff).toBe(true)
+    expect(result.forecast).toMatchObject({
+      cutoffId,
+      totalDays: 15,
+      elapsedDays: 5,
+      remainingDays: 10,
+      actualIncome: 25000,
+      totalExpenses: 5000,
+      totalSavings: 4000,
+      availableCash: 16000,
+      dailyBurnRate: 1000,
+      safeDailySpend: 1600,
+      projectedRemaining: 6000,
+      projectedDeficit: 0,
+    })
+    expect(result.explanation).toMatchObject({
+      headline: expect.stringContaining('6,000.00'),
+      summary: expect.stringContaining('1,000.00/day'),
+    })
+    await expect(cashflowSnapshotRepository.findAll()).resolves.toHaveLength(0)
+  })
+
+  it('resolves active cutoff for getCurrentForecast', async () => {
+    const activeCutoffId = await createCutoff({
+      name: 'Active Cutoff',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 20000,
+      status: 'active',
+    })
+    await createIncome(activeCutoffId, 20000)
+    await createExpense(activeCutoffId, 5000)
+
+    const result = await cashflowService.getCurrentForecast('2026-06-20')
+
+    expect(result.hasCurrentCutoff).toBe(true)
+    expect(result.forecast.cutoffId).toBe(activeCutoffId)
+    expect(result.forecast.availableCash).toBe(15000)
+  })
+
+  it('returns empty forecast result when there is no current cutoff', async () => {
+    const result = await cashflowService.getCurrentForecast('2026-07-01')
+
+    expect(result).toEqual({
+      forecast: null,
+      explanation: null,
+      hasCurrentCutoff: false,
+    })
+  })
+
+  it('loads combined cashflow and forecast in a single pass', async () => {
+    const activeCutoffId = await createCutoff({
+      name: 'Active Cycle',
+      startDate: '2026-06-16',
+      endDate: '2026-06-30',
+      expectedIncome: 28000,
+      status: 'active',
+    })
+    await createIncome(activeCutoffId, 24000)
+    await createExpense(activeCutoffId, 6000)
+    await createSavings(activeCutoffId, 3000)
+
+    const result = await cashflowService.getCurrentCashflowAndForecast('2026-06-20')
+
+    expect(result.hasCurrentCutoff).toBe(true)
+    expect(result.cashflow.remainingCash).toBe(15000)
+    expect(result.forecast.availableCash).toBe(15000)
+    expect(result.forecast.dailyBurnRate).toBe(1200) // 6000 / 5 days
+    expect(result.forecast.safeDailySpend).toBe(1500) // 15000 / 10 days
+    expect(result.forecast.projectedRemaining).toBe(3000) // 15000 - (1200 * 10)
+    expect(result.explanation.headline).toContain('3,000.00')
+    await expect(cashflowSnapshotRepository.findAll()).resolves.toHaveLength(0)
+  })
 })

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   KpiGrid,
   PageHeader,
@@ -11,7 +10,6 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/ui/EmptyState.jsx'
 import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
-import { Modal } from '@/components/ui/Modal.jsx'
 
 import { useCashflow } from '../hooks/useCashflow.js'
 
@@ -71,107 +69,141 @@ function getCashflowStatus(remainingCash) {
   }
 }
 
-function FlowComparisonCard() {
+function ForecastProjectionCard({ forecast }) {
+  if (!forecast) {
+    return null
+  }
+
+  const isShortfall = forecast.projectedRemaining < 0
+
   return (
     <SectionCard
-      title="Flow Comparison"
-      description="Inflow vs outflow velocity per cycle"
+      title="Cutoff Cashflow Forecast"
+      description={`Deterministic projection for ${forecast.cutoffName || 'Current Cutoff'} through ${forecast.endDate}`}
       className="lg:col-span-2"
+      actions={
+        <StatusBadge tone={isShortfall ? 'error' : 'success'}>
+          {isShortfall ? 'Projected Shortfall' : 'Projected Surplus'}
+        </StatusBadge>
+      }
     >
-      <div className="flex min-h-64 items-center justify-center rounded border border-dashed border-outline-variant bg-surface-container-low p-6 text-center">
-        <div>
-          <span className="material-symbols-outlined text-3xl text-primary">
-            stacked_line_chart
-          </span>
-          <p className="mt-2 font-semibold text-on-surface">
-            Cycle comparison analytics are underway.
-          </p>
-          <p className="mt-1 max-w-xl text-body-sm leading-relaxed text-on-surface-variant">
-            Future cashflow reports will compare inflow and outflow movement
-            across cutoff periods. This MVP keeps cashflow totals read-only and
-            current-cutoff based.
-          </p>
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded border border-outline-variant bg-surface p-4">
+            <p className="text-label-caps font-label-caps uppercase text-on-surface-variant">
+              Daily Burn Rate
+            </p>
+            <p className="mt-1 font-data-mono text-title-md font-semibold text-on-surface">
+              {formatMoney(forecast.dailyBurnRate)}
+              <span className="text-body-sm font-normal text-on-surface-variant">/day</span>
+            </p>
+            <p className="mt-1 text-body-xs text-on-surface-variant">
+              Across {forecast.elapsedDays} elapsed {forecast.elapsedDays === 1 ? 'day' : 'days'}
+            </p>
+          </div>
+
+          <div className="rounded border border-outline-variant bg-surface p-4">
+            <p className="text-label-caps font-label-caps uppercase text-on-surface-variant">
+              Safe Daily Spend
+            </p>
+            <p className="mt-1 font-data-mono text-title-md font-semibold text-primary">
+              {formatMoney(forecast.safeDailySpend)}
+              <span className="text-body-sm font-normal text-on-surface-variant">/day</span>
+            </p>
+            <p className="mt-1 text-body-xs text-on-surface-variant">
+              Across {forecast.remainingDays} remaining {forecast.remainingDays === 1 ? 'day' : 'days'}
+            </p>
+          </div>
+
+          <div className="rounded border border-outline-variant bg-surface p-4 sm:col-span-2 lg:col-span-1">
+            <p className="text-label-caps font-label-caps uppercase text-on-surface-variant">
+              Projected Remaining
+            </p>
+            <p
+              className={[
+                'mt-1 font-data-mono text-title-md font-semibold',
+                isShortfall ? 'text-error' : 'text-secondary',
+              ].join(' ')}
+            >
+              {formatMoney(forecast.projectedRemaining)}
+            </p>
+            <p className="mt-1 text-body-xs text-on-surface-variant">
+              {isShortfall
+                ? `Shortfall of ${formatMoney(forecast.projectedDeficit)}`
+                : 'Projected closing cash'}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-outline-variant/40 bg-surface-container-low p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-body-sm text-on-surface-variant">
+            <span>
+              Cycle Timeline: <strong className="font-semibold text-on-surface">{forecast.startDate}</strong> to{' '}
+              <strong className="font-semibold text-on-surface">{forecast.endDate}</strong>
+            </span>
+            <span>
+              Progress: <strong className="font-semibold text-on-surface">{forecast.elapsedDays}</strong> of{' '}
+              <strong className="font-semibold text-on-surface">{forecast.totalDays}</strong> days ({forecast.remainingDays} remaining)
+            </span>
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{
+                width: `${forecast.totalDays > 0 ? Math.min(100, Math.round((forecast.elapsedDays / forecast.totalDays) * 100)) : 0}%`,
+              }}
+            />
+          </div>
         </div>
       </div>
     </SectionCard>
   )
 }
 
-function HealthStatusPanel({ cashflowStatus, onDeepDive }) {
+function ForecastExplanationCard({ explanation, forecast }) {
+  if (!explanation) {
+    return null
+  }
+
+  const isShortfall = (forecast?.projectedRemaining ?? 0) < 0
+
   return (
     <section className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-6">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="material-symbols-outlined text-primary">insights</span>
-        <h3 className="font-headline-sm text-headline-sm">Health Status</h3>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary">analytics</span>
+          <h3 className="font-headline-sm text-headline-sm">Forecast Explanation</h3>
+        </div>
+        <StatusBadge tone={isShortfall ? 'error' : 'info'}>
+          {isShortfall ? 'Shortfall Projected' : 'On Track'}
+        </StatusBadge>
       </div>
 
-      <div className="flex-1 space-y-4">
-        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-3">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-label-caps font-label-caps">Liquidity Score</span>
-            <StatusBadge tone={cashflowStatus.tone}>{cashflowStatus.label}</StatusBadge>
-          </div>
-          <p className="text-body-sm italic leading-relaxed text-on-surface-variant">
-            Current cash position is evaluated from the active cutoff totals.
-            Runway and projection details are still underway.
+      <div className="flex-1 space-y-3">
+        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-4">
+          <p className="font-semibold text-on-surface text-body-sm">{explanation.headline}</p>
+          <p className="mt-1 text-body-sm leading-relaxed text-on-surface-variant">
+            {explanation.summary}
           </p>
         </div>
 
-        <div className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-3">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-label-caps font-label-caps">AI Commentary</span>
-          </div>
-          <p className="text-body-sm leading-relaxed text-on-surface-variant">
-            AI commentary, forecasting, burn rate, and safe spend calculations
-            are still underway. No generated cashflow recommendation is running
-            in this MVP release.
-          </p>
-        </div>
-
-        <div className="border-t border-outline-variant pt-4">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-2 rounded bg-on-primary-fixed py-2 text-body-sm font-semibold text-white transition-colors hover:bg-on-primary-fixed-variant"
-            onClick={onDeepDive}
-          >
-            <span className="material-symbols-outlined text-sm">auto_awesome</span>
-            Deep Dive Report
-          </button>
-        </div>
+        {explanation.details && explanation.details.length > 0 ? (
+          <ul className="space-y-1.5 rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-3">
+            {explanation.details.map((detail, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-2 text-body-xs leading-relaxed text-on-surface-variant"
+              >
+                <span className="material-symbols-outlined mt-0.5 text-xs text-primary">
+                  check_circle
+                </span>
+                <span>{detail}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </section>
-  )
-}
-
-function AiUnderwayModal({ isOpen, onClose }) {
-  return (
-    <Modal
-      title="AI Features Are Underway"
-      description="Cashflow deep dives and AI-generated reports are planned for a future phase."
-      isOpen={isOpen}
-      onClose={onClose}
-      size="sm"
-      footer={
-        <button
-          type="button"
-          className="rounded bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
-          onClick={onClose}
-        >
-          Got it
-        </button>
-      }
-    >
-      <div className="space-y-3 text-body-sm text-on-surface-variant">
-        <p>
-          PesoPilot currently calculates cashflow from your local current-cutoff
-          income, expense, and savings records.
-        </p>
-        <p>
-          AI deep dives, forecasting, and report generation are not active in
-          this MVP release.
-        </p>
-      </div>
-    </Modal>
   )
 }
 
@@ -308,10 +340,11 @@ function RecentCashflowsPreview() {
 }
 
 export function CashflowPage() {
-  const [isAiUnderwayOpen, setIsAiUnderwayOpen] = useState(false)
   const {
     cashflow,
     error,
+    explanation,
+    forecast,
     hasCurrentCutoff,
     isLoading,
   } = useCashflow()
@@ -334,7 +367,7 @@ export function CashflowPage() {
         title={hasCurrentCutoff ? 'Current-cutoff cashflow' : 'Create a cutoff to enable cashflow'}
         message={
           hasCurrentCutoff
-            ? 'Cashflow is read-only and calculated from current-cutoff income, expense, and savings records.'
+            ? 'Cashflow and forecast are calculated deterministically from current-cutoff income, expense, and savings records.'
             : 'Cashflow needs a current salary cutoff before it can summarize your funded cycle.'
         }
         action={
@@ -392,13 +425,12 @@ export function CashflowPage() {
             />
           </KpiGrid>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <FlowComparisonCard />
-            <HealthStatusPanel
-              cashflowStatus={cashflowStatus}
-              onDeepDive={() => setIsAiUnderwayOpen(true)}
-            />
-          </div>
+          {forecast ? (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <ForecastProjectionCard forecast={forecast} />
+              <ForecastExplanationCard explanation={explanation} forecast={forecast} />
+            </div>
+          ) : null}
 
           <MetricsGrid cashflow={cashflow} />
 
@@ -408,11 +440,6 @@ export function CashflowPage() {
           />
 
           <RecentCashflowsPreview />
-
-          <AiUnderwayModal
-            isOpen={isAiUnderwayOpen}
-            onClose={() => setIsAiUnderwayOpen(false)}
-          />
         </>
       ) : null}
     </div>

@@ -4730,7 +4730,7 @@ PASSED.
 
 # Phase 12 — Cashflow Forecast
 
-Status: ⬜
+Status: ✅
 
 Goal:
 
@@ -4740,19 +4740,208 @@ Predict future cashflow.
 
 ## Features
 
-[ ] Forecast engine
+[x] Forecast engine
 
-[ ] Forecast UI
+[x] Forecast UI
 
-[ ] Forecast explanation
+[x] Forecast explanation
 
 ---
 
 ## Testing
 
-[ ] Forecast accuracy
+[x] Forecast accuracy
 
-[ ] Edge cases
+[x] Edge cases
+
+---
+
+## Action Notes
+
+Implemented deterministic Phase 12 Cashflow Forecast by extending the existing Phase 6 cashflow feature.
+
+Forecasting remains local-first and computed on demand.
+
+Forecast Engine input is based on the active salary cutoff and recorded:
+
+- actual income;
+- expenses;
+- savings;
+- cutoff start/end dates;
+- explicit as-of date.
+
+Actual recorded income remains authoritative.
+
+Expected cutoff income is retained only as contextual planning metadata and does not inflate available cash or projected values.
+
+Core deterministic calculations:
+
+availableCash =
+actualIncome
+- totalExpenses
+- totalSavings
+
+dailyBurnRate =
+totalExpenses
+÷ elapsedDays
+
+safeDailySpend =
+availableCash
+÷ remainingDays
+
+when remaining days and available cash are positive.
+
+projectedRemaining =
+availableCash
+- rawDailyBurnRate × remainingDays
+
+The forecast preserves unrounded intermediate burn-rate precision and rounds only public monetary results.
+
+projectedDeficit is the positive magnitude of a negative projectedRemaining value.
+
+Forecast horizon is limited to the active salary cutoff.
+
+No 30-day, 90-day, next-cutoff, or multi-cycle forecasting was introduced.
+
+Date calculations use UTC-safe YYYY-MM-DD cutoff semantics.
+
+Before-cutoff dates are deterministically clamped to:
+
+elapsedDays = 0
+remainingDays = totalDays
+
+At cutoff end:
+
+elapsedDays = totalDays
+remainingDays = 0
+safeDailySpend = 0
+projectedRemaining = availableCash
+
+Non-finite monetary values such as NaN and ±Infinity are rejected rather than silently converted to zero.
+
+Missing optional monetary inputs may use the established zero fallback.
+
+ForecastResult is immutable and contains deterministic fields for:
+
+- cutoff identity;
+- cutoff dates;
+- total / elapsed / remaining days;
+- expected income;
+- actual income;
+- expenses;
+- savings;
+- available cash;
+- daily burn rate;
+- safe daily spend;
+- projected remaining cash;
+- projected deficit.
+
+The existing Phase 6 cashflow service contracts remain backward compatible:
+
+- calculateCashflowForCutoff(...)
+- getCurrentCashflow(...)
+
+Combined cashflow + forecast loading uses a shared cutoff record bundle so income, expense, and savings repositories are not redundantly queried for the same UI load.
+
+The existing useCashflow public behavior is preserved and extended with:
+
+- forecast;
+- explanation.
+
+Existing loadCurrentCashflow and loadCutoffCashflow behavior remains available.
+
+Forecast UI was integrated into the existing Cashflow page.
+
+Existing current-state cashflow UI remains intact, including:
+
+- Expected Income;
+- Actual Income;
+- Expenses;
+- Savings;
+- Remaining Cash;
+- Expense Rate;
+- Savings Rate;
+- Income Variance;
+- Current Cutoff Summary;
+- Recent Cashflows.
+
+Phase 12 adds:
+
+- Daily Burn Rate;
+- Safe Daily Spend;
+- Projected Remaining;
+- Projected Shortfall when applicable;
+- deterministic forecast explanation.
+
+Forecast explanation is deterministic and rule-based.
+
+It is descriptive only and explicitly grounds projections in the current recorded spending pace.
+
+No LLM is required for Phase 12.
+
+The completed Phase 11B AI Platform was not modified.
+
+No new AI workflow or forecast prompt template was added.
+
+No risk scoring or Budget Shock behavior was introduced.
+
+Phase 13 remains responsible for:
+
+- Risk engine;
+- Risk scoring;
+- Alerts;
+- Recommendations;
+- Green / Yellow / Orange / Red classifications.
+
+No trajectory chart or speculative daily future balance simulation was introduced.
+
+No forecast snapshot persistence was introduced.
+
+cashflow_snapshots remains unchanged with no production forecast writers/readers.
+
+Dexie schema remains unchanged.
+
+No new database tables or migrations were added.
+
+Spring Boot backend remains unchanged.
+
+No new dependencies were added.
+
+package.json remains unchanged.
+
+package-lock.json remains unchanged.
+
+pom.xml remains unchanged.
+
+Decision Log remains unchanged.
+
+Final validation:
+
+Focused Cashflow:
+3 test files passed.
+48/48 tests passed.
+
+Frontend full regression:
+88/88 test files passed.
+862/862 tests passed.
+0 failures.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+
+Backend:
+30/30 tests passed.
+0 failures.
+0 errors.
+BUILD SUCCESS.
+
+Phase 12 implementation audit result:
+
+APPROVED.
 
 ---
 
