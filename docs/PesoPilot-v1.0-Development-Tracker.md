@@ -4576,14 +4576,155 @@ BUILD SUCCESS.
 
 # Phase 11B Verification
 
-* [ ] AI outputs grounded in deterministic insights
-* [ ] no AI-generated financial source of truth
-* [ ] guardrails enforced
-* [ ] provider abstraction respected
-* [ ] streaming tested
-* [ ] npm.cmd run test
-* [ ] npm.cmd run lint
-* [ ] npm.cmd run build
+* [x] AI outputs grounded in deterministic insights
+* [x] no AI-generated financial source of truth
+* [x] guardrails enforced
+* [x] provider abstraction respected
+* [x] streaming tested
+* [x] npm.cmd run test
+* [x] npm.cmd run lint
+* [x] npm.cmd run build
+
+## Verification Notes
+
+Phase 11B AI Platform independently verified after completion of
+Phases 11B.0 through 11B.9.
+
+AI outputs remain grounded in deterministic financial intelligence:
+
+financial records
+→ deterministic engines
+→ InsightBundle
+→ RecommendationBundle
+→ FinancialSummary
+→ Prompt Builder
+→ ProviderRequest
+→ AI explanation
+
+The AI subsystem does not become a financial source of truth.
+
+Regression verification confirms InsightBundle, RecommendationBundle, and
+FinancialSummary remain unchanged across AI orchestration. AI output is
+limited to explanation/coaching content and does not write or recalculate
+expenses, income, savings, budgets, balances, deterministic insights,
+recommendations, or FinancialSummary.
+
+Production guardrails remain enforced across the completed platform:
+
+- Input Guardrail;
+- Memory Guardrail;
+- Prompt Guardrail;
+- Provider Guardrail;
+- Streaming Provider Guardrail;
+- Response Guardrail;
+- Financial Guidance Guardrail.
+
+Unsafe synchronous and streaming provider outputs were rejected using the
+real production guardrail implementation.
+
+Streaming preserves the Safe Publication Gate:
+
+provider fragments
+→ private Token Buffer
+→ canonical ProviderResponse
+→ Response Guardrail
+→ Financial Guidance Guardrail
+→ validated StreamChunks / StreamEvents
+
+Unsafe streamed output publishes zero generated-content chunks.
+
+Provider abstraction remains:
+
+AI Orchestrator
+→ Provider Layer
+→ Provider Registry
+→ Adapter
+
+Provider-specific Ollama transport remains isolated inside the Provider
+Layer implementation. Production orchestration does not directly call
+Ollama HTTP endpoints.
+
+The synchronous provider contract remains unchanged:
+
+ProviderRequest
+generation.stream = false
+adapter.generate(...)
+
+Browser-local streaming remains additive through:
+
+ProviderStreamRequest
+adapter.stream(...)
+
+Ollama locality/privacy verification remains mandatory before prompt or
+financial context transmission:
+
+loopback validation
+→ POST /api/show { model }
+→ locality verification
+→ POST /api/generate
+
+Memory remains bounded, typed, validated, and prompt-facing only.
+
+Conversation lifecycle, roles, topic, clarification state, message bounds,
+and ConversationContext remain owned by the Conversation Engine.
+
+The Phase 11B.9 AI Testing Harness remains developer/test-only and is not
+exported through the production AI facade or runtime capability registry.
+
+Golden regression suite:
+
+8 scenarios
+8 passed
+0 failed
+
+Coverage includes:
+
+- synchronous success;
+- Response Guardrail rejection;
+- Financial Guidance Guardrail rejection;
+- provider retry recovery;
+- bounded MemoryContext;
+- ConversationContext propagation;
+- streaming Safe Publication Gate;
+- streaming guardrail rejection.
+
+Final validation:
+
+Frontend:
+86/86 test files passed.
+822/822 tests passed.
+0 failures.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+905 modules transformed.
+
+Backend:
+30/30 tests passed.
+0 failures.
+0 errors.
+BUILD SUCCESS.
+
+Dependency/scope audit:
+PASS.
+
+No unauthorized Spring AI, WebFlux, external LLM SDK, streaming library,
+Redis, or new database dependency is present.
+
+Spring production inference remains intentionally unavailable through the
+existing unavailable execution ports and fails closed with HTTP 503.
+
+No Phase 12 Cashflow Forecast implementation was introduced.
+
+Final verification working tree was clean.
+
+Phase 11B verification result:
+
+PASSED.
 
 ---
 
