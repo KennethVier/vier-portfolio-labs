@@ -2091,6 +2091,157 @@ The Spring Boot AI REST API establishes the external, provider-independent HTTP 
 
 ---
 
+# 12.8 — Streaming & Real-Time Response Architecture
+
+Version: 1.0.0
+Phase: Phase 11B.8
+
+## Core Principle
+
+```text
+AI explains.
+PesoPilot decides.
+```
+
+Streaming changes delivery semantics only. It does not weaken financial authority, guardrail safety, or architectural boundaries.
+
+## 1. Dual Boundary Architecture
+
+PesoPilot enforces a strict Dual Boundary model for AI streaming:
+
+1. **Browser-Local AI Runtime**: Real incremental generation is executed entirely within the client browser via local Ollama HTTP NDJSON transport. No user financial data or prompts are transmitted over external networks or to the Spring backend during generation.
+2. **Spring SSE Transport Contract**: Spring Boot owns the versioned HTTP Server-Sent Events (SSE) contract (`POST /api/v1/ai/explanations/stream`). It defines transport semantics, event serialization, and connection lifecycle callbacks. In Phase 11B.8, Spring has no production inference runtime; its production execution port (`UnavailableAiStreamingExecutionPort`) immediately fails closed with `503 Service Unavailable`.
+
+## 2. Safe Publication Gate (Non-Negotiable)
+
+To maintain absolute financial safety, raw model fragments from Ollama are strictly private:
+
+```text
+Ollama NDJSON fragments
+  ↓
+Private TokenBuffer (max 5,000 chars)
+  ↓
+Complete ProviderResponse Reconstruction
+  ↓
+Response Guardrail (validateResponse)
+  ↓
+Financial Guidance Guardrail (validateFinancialGuidance)
+  ↓
+Deterministic Chunk Publication (StreamChunks <= 256 chars)
+```
+
+* **Core Rule**: Generate incrementally. Publish only after validation.
+* Raw text fragments are accumulated in a private `TokenBuffer` and are NEVER published directly to the user or UI.
+* If either post-generation guardrail (`Response Guardrail` or `Financial Guidance Guardrail`) rejects the accumulated response, exactly **zero generated-content chunks** are published.
+* Rejections trigger standard audit logging (`auditLogger.logRejection`) and transition the workflow to `GUARDRAIL_REJECTED`. No partial text or rejected content is ever surfaced in error payloads.
+
+## 3. Strict 5,000-Character Response Ceiling
+
+Accumulated generated content is strictly bounded by existing policy authority:
+
+```text
+DEFAULT_GUARDRAIL_POLICY.maxResponseLength = 5000 characters
+```
+
+At character 5,001:
+* The active provider HTTP transport is immediately aborted via `AbortController`.
+* The private buffer is discarded.
+* The stream fails closed with `STREAM_BUFFER_LIMIT_EXCEEDED`.
+* Exactly zero generated content is published.
+
+## 4. Separation of Protocols: NDJSON != SSE
+
+* **Ollama Transport**: Ollama responds with newline-delimited JSON (`application/x-ndjson`), NOT SSE. The browser runtime consumes NDJSON incrementally via native `ReadableStream`, `TextDecoder` (with streaming multibyte support across network packets), and `AbortSignal`.
+* **Spring Transport**: Spring produces standard Server-Sent Events (`text/event-stream`).
+
+## 5. Streaming-Specific Provider Guardrail
+
+The synchronous provider guardrail (`validateProvider`) strictly enforces `generation.stream === false` to preserve 11B.6 synchronous workflows.
+
+Phase 11B.8 introduces an additive streaming validator (`validateStreamingProvider`) that:
+* Validates non-null `ProviderStreamRequest`;
+* Verifies registered provider descriptor;
+* Enforces local provider locality;
+* Enforces model matching;
+* Does NOT require `generation.stream === false` because `ProviderStreamRequest` inherently establishes streaming intent.
+
+## 6. Deterministic Chunk Model & Surrogate Safety
+
+Once both post-generation guardrails approve the response:
+* `ProviderResponse.content` is split into deterministic `StreamChunk` events.
+* Maximum chunk length: 256 UTF-16 code units.
+* **Surrogate Pair Protection**: If a 256-character split falls between a UTF-16 surrogate pair (e.g. multi-byte emojis or currency symbols), the chunk boundary is automatically retracted by one code unit to keep the surrogate pair intact.
+* Chunk sequence numbers are strictly sequential (`1..N`), contiguous, and content-specific.
+* Joining all published chunks strictly equals the validated response text without normalization, trimming, or whitespace alteration.
+
+## 7. Stream Lifecycle & Event Model
+
+The Stream Manager enforces a deterministic lifecycle:
+
+```text
+starting → streaming → validating → publishing → completed
+```
+
+Terminal alternatives:
+* Any active state → `cancelled` (idempotent cancellation)
+* Active state before completion → `failed` (sanitized failure event)
+* Active state before completion → `timed_out` (workflow deadline expired)
+
+Canonical Stream Events:
+* `started`, `chunk`, `completed`, `cancelled`, `failed`, `timed_out`
+* Event sequence numbers increment monotonically (`1..M`) across external events, distinct from chunk sequence numbers.
+
+## 8. Cancellation Semantics
+
+Cancellation uses the stream session's `AbortController`:
+* **Pre-provider / Locality preflight (`/api/show`)**: Aborts HTTP transport; provider never generates.
+* **During generation (`/api/generate`)**: Aborts HTTP fetch immediately, clears private buffer, publishes zero chunks.
+* **Before / during validation**: Guardrail functions are synchronous. Cancellation is checked immediately before validation and again before publication. If cancelled, zero chunks are emitted.
+* **During publication**: Cancellation is checked between chunk emissions. If a consumer callback calls `cancel()`, subsequent chunk emissions halt immediately.
+* **Post-completion**: Calling `cancel()` on a completed stream is a safe, idempotent no-op.
+
+## 9. Retry Integration
+
+Streaming reuses the existing `retryManager` policy without duplicating retry logic:
+* Each attempt receives a fresh private `TokenBuffer`.
+* On retryable provider failure (e.g., transient daemon connectivity), the failed attempt buffer is cleared and the attempt counter increments.
+* Because no chunks are published before safety approval, retries cannot duplicate visible text.
+* Once the stream enters `publishing`, no further retries are permitted; any publication failure is terminal.
+* The overall workflow maintains a single stable `streamId` across retry attempts.
+
+## 10. Sanitized Diagnostics & Privacy
+
+Stream diagnostics expose execution metadata without content leakage:
+* Fields: `streamId`, `state`, `providerFragmentsReceived`, `chunksPublished`, `charactersGenerated`, `charactersPublished`, `startedAt`, `providerCompletedAt`, `publicationStartedAt`, `completedAt`, `durationMs`.
+* Strictly excluded: prompts, generated text, conversation history, memory items, financial values, raw provider JSON, credentials, stack traces.
+* Provider fragments are termed "fragments", never tokenizer "tokens".
+
+## 11. Backend Transport-Neutral Architecture
+
+* **Layering**:
+  ```text
+  AiStreamingExplanationController
+    ↓
+  AiStreamingGateway (DefaultAiStreamingGateway)
+    ↓
+  AiStreamingExecutionPort (transport-neutral)
+  ```
+* **Transport-Neutral Execution Port**:
+  ```java
+  public interface AiStreamingExecutionPort {
+      AiStreamingExecutionHandle start(
+          AiExecutionCommand command,
+          Consumer<AiStreamEventDto> eventConsumer
+      );
+  }
+  ```
+  The execution port does not import `SseEmitter`, `HttpServletResponse`, or Spring MVC classes.
+* **Controller Ownership**: `AiStreamingExplanationController` manages the `SseEmitter`, timeout, error/completion callbacks, and translates application `AiStreamEventDto` events to SSE event payloads.
+* **Production Unavailable Execution**: `UnavailableAiStreamingExecutionPort` immediately throws `AiExecutionUnavailableException`, yielding a 503 JSON `ApiResponse` through `GlobalExceptionHandler`.
+* **Zero Persistence**: Stream events, tokens, and diagnostics are ephemeral; no database or Dexie persistence is introduced.
+
+---
+
 # 12.10 — Future Multi-LLM & AI Evolution Architecture
 
 Version: 1.0.0

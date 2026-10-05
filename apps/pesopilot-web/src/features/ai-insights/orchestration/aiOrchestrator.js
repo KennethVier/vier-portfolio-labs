@@ -13,6 +13,8 @@ export const aiOrchestrator = Object.freeze({
   status: 'ready',
 
   executeWorkflow: (input) => defaultCoordinator.executeWorkflow(input),
+  executeStreamingWorkflow: (input, callbacks) =>
+    defaultCoordinator.executeStreamingWorkflow(input, callbacks),
 
   getWorkflowTemplate,
   listWorkflowTemplates,

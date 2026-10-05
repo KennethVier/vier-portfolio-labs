@@ -32,7 +32,7 @@ import {
 import { validateInput } from './inputGuardrail.js'
 import { validateMemory } from './memoryGuardrail.js'
 import { validatePrompt } from './promptGuardrail.js'
-import { validateProvider } from './providerGuardrail.js'
+import { validateProvider, validateStreamingProvider } from './providerGuardrail.js'
 import { validateResponse } from './responseGuardrail.js'
 import { validateFinancialGuidance } from './financialGuidanceGuardrail.js'
 import {
@@ -95,6 +95,7 @@ describe('Phase 11B.6 — Guardrail Engine', () => {
       expect(typeof guardrailEngine.validateMemory).toBe('function')
       expect(typeof guardrailEngine.validatePrompt).toBe('function')
       expect(typeof guardrailEngine.validateProvider).toBe('function')
+      expect(typeof guardrailEngine.validateStreamingProvider).toBe('function')
       expect(typeof guardrailEngine.validateResponse).toBe('function')
       expect(typeof guardrailEngine.validateFinancialGuidance).toBe('function')
     })
@@ -513,6 +514,65 @@ describe('Phase 11B.6 — Guardrail Engine', () => {
     it('rejects model mismatches', () => {
       const decision = validateProvider({
         providerRequest: { providerId: 'ollama', model: 'mistral', generation: { stream: false } },
+        providerDescriptor: { id: 'ollama', locality: 'local' },
+        model: 'llama3.2',
+      })
+      expect(decision.decision).toBe('reject')
+      expect(decision.reasonCodes).toContain('PROVIDER_MODEL_MISMATCH')
+    })
+
+    it('allows valid local ProviderStreamRequest with validateStreamingProvider', () => {
+      const decision = validateStreamingProvider({
+        providerStreamRequest: {
+          version: '1.0.0',
+          providerId: 'ollama',
+          model: 'llama3.2',
+          prompt: { system: 'sys', user: 'usr' },
+        },
+        providerDescriptor: { id: 'ollama', locality: 'local' },
+        model: 'llama3.2',
+      })
+      expect(decision.decision).toBe('allow')
+    })
+
+    it('rejects cloud locality in validateStreamingProvider', () => {
+      const decision = validateStreamingProvider({
+        providerStreamRequest: {
+          version: '1.0.0',
+          providerId: 'ollama',
+          model: 'llama3.2',
+          prompt: { system: 'sys', user: 'usr' },
+        },
+        providerDescriptor: { id: 'ollama', locality: 'cloud' },
+        model: 'llama3.2',
+      })
+      expect(decision.decision).toBe('reject')
+      expect(decision.reasonCodes).toContain('PROVIDER_LOCALITY_VIOLATION')
+    })
+
+    it('rejects unregistered/unsupported provider in validateStreamingProvider', () => {
+      const decision = validateStreamingProvider({
+        providerStreamRequest: {
+          version: '1.0.0',
+          providerId: 'unknown-llm',
+          model: 'llama3.2',
+          prompt: { system: 'sys', user: 'usr' },
+        },
+        providerDescriptor: null,
+        model: 'llama3.2',
+      })
+      expect(decision.decision).toBe('reject')
+      expect(decision.reasonCodes).toContain('PROVIDER_UNSUPPORTED')
+    })
+
+    it('rejects model mismatch in validateStreamingProvider', () => {
+      const decision = validateStreamingProvider({
+        providerStreamRequest: {
+          version: '1.0.0',
+          providerId: 'ollama',
+          model: 'mistral',
+          prompt: { system: 'sys', user: 'usr' },
+        },
         providerDescriptor: { id: 'ollama', locality: 'local' },
         model: 'llama3.2',
       })

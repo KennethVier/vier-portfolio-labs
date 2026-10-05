@@ -4032,7 +4032,7 @@ switch, or Phase 11B.8+ behavior were introduced.
 
 # Phase 11B.8 — Streaming Engine
 
-Status: ⬜
+Status: ✅
 
 ## Architecture References
 
@@ -4042,12 +4042,285 @@ Status: ⬜
 
 ## Features
 
-* [ ] Stream manager
-* [ ] Token buffer
-* [ ] Chunk model
-* [ ] SSE endpoint
-* [ ] Cancellation
-* [ ] Stream diagnostics
+* [x] Stream manager
+* [x] Token buffer
+* [x] Chunk model
+* [x] SSE endpoint
+* [x] Cancellation
+* [x] Stream diagnostics
+
+## Action Notes
+
+```txt
+Phase 11B.8 Streaming Engine validated.
+
+Implemented the v1 Dual Boundary + Safe Publication Gate architecture.
+
+Real incremental AI generation remains browser-local:
+
+AI Orchestrator
+→ Provider Layer
+→ local Ollama NDJSON streaming
+→ private Token Buffer
+→ canonical ProviderResponse
+→ Response Guardrail
+→ Financial Guidance Guardrail
+→ validated StreamChunk publication
+
+Spring owns a separate versioned SSE transport contract:
+
+POST /api/v1/ai/explanations/stream
+
+Spring does not own production AI inference. The production streaming
+execution port intentionally remains unavailable and fails closed with
+HTTP 503 using the existing ApiResponse<T> envelope.
+
+Streaming generation is incremental, but raw provider fragments are
+never published directly to the user.
+
+Safe Publication Gate:
+
+Generate incrementally.
+Publish only after validation.
+
+Ollama NDJSON fragments remain private until the complete response is
+reconstructed and passes both the existing Response Guardrail and
+Financial Guidance Guardrail.
+
+If either final guardrail rejects:
+
+- workflow terminates with GUARDRAIL_REJECTED;
+- zero generated-content StreamChunks are published;
+- zero chunk events containing rejected model text are emitted;
+- rejected text is not copied into diagnostics or error payloads.
+
+The Safe Publication Gate was validated against real, pre-existing
+guardrail rules without mocking the guardrail engine, including violations
+split across multiple provider fragments.
+
+Provider streaming is additive.
+
+The existing synchronous ProviderRequest contract remains unchanged and
+continues to require:
+
+generation.stream = false
+
+Existing synchronous provider execution continues through:
+
+adapter.generate(...)
+
+A separate ProviderStreamRequest and additive Ollama stream operation
+handle browser-local streaming.
+
+The existing synchronous Provider Guardrail remains unchanged.
+A separate streaming-specific provider guardrail validates:
+
+- registered provider;
+- supported provider;
+- permitted locality;
+- matching configured model;
+- valid ProviderStreamRequest.
+
+Ollama streaming preserves locality-first privacy:
+
+POST /api/show { model }
+
+must pass before prompt or financial context is transmitted.
+
+Only then:
+
+POST /api/generate
+stream: true
+
+is opened against local Ollama.
+
+Ollama output is NDJSON, not SSE.
+
+The streaming transport uses native browser:
+
+- fetch;
+- ReadableStream;
+- TextDecoder;
+- AbortSignal.
+
+No streaming dependency was added.
+
+The Token Buffer stores ordered provider text fragments, not guaranteed
+model tokenizer tokens.
+
+The buffer is bounded by the existing Response Guardrail limit:
+
+5000 characters.
+
+Character 5001 causes:
+
+- STREAM_BUFFER_LIMIT_EXCEEDED internally;
+- active provider HTTP transport abort;
+- private buffer clearing;
+- failed stream;
+- zero generated-content publication.
+
+After full-response guardrails allow the response, safe publication uses
+deterministic StreamChunks with a maximum 256 JavaScript code units while
+preserving UTF-16 surrogate-pair boundaries.
+
+Joining all published chunks exactly reconstructs the validated
+ProviderResponse.content.
+
+Stream lifecycle:
+
+starting
+→ streaming
+→ validating
+→ publishing
+→ completed
+
+Terminal alternatives:
+
+cancelled
+failed
+timed_out
+
+Terminal streams accept no further content or non-idempotent state
+transitions.
+
+Cancellation propagates through a single AbortSignal path:
+
+stream handle cancel()
+→ stream session AbortController
+→ orchestration timeout/cancellation signal
+→ providerConfig.signal
+→ Ollama streaming adapter
+→ streaming transport
+→ native fetch
+
+Cancellation does not claim that Ollama GPU/model compute terminates
+instantly. PesoPilot guarantees abortion of its active HTTP request.
+
+Cancellation is checked before and after synchronous final guardrail
+validation so cancelled streams cannot begin publication.
+
+Existing orchestration RetryManager remains authoritative.
+
+No StreamingRetryManager was introduced.
+
+Each retry attempt uses a fresh private Token Buffer. Failed attempt
+content is discarded. Only a successful attempt can proceed to final
+guardrails and publication.
+
+No retry occurs once safe publication has begun.
+
+The public Streaming Engine facade is:
+
+streamingEngine.startStream(...)
+
+The returned public handle exposes only:
+
+- streamId;
+- cancel();
+- getDiagnostics();
+- promise.
+
+Internal session state is not exposed through the public API.
+
+Stream diagnostics are sanitized and contain only operational metadata
+such as state, counts, timestamps, durations, and stream ID.
+
+Diagnostics contain no:
+
+- prompt text;
+- generated response text;
+- financial values;
+- conversation text;
+- memory content;
+- provider raw payload;
+- credentials;
+- stack traces.
+
+Spring streaming architecture preserves:
+
+Controller
+→ AiStreamingGateway
+→ AiStreamingExecutionPort
+
+AiStreamingExecutionPort is transport-neutral and contains no SseEmitter,
+HttpServletResponse, or ResponseEntity dependency.
+
+The Spring controller alone owns SseEmitter and SSE serialization.
+
+Canonical SSE lifecycle events include:
+
+started
+chunk
+completed
+cancelled
+failed
+timed_out
+
+Application-level failed terminal events are emitted as:
+
+event: failed
+
+and the emitter completes normally.
+
+Transport failures remain separate from protocol-level failed events.
+
+Production UnavailableAiStreamingExecutionPort throws synchronously before
+the controller returns or commits an SseEmitter.
+
+Therefore production unavailable streaming returns:
+
+HTTP 503
+application/json
+ApiResponse.failure(...)
+
+and not text/event-stream.
+
+ApiResponse<T> remains the established three-field contract:
+
+success
+message
+data
+
+No nested error envelope was introduced.
+
+No Spring production inference runtime, Java Ollama adapter, Spring AI,
+WebFlux, WebSockets, Redis, persistence, resume/reconnect protocol,
+heartbeats, adaptive buffering, streaming retry subsystem, streaming UI,
+or Phase 11B.9 behavior was introduced.
+
+Validation:
+
+Frontend Streaming Engine and related focused tests:
+PASS.
+
+Frontend full regression:
+78/78 test files passed.
+784/784 tests passed.
+
+ESLint:
+0 errors.
+0 warnings.
+
+Production Vite build:
+PASS.
+
+Backend:
+30/30 tests passed.
+0 failures.
+0 errors.
+BUILD SUCCESS.
+
+No new Maven dependencies were introduced.
+
+pom.xml remains unchanged.
+
+Decision Log remains unchanged.
+
+Database/schema remains unchanged.
+
+The existing synchronous AI execution path remains preserved.
+```
 
 ---
 

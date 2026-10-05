@@ -65,7 +65,8 @@ describe('AI Platform Foundation', () => {
       c.exportName !== 'aiOrchestrator' &&
       c.exportName !== 'memoryService' &&
       c.exportName !== 'guardrailEngine' &&
-      c.exportName !== 'aiGateway',
+      c.exportName !== 'aiGateway' &&
+      c.exportName !== 'streamingEngine',
   )
 
   it('exports all eight canonical capabilities and PromptPackage DTO helpers, with no unrelated exports', () => {
@@ -192,6 +193,9 @@ describe('AI Platform Foundation', () => {
     expect(typeof providerLayer.validateProviderRequest).toBe('function')
     expect(typeof providerLayer.validateProviderResponse).toBe('function')
     expect(typeof providerLayer.validateProviderDiagnostics).toBe('function')
+    expect(typeof providerLayer.createProviderStreamRequest).toBe('function')
+    expect(typeof providerLayer.validateProviderStreamRequest).toBe('function')
+    expect(typeof providerLayer.supportsStreaming).toBe('function')
   })
 
   it('ensures providerLayer is frozen and immutable', () => {
@@ -225,14 +229,17 @@ describe('AI Platform Foundation', () => {
 
     expect(Object.keys(providerLayer).sort()).toEqual([
       'createProviderRequest',
+      'createProviderStreamRequest',
       'getProvider',
       'getProviderDescriptor',
       'listProviders',
       'name',
       'status',
+      'supportsStreaming',
       'validateProviderDiagnostics',
       'validateProviderRequest',
       'validateProviderResponse',
+      'validateProviderStreamRequest',
     ])
   })
 
@@ -242,6 +249,7 @@ describe('AI Platform Foundation', () => {
     expect(aiOrchestrator.name).toBe('ai-orchestrator')
     expect(aiOrchestrator.status).toBe('ready')
     expect(typeof aiOrchestrator.executeWorkflow).toBe('function')
+    expect(typeof aiOrchestrator.executeStreamingWorkflow).toBe('function')
     expect(typeof aiOrchestrator.getWorkflowTemplate).toBe('function')
     expect(typeof aiOrchestrator.listWorkflowTemplates).toBe('function')
     expect(typeof aiOrchestrator.validateWorkflow).toBe('function')
@@ -276,6 +284,7 @@ describe('AI Platform Foundation', () => {
     })
 
     expect(Object.keys(aiOrchestrator).sort()).toEqual([
+      'executeStreamingWorkflow',
       'executeWorkflow',
       'getWorkflowTemplate',
       'listWorkflowTemplates',
@@ -354,6 +363,7 @@ describe('AI Platform Foundation', () => {
     expect(typeof guardrailEngine.validateMemory).toBe('function')
     expect(typeof guardrailEngine.validatePrompt).toBe('function')
     expect(typeof guardrailEngine.validateProvider).toBe('function')
+    expect(typeof guardrailEngine.validateStreamingProvider).toBe('function')
     expect(typeof guardrailEngine.validateResponse).toBe('function')
     expect(typeof guardrailEngine.validateFinancialGuidance).toBe('function')
   })
@@ -397,6 +407,7 @@ describe('AI Platform Foundation', () => {
       'validatePrompt',
       'validateProvider',
       'validateResponse',
+      'validateStreamingProvider',
     ])
   })
 
@@ -441,6 +452,54 @@ describe('AI Platform Foundation', () => {
     expect(Object.keys(aiGateway).sort()).toEqual([
       'name',
       'requestExplanation',
+      'status',
+    ])
+  })
+
+  // Streaming Engine 11B.8 Assertions
+  it('ensures streamingEngine has canonical name "streaming-engine", status "ready", and startStream function', () => {
+    expect(streamingEngine).toBeDefined()
+    expect(streamingEngine.name).toBe('streaming-engine')
+    expect(streamingEngine.status).toBe('ready')
+    expect(typeof streamingEngine.startStream).toBe('function')
+  })
+
+  it('ensures streamingEngine is frozen and immutable', () => {
+    expect(Object.isFrozen(streamingEngine)).toBe(true)
+
+    expect(() => {
+      streamingEngine.status = 'active'
+    }).toThrow()
+
+    expect(() => {
+      streamingEngine.newProp = 'illegal'
+    }).toThrow()
+  })
+
+  it('ensures streamingEngine exposes no unauthorized or operational AI execution methods directly', () => {
+    const PROHIBITED_METHODS = [
+      'execute',
+      'generate',
+      'chat',
+      'stream',
+      'complete',
+      'send',
+      'invoke',
+      'persist',
+      'save',
+      'createTokenBuffer',
+      'createStreamChunk',
+      'createStreamEvent',
+      'validateStreamChunk',
+      'validateStreamEvent',
+    ]
+    PROHIBITED_METHODS.forEach((method) => {
+      expect(streamingEngine[method]).toBeUndefined()
+    })
+
+    expect(Object.keys(streamingEngine).sort()).toEqual([
+      'name',
+      'startStream',
       'status',
     ])
   })

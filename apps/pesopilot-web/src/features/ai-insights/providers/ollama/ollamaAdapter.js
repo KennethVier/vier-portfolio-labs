@@ -10,6 +10,8 @@ import {
   mapFromOllamaGenerateResponse,
   mapToOllamaGeneratePayload,
 } from './ollamaMapper.js'
+import { validateProviderStreamRequest } from '../providerStreamRequest.js'
+import { defaultOllamaStreamTransport } from './ollamaStreamTransport.js'
 
 function isModelNotFoundError(status, data) {
   if (status !== 404) return false
@@ -23,6 +25,7 @@ function isModelNotFoundError(status, data) {
 
 export function createOllamaAdapter({
   transport = defaultFetchTransport,
+  streamTransport = defaultOllamaStreamTransport,
 } = {}) {
   return Object.freeze({
     id: 'ollama',
@@ -210,6 +213,23 @@ export function createOllamaAdapter({
         rawData: genResult.data,
         providerId: 'ollama',
         model: providerRequest.model,
+      })
+    },
+
+    async *stream(providerStreamRequest, providerConfig = {}) {
+      const validation = validateProviderStreamRequest(providerStreamRequest)
+      if (!validation.valid) {
+        throw new ProviderError({
+          code: PROVIDER_ERROR_CODES.INVALID_REQUEST,
+          message: `Invalid ProviderStreamRequest: ${validation.errors.join(' ')}`,
+          providerId: 'ollama',
+          model: providerStreamRequest?.model ?? null,
+        })
+      }
+
+      yield* streamTransport(providerStreamRequest, {
+        transport,
+        ...providerConfig,
       })
     },
   })
