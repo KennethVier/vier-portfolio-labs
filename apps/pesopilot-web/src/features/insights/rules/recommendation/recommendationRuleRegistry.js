@@ -6,8 +6,8 @@ import {
   evaluateCutoffExpensesUp,
   evaluateExpenseCategoryConcentration,
   evaluateExpenseRisingSpending,
-  evaluateGoalNoContributions,
-  evaluateHealthLowStatus,
+  // evaluateGoalNoContributions (Phase 14+ dormant)
+  // evaluateHealthLowStatus (Phase 16+ dormant)
   evaluateIncomeMissingIncome,
   evaluateIncomeUnstable,
   evaluateSavingsLowRate,
@@ -59,11 +59,6 @@ export const recommendationRuleRegistry = Object.freeze([
     evaluate: evaluateSavingsLowRate,
   },
   {
-    id: RECOMMENDATION_RULE_IDS.goalNoContributions,
-    domain: 'goal',
-    evaluate: evaluateGoalNoContributions,
-  },
-  {
     id: RECOMMENDATION_RULE_IDS.cutoffExpensesUp,
     domain: 'cutoff',
     evaluate: evaluateCutoffExpensesUp,
@@ -72,11 +67,6 @@ export const recommendationRuleRegistry = Object.freeze([
     id: RECOMMENDATION_RULE_IDS.cutoffCashTrendDown,
     domain: 'cutoff',
     evaluate: evaluateCutoffCashTrendDown,
-  },
-  {
-    id: RECOMMENDATION_RULE_IDS.healthLowStatus,
-    domain: 'health',
-    evaluate: evaluateHealthLowStatus,
   },
 ])
 

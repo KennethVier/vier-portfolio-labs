@@ -24,7 +24,6 @@ function getNextCutoffLabel(data) {
 export function HeaderProvider({ children }) {
   const [config, setConfig] = useState(defaultHeaderConfig)
   const [statusConfig, setStatusConfig] = useState({
-    healthScore: defaultHeaderConfig.healthScore,
     nextCutoff: defaultHeaderConfig.nextCutoff,
   })
 
@@ -33,12 +32,10 @@ export function HeaderProvider({ children }) {
       const data = await dashboardService.loadDashboard()
 
       setStatusConfig({
-        healthScore: data.healthScore ?? defaultHeaderConfig.healthScore,
         nextCutoff: getNextCutoffLabel(data),
       })
     } catch {
       setStatusConfig({
-        healthScore: defaultHeaderConfig.healthScore,
         nextCutoff: defaultHeaderConfig.nextCutoff,
       })
     }

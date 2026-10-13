@@ -227,22 +227,7 @@ describe('insightService', () => {
     await expect(insightService.loadInsights()).resolves.toEqual({
       scope: INSIGHT_SCOPES.currentCutoff,
       generatedAt: expect.any(String),
-      health: {
-        category: 'health',
-        scope: INSIGHT_SCOPES.currentCutoff,
-        generatedAt: '2026-06-28T00:00:00.000Z',
-        score: 80,
-        status: 'Healthy',
-        breakdown: [],
-        strengths: [],
-        weaknesses: [],
-        evidence: [],
-        explanation: 'Financial health is Healthy with a score of 80.',
-        diagnostics: {
-          executedRules: [],
-          warnings: [],
-        },
-      },
+      health: null,
       expenses: {
         category: 'expense',
         scope: INSIGHT_SCOPES.currentCutoff,
@@ -384,21 +369,21 @@ describe('insightService', () => {
       goals: {
         category: 'goal',
         scope: INSIGHT_SCOPES.currentCutoff,
-        generatedAt: '2026-06-28T00:04:00.000Z',
+        generatedAt: expect.any(String),
         metrics: {
-          totalGoals: 1,
-          activeGoals: 1,
+          totalGoals: 0,
+          activeGoals: 0,
           completedGoals: 0,
-          totalTargetAmount: 10000,
-          totalSavedAmount: 5000,
-          overallCompletionRate: 50,
+          totalTargetAmount: 0,
+          totalSavedAmount: 0,
+          overallCompletionRate: 0,
           highestFundedGoal: null,
           goalsWithoutContributions: [],
           goals: [],
         },
         breakdown: [],
         evidence: [],
-        explanation: 'Overall goal completion is 50%.',
+        explanation: '',
         diagnostics: {
           executedRules: [],
           warnings: [],
@@ -426,7 +411,7 @@ describe('insightService', () => {
     })
 
     expect(bundle.scope).toBe(INSIGHT_SCOPES.specificCutoff)
-    expect(bundle.health.scope).toBe(INSIGHT_SCOPES.specificCutoff)
+    expect(bundle.health).toBeNull()
     expect(bundle.expenses.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.income.scope).toBe(INSIGHT_SCOPES.specificCutoff)
     expect(bundle.savings.scope).toBe(INSIGHT_SCOPES.specificCutoff)

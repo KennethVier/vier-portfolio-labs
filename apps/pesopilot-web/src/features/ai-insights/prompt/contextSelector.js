@@ -8,12 +8,8 @@ function getDomainProp(domain, prop) {
   return domain[prop]
 }
 
-function selectHealth(health) {
-  if (!health || typeof health !== 'object') return null
-  return {
-    score: getDomainProp(health, 'score'),
-    status: getDomainProp(health, 'status'),
-  }
+function selectHealth() {
+  return null
 }
 
 function selectIncome(income) {
@@ -57,16 +53,8 @@ function selectSavings(savings) {
   }
 }
 
-function selectGoals(goals) {
-  if (!goals || typeof goals !== 'object') return null
-  return {
-    totalGoals: getDomainProp(goals, 'totalGoals'),
-    activeGoals: getDomainProp(goals, 'activeGoals'),
-    completedGoals: getDomainProp(goals, 'completedGoals'),
-    totalTargetAmount: getDomainProp(goals, 'totalTargetAmount'),
-    totalSavedAmount: getDomainProp(goals, 'totalSavedAmount'),
-    overallCompletionRate: getDomainProp(goals, 'overallCompletionRate'),
-  }
+function selectGoals() {
+  return null
 }
 
 function selectCashflow(cashflow) {

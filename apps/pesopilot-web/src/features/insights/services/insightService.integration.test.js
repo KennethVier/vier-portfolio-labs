@@ -126,9 +126,7 @@ describe('insightService integration (real engines, real IndexedDB)', () => {
 
     expect(bundle.scope).toBe(INSIGHT_SCOPES.currentCutoff)
 
-    expect(bundle.health.category).toBe('health')
-    expect(typeof bundle.health.score).toBe('number')
-    expect(typeof bundle.health.status).toBe('string')
+    expect(bundle.health).toBeNull()
 
     expect(bundle.expenses.metrics.totalExpenses).toBe(30000)
     expect(bundle.expenses.metrics.categoryDistribution.length).toBeGreaterThan(0)
@@ -140,9 +138,8 @@ describe('insightService integration (real engines, real IndexedDB)', () => {
     expect(bundle.savings.metrics.totalSavings).toBe(5000)
     expect(bundle.savings.metrics.savingsRate.rate).toBe(12.5)
 
-    expect(bundle.goals.metrics.totalGoals).toBe(1)
-    expect(bundle.goals.metrics.activeGoals).toBe(1)
-    expect(bundle.goals.metrics.totalTargetAmount).toBe(20000)
+    expect(bundle.goals.metrics.totalGoals).toBe(0)
+    expect(bundle.goals.metrics.activeGoals).toBe(0)
 
     expect(bundle.cashflow.metrics.remainingCash).toBe(5000)
     expect(bundle.cashflow.metrics.spendingPace.status).toBe('Fast')

@@ -69,16 +69,6 @@ const RAW_TEMPLATES = [
     id: 'position.pace',
     text: 'Your spending pace is currently {paceStatus} relative to the cycle timeline.',
   },
-  {
-    category: 'currentPosition',
-    id: 'position.goals',
-    text: 'Overall goal completion rate is {completionRate} across {activeGoals} active goals.',
-  },
-  {
-    category: 'currentPosition',
-    id: 'position.health',
-    text: 'Overall financial health is evaluated as {healthStatus} with a score of {healthScore}.',
-  },
 
   // Highlights
   {
@@ -140,16 +130,6 @@ const RAW_TEMPLATES = [
   },
   {
     category: 'risks',
-    id: 'risk.goal.noContributions',
-    text: '{goalCount} active goals received no contributions during this period.',
-  },
-  {
-    category: 'risks',
-    id: 'risk.health',
-    text: 'Financial health is currently evaluated as {healthStatus}.',
-  },
-  {
-    category: 'risks',
     id: 'risk.change.up',
     text: '{metricLabel} increased by {percent} compared to {baselineLabel}.',
   },
@@ -200,16 +180,6 @@ const RAW_TEMPLATES = [
     id: 'positive.savingsConsistency',
     text: 'Savings contributions were maintained consistently.',
   },
-  {
-    category: 'positiveObservations',
-    id: 'positive.goalsCompleted',
-    text: 'You have completed {completedGoals} financial goals.',
-  },
-  {
-    category: 'positiveObservations',
-    id: 'positive.health',
-    text: 'Financial health score remains in the {healthStatus} range.',
-  },
 
   // Priority Actions
   {
@@ -227,7 +197,7 @@ const RAW_TEMPLATES = [
   {
     category: 'closing',
     id: 'closing.stable',
-    text: 'Overall, your finances remain stable. Continuing your current habits while following priority recommendations will support your financial goals.',
+    text: 'Overall, your finances remain stable. Continuing your current habits while following priority recommendations will support your financial stability.',
   },
   {
     category: 'closing',

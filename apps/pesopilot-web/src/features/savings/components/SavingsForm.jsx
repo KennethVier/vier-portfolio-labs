@@ -51,7 +51,6 @@ export function SavingsForm({
   onCancel,
   onSubmit,
   salaryCutoffs,
-  savingsGoals = [],
   mode = SAVINGS_FORM_MODE.general,
   selectedGoal = null,
   selectedGoalId = null,
@@ -187,29 +186,7 @@ export function SavingsForm({
             error={errors.date?.message}
             {...register('date')}
           />
-          {!isGoalContribution ? (
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-content">
-                Savings goal
-              </span>
-              <select
-                className="min-h-10 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm"
-                {...register('goalId')}
-              >
-                <option value="">General Savings</option>
-                {savingsGoals.map((goal) => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.name}
-                  </option>
-                ))}
-              </select>
-              {errors.goalId ? (
-                <span className="mt-1 block text-xs text-error">
-                  {errors.goalId.message}
-                </span>
-              ) : null}
-            </label>
-          ) : null}
+          <input type="hidden" {...register('goalId')} />
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-content">
               Salary cutoff

@@ -62,7 +62,8 @@ describe('summarySectionBuilder', () => {
     const withGoals = {
       goals: { metrics: { activeGoals: 1, totalGoals: 1 } },
     }
-    expect(hasSufficientFinancialData(withGoals)).toBe(true)
+    // Goals do not contribute to MVP financial data
+    expect(hasSufficientFinancialData(withGoals)).toBe(false)
   })
 
   it('extracts current position candidates with raw evidence and formatted variables (Correction 3 & 4)', () => {
@@ -276,7 +277,7 @@ describe('summarySectionBuilder', () => {
     expect(savingsRisk.severity).toBeNull()
 
     const goalRisk = candidates.find((c) => c.key === 'risk_goals_no_contributions')
-    expect(goalRisk.severity).toBeNull()
+    expect(goalRisk).toBeUndefined()
   })
 
   it('uses INCOME_RULE_IDS.missingIncomeDetection for missing income risk severity', () => {
@@ -354,7 +355,7 @@ describe('summarySectionBuilder', () => {
     expect(risk.severity).toBe('warning')
   })
 
-  it('uses GOAL_RULE_IDS.goalsWithoutContributions for goals without contributions risk severity', () => {
+  it('does not generate goal risk candidates for MVP summary', () => {
     expect(GOAL_RULE_IDS.goalsWithoutContributions).toBe('goals_without_contributions')
 
     const bundle = {
@@ -376,11 +377,10 @@ describe('summarySectionBuilder', () => {
     })
 
     const risk = candidates.find((c) => c.key === 'risk_goals_no_contributions')
-    expect(risk).toBeDefined()
-    expect(risk.severity).toBe('warning')
+    expect(risk).toBeUndefined()
   })
 
-  it('reuses contributing Health RuleResult severity for Critical / Needs Attention health risk', () => {
+  it('does not generate health risk candidates for MVP summary', () => {
     const bundle = {
       cashflow: { metrics: { remainingCash: 100 } },
       health: {
@@ -400,8 +400,7 @@ describe('summarySectionBuilder', () => {
     })
 
     const healthRisk = candidates.find((c) => c.key === 'risk_health_status')
-    expect(healthRisk).toBeDefined()
-    expect(healthRisk.severity).toBe('critical')
+    expect(healthRisk).toBeUndefined()
 
     const bundleNeedsAttention = {
       cashflow: { metrics: { remainingCash: 100 } },
@@ -420,11 +419,10 @@ describe('summarySectionBuilder', () => {
       recommendationBundle: { recommendations: [] },
     })
     const healthRisk2 = res2.candidates.find((c) => c.key === 'risk_health_status')
-    expect(healthRisk2).toBeDefined()
-    expect(healthRisk2.severity).toBe('warning')
+    expect(healthRisk2).toBeUndefined()
   })
 
-  it('health risk with no contributing negative severity remains null (does not manufacture severity)', () => {
+  it('health risk remains absent from MVP summary regardless of breakdown', () => {
     // Empty breakdown
     const res1 = buildCandidateSections({
       insightBundle: {
@@ -433,7 +431,7 @@ describe('summarySectionBuilder', () => {
       },
       recommendationBundle: { recommendations: [] },
     })
-    expect(res1.candidates.find((c) => c.key === 'risk_health_status').severity).toBeNull()
+    expect(res1.candidates.find((c) => c.key === 'risk_health_status')).toBeUndefined()
 
     // Negative item but missing severity string
     const res2 = buildCandidateSections({
@@ -447,7 +445,7 @@ describe('summarySectionBuilder', () => {
       },
       recommendationBundle: { recommendations: [] },
     })
-    expect(res2.candidates.find((c) => c.key === 'risk_health_status').severity).toBeNull()
+    expect(res2.candidates.find((c) => c.key === 'risk_health_status')).toBeUndefined()
 
     // Breakdown only contains passing items
     const res3 = buildCandidateSections({
@@ -461,7 +459,7 @@ describe('summarySectionBuilder', () => {
       },
       recommendationBundle: { recommendations: [] },
     })
-    expect(res3.candidates.find((c) => c.key === 'risk_health_status').severity).toBeNull()
+    expect(res3.candidates.find((c) => c.key === 'risk_health_status')).toBeUndefined()
   })
 
   it('assigns null severity to comparison/trend risks without fabricating severity', () => {

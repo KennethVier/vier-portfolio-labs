@@ -97,10 +97,9 @@ export const cutoffWorkflowReminderService = {
       return [buildReminder('no_current_cutoff', null)]
     }
 
-    const [incomeRecords, savingsRecords, savingsGoals] = await Promise.all([
+    const [incomeRecords, savingsRecords] = await Promise.all([
       incomeService.loadIncome({ cutoffId: currentCutoff.id }),
       savingsService.loadSavings({ cutoffId: currentCutoff.id }),
-      savingsService.loadSavingsGoals(),
     ])
     const reminders = []
 
@@ -118,15 +117,6 @@ export const cutoffWorkflowReminderService = {
     ) {
       reminders.push(buildReminder('no_savings', currentCutoff))
     }
-
-    savingsGoals
-      .filter(
-        (goal) =>
-          goal.status === 'active' &&
-          goal.contributionCount === 0 &&
-          !isDismissed('goal_no_contribution', goal.id, storage),
-      )
-      .forEach((goal) => reminders.push(buildGoalReminder(goal)))
 
     return sortReminders(reminders)
   },

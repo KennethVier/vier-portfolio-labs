@@ -160,11 +160,11 @@ date
 
 ---
 
-# Store: savings_goals
+# Store: savings_goals (Dormant / Future Phase 14 Infrastructure)
 
 Purpose:
 
-Tracks lifetime savings objectives. Progress is derived from linked savings contributions and is not stored directly.
+Dormant / future Phase 14 infrastructure for lifetime savings objectives. Preserved in Dexie schema for future-readiness and zero data-loss migration risk, but inactive in the active Phase 0–13 MVP production runtime. Progress is derived from linked savings contributions and is not stored directly.
 
 Fields:
 

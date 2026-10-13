@@ -59,7 +59,7 @@ function getCurrentCutoffExpenses(expenses, currentCutoff) {
 }
 
 function getInsightExplanation(insights, fallback) {
-  return insights?.cashflow?.explanation || insights?.expenses?.explanation || insights?.health?.explanation || fallback
+  return insights?.cashflow?.explanation || insights?.expenses?.explanation || fallback
 }
 
 export function getHealthScore(insights, hasCurrentCutoff = true) {
@@ -406,8 +406,6 @@ function buildDashboardModel({
     cutoffPerformance: getCutoffPerformance(insights, hasCurrentCutoff),
     cutoffProgress: calculateCutoffProgress(currentCutoff),
     expenseHelperText: deriveExpenseHelperText(insights, hasCurrentCutoff),
-    healthScore: getHealthScore(insights, hasCurrentCutoff),
-    healthStatus: hasCurrentCutoff ? insights?.health?.status ?? null : null,
     insights,
     recentTransactions: buildRecentTransactions({ expenses, income, savings }),
     spendingOverview: buildSpendingOverview(expenses, currentCutoff),

@@ -20,7 +20,6 @@ import {
   formatMoney,
   formatPercent,
   getHorizonCoverageNotice,
-  mapHealthStatusToTone,
   mapSeverityToTone,
 } from '../utils/insightsViewTransforms.js'
 
@@ -72,7 +71,7 @@ export function InsightsPage() {
         <PageHeader
           eyebrow="FINANCIAL INTELLIGENCE"
           title="Financial Insights"
-          description="Deterministic financial health, horizon comparisons, and priority recommendations for your active cutoff."
+          description="Deterministic financial position, horizon comparisons, and priority recommendations for your active cutoff."
           meta={
             insights.generatedAt
               ? `Generated ${formatGeneratedAt(insights.generatedAt)}`
@@ -144,16 +143,6 @@ export function InsightsPage() {
       ? `Status: ${savingsRateStatus}`
       : 'No savings data'
 
-  const activeGoalCount = insights.goals?.metrics?.activeGoals
-  const hasGoalsBaseline =
-    typeof activeGoalCount === 'number' && activeGoalCount > 0
-  const goalProgressValue = hasGoalsBaseline
-    ? formatPercent(insights.goals?.metrics?.overallCompletionRate)
-    : '--'
-  const goalProgressHelper = hasGoalsBaseline
-    ? `${activeGoalCount} active goal(s)`
-    : 'No active goals'
-
   // Summary sections & horizon filtering (Correction 7 & 8)
   const filteredSummarySections = filterSummarySectionsByHorizon(
     insights.summary?.sections,
@@ -170,7 +159,7 @@ export function InsightsPage() {
       <PageHeader
         eyebrow="FINANCIAL INTELLIGENCE"
         title="Financial Insights"
-        description="Deterministic financial health, horizon comparisons, and priority recommendations for your active cutoff."
+        description="Deterministic financial position, horizon comparisons, and priority recommendations for your active cutoff."
         meta={
           insights.generatedAt
             ? `Generated ${formatGeneratedAt(insights.generatedAt)}`
@@ -187,7 +176,7 @@ export function InsightsPage() {
         }
       />
 
-      {/* 2. Current Cutoff Overview & Health Banner */}
+      {/* 2. Current Cutoff Overview Banner */}
       <section className="rounded-lg border border-outline-variant bg-surface-container-lowest p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -202,33 +191,23 @@ export function InsightsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-3">
-            <div className="text-right">
-              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-                Financial Health
-              </span>
-              <div className="font-data-mono text-2xl font-bold text-on-surface">
-                {insights.health?.score != null ? insights.health.score : '--'}
+          {cashflowPosition && cashflowPosition !== 'No Data' ? (
+            <div className="flex items-center gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+              <div className="text-right">
+                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
+                  Cashflow Position
+                </span>
+                <div className="font-data-mono text-xl font-bold text-on-surface">
+                  {cashflowPosition}
+                </div>
               </div>
             </div>
-            <StatusBadge
-              tone={mapHealthStatusToTone(insights.health?.status)}
-              className="text-xs"
-            >
-              {insights.health?.status ?? 'No Data'}
-            </StatusBadge>
-          </div>
+          ) : null}
         </div>
-
-        {insights.health?.explanation ? (
-          <p className="mt-4 border-t border-outline-variant pt-3 font-body-md text-on-surface">
-            {insights.health.explanation}
-          </p>
-        ) : null}
       </section>
 
       {/* 3. Core Current-Cutoff KPI Bar */}
-      <KpiGrid columns={4}>
+      <KpiGrid columns={3}>
         <StatCard
           label="Remaining Cash"
           value={remainingCashValue}
@@ -249,13 +228,6 @@ export function InsightsPage() {
           helperText={savingsRateHelper}
           tone="neutral"
           icon={<span className="material-symbols-outlined text-lg">savings</span>}
-        />
-        <StatCard
-          label="Goal Progress"
-          value={goalProgressValue}
-          helperText={goalProgressHelper}
-          tone="neutral"
-          icon={<span className="material-symbols-outlined text-lg">flag</span>}
         />
       </KpiGrid>
 
@@ -464,7 +436,7 @@ export function InsightsPage() {
       {/* 6. Domain Insight Deep Dive (Correction 12 & 13) */}
       <SectionCard
         title="Domain Intelligence Deep Dive"
-        description="Comprehensive evaluations across cashflow, income, spending, savings, goals, and multi-cutoff trends."
+        description="Comprehensive evaluations across cashflow, income, spending, savings, and multi-cutoff trends."
       >
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Cashflow */}
@@ -550,27 +522,6 @@ export function InsightsPage() {
             <div className="mt-3 border-t border-outline-variant/60 pt-2 text-xs text-on-surface-variant">
               <div>Rate Status: <span className="font-semibold text-on-surface">{insights.savings?.metrics?.savingsRate?.status ?? '--'}</span></div>
               <div>Consistency: <span className="font-semibold text-on-surface">{insights.savings?.metrics?.consistency?.status ?? '--'}</span></div>
-            </div>
-          </div>
-
-          {/* Goals */}
-          <div className="flex flex-col justify-between rounded border border-outline-variant bg-surface-container-lowest p-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">
-                  Goals
-                </span>
-                <span className="material-symbols-outlined text-primary text-base">
-                  flag
-                </span>
-              </div>
-              <p className="mt-2 font-body-sm text-on-surface">
-                {insights.goals?.explanation || 'No goals evaluation.'}
-              </p>
-            </div>
-            <div className="mt-3 border-t border-outline-variant/60 pt-2 text-xs text-on-surface-variant">
-              <div>Active Goals: <span className="font-semibold text-on-surface">{insights.goals?.metrics?.activeGoals ?? 0}</span></div>
-              <div>Completed Goals: <span className="font-semibold text-on-surface">{insights.goals?.metrics?.completedGoals ?? 0}</span></div>
             </div>
           </div>
 

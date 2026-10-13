@@ -344,13 +344,8 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
         recommendationBundle: sampleRecommendationBundle,
       })
 
-      // Health
-      expect(context.insights.health).toEqual({
-        score: 85,
-        status: 'Healthy',
-      })
-      expect(context.insights.health.breakdown).toBeUndefined()
-      expect(context.insights.health.diagnostics).toBeUndefined()
+      // Health (deactivated for MVP release)
+      expect(context.insights.health).toBeNull()
 
       // Income
       expect(context.insights.income).toEqual({
@@ -397,18 +392,8 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
       })
       expect(context.insights.savings.largestSavingsContribution).toBeUndefined()
 
-      // Goals
-      expect(context.insights.goals).toEqual({
-        activeGoals: 2,
-        completedGoals: 1,
-        overallCompletionRate: 40,
-        totalGoals: 3,
-        totalSavedAmount: 40000,
-        totalTargetAmount: 100000,
-      })
-      expect(context.insights.goals.highestFundedGoal).toBeUndefined()
-      expect(context.insights.goals.goalsWithoutContributions).toBeUndefined()
-      expect(context.insights.goals.goals).toBeUndefined()
+      // Goals (deactivated for MVP release)
+      expect(context.insights.goals).toBeNull()
 
       // Cashflow
       expect(context.insights.cashflow).toEqual({

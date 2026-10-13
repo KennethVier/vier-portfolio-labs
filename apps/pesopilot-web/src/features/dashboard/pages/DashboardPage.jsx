@@ -235,8 +235,6 @@ function AllocationMatrix({ rows }) {
 
 function FinancialInsights({
   hasCurrentCutoff,
-  healthScore,
-  healthStatus,
   summaryNarrative,
   topRecommendations = [],
 }) {
@@ -246,14 +244,6 @@ function FinancialInsights({
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined">monitoring</span>
           <h3 className="font-headline-sm text-headline-sm">Financial Insights</h3>
-        </div>
-        <div className="text-right">
-          <div className="font-data-mono text-lg font-semibold">
-            {healthScore ?? '--'}
-          </div>
-          <div className="font-label-caps text-label-caps uppercase opacity-80">
-            {healthStatus ?? 'No data'}
-          </div>
         </div>
       </div>
       <div className="space-y-3">
@@ -615,8 +605,6 @@ export function DashboardPage() {
             />
             <FinancialInsights
               hasCurrentCutoff={Boolean(data.currentCutoff)}
-              healthScore={data.healthScore}
-              healthStatus={data.healthStatus}
               summaryNarrative={data.summaryNarrative}
               topRecommendations={data.topRecommendations}
             />

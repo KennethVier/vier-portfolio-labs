@@ -164,7 +164,7 @@ describe('cutoffWorkflowReminderService', () => {
     ).resolves.toEqual([])
   })
 
-  it('shows active savings goal reminders after cutoff workflow reminders', async () => {
+  it('does not emit savings goal reminders during MVP runtime even if goals exist', async () => {
     const cutoffId = await createActiveCutoff()
     await incomeService.createIncome({
       amount: 40000,
@@ -182,21 +182,15 @@ describe('cutoffWorkflowReminderService', () => {
       targetDate: '',
     })
 
-    await expect(
-      cutoffWorkflowReminderService.loadReminders({
-        storage: new MemoryStorage(),
-      }),
-    ).resolves.toEqual([
+    const reminders = await cutoffWorkflowReminderService.loadReminders({
+      storage: new MemoryStorage(),
+    })
+    expect(reminders).toEqual([
       expect.objectContaining({
         priority: 3,
         type: 'no_savings',
       }),
-      expect.objectContaining({
-        actionLabel: 'Add Contribution',
-        message: 'Emergency Fund has no contributions yet.',
-        priority: 4,
-        type: 'goal_no_contribution',
-      }),
     ])
+    expect(reminders.some((r) => r.type === 'goal_no_contribution')).toBe(false)
   })
 })

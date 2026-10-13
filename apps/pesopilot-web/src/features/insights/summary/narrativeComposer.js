@@ -20,8 +20,6 @@ const POSITION_ORDER = Object.freeze([
   'position.savingsRate',
   'position.topCategory',
   'position.pace',
-  'position.goals',
-  'position.health',
 ])
 
 function getSeverityWeight(severity) {
@@ -49,11 +47,7 @@ function determineTone(candidates) {
   const hasCriticalRisk = candidates.some(
     (c) =>
       c.sectionType === 'risks' &&
-      (c.severity === 'critical' ||
-        c.key === 'risk_cashflow_negative' ||
-        (c.key === 'risk_health_status' &&
-          (c.variables?.healthStatus === 'Critical' ||
-            c.variables?.healthStatus === 'Needs Attention'))),
+      (c.severity === 'critical' || c.key === 'risk_cashflow_negative'),
   )
 
   if (hasCriticalRisk) {
@@ -61,12 +55,7 @@ function determineTone(candidates) {
   }
 
   const hasStableSignal = candidates.some(
-    (c) =>
-      c.key === 'positive_cashflow_position' ||
-      c.key === 'positive_health_status' ||
-      (c.key === 'position_health' &&
-        (c.variables?.healthStatus === 'Healthy' ||
-          c.variables?.healthStatus === 'Excellent')),
+    (c) => c.key === 'positive_cashflow_position',
   )
 
   if (hasStableSignal) {
@@ -291,7 +280,7 @@ export function composeNarrative({ candidates = [] }) {
     evidence: [],
     horizon: 'current',
     key: 'executive_summary',
-    relatedInsights: ['health', 'cashflow'],
+    relatedInsights: ['cashflow'],
     relatedRecommendations: topAction
       ? [...topAction.relatedRecommendations]
       : [],
@@ -306,7 +295,7 @@ export function composeNarrative({ candidates = [] }) {
     evidence: [],
     horizon: 'current',
     key: 'closing_summary',
-    relatedInsights: ['health', 'cashflow'],
+    relatedInsights: ['cashflow'],
     relatedRecommendations: [],
     templateId: closingTemplateId,
     text: closingText,

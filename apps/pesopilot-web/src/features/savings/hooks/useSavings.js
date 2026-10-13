@@ -29,17 +29,15 @@ export function useSavings() {
         nextSavings,
         nextSalaryCutoffs,
         nextSavingsKpis,
-        nextSavingsGoals,
       ] = await Promise.all([
         savingsService.loadSavings(nextFilters),
         savingsService.loadSalaryCutoffs(),
         savingsService.loadSavingsKpis(),
-        savingsService.loadSavingsGoals(),
       ])
 
       setSavings(nextSavings)
       setSavingsKpis(nextSavingsKpis)
-      setSavingsGoals(nextSavingsGoals)
+      setSavingsGoals([])
       setSalaryCutoffs(nextSalaryCutoffs)
     } catch (loadError) {
       setError(loadError.message || 'Unable to load savings')

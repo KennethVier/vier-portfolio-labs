@@ -903,12 +903,12 @@ MUST NOT:
 
 The Prompt Builder consumes three separate deterministic inputs, each authoritative for its own domain:
 
-1. `InsightBundle` — Authoritative source for deterministic financial metrics across seven domains:
-   * `health`
+1. `InsightBundle` — Authoritative source for deterministic financial metrics across seven domain keys:
+   * `health` (Dormant / Future Phase 16+; evaluated as null in active MVP runtime)
    * `income`
    * `expenses`
    * `savings`
-   * `goals`
+   * `goals` (Dormant / Future Phase 14+; evaluated as null in active MVP runtime)
    * `cashflow`
    * `cutoff`
 2. `RecommendationBundle` — Authoritative source for deterministic recommendation rankings and content. The Prompt Builder strictly ignores `insightBundle.recommendations` to prevent conflicting or stale recommendation representations.

@@ -5,7 +5,6 @@ import {
   SEVERITY_WEIGHT,
 } from './summaryConstants.js'
 import { CASHFLOW_RULE_IDS } from '../rules/cashflow/cashflowRuleConstants.js'
-import { GOAL_RULE_IDS } from '../rules/goal/goalRuleConstants.js'
 import { INCOME_RULE_IDS } from '../rules/income/incomeRuleConstants.js'
 import { SAVINGS_RULE_IDS } from '../rules/savings/savingsRuleConstants.js'
 
@@ -45,14 +44,7 @@ export function hasSufficientFinancialData(bundle) {
       (bundle.savings.metrics.savingsRate?.status &&
         bundle.savings.metrics.savingsRate.status !== 'No Data'))
 
-  const hasGoals =
-    bundle.goals?.metrics &&
-    (bundle.goals.metrics.totalGoals > 0 ||
-      bundle.goals.metrics.activeGoals > 0)
-
-  return Boolean(
-    hasCashflow || hasIncome || hasExpenses || hasSavings || hasGoals,
-  )
+  return Boolean(hasCashflow || hasIncome || hasExpenses || hasSavings)
 }
 
 function getHighestSeverity(items) {
@@ -82,14 +74,6 @@ function findBreakdownSeverity(breakdown, ruleIds) {
   return getHighestSeverity(matching)
 }
 
-function findHealthRiskSeverity(breakdown) {
-  if (!Array.isArray(breakdown)) return null
-  const negativeItems = breakdown.filter(
-    (b) => b?.status === 'warning' || b?.status === 'fail',
-  )
-  return getHighestSeverity(negativeItems)
-}
-
 export function buildCandidateSections({
   insightBundle,
   recommendationBundle,
@@ -115,8 +99,6 @@ export function buildCandidateSections({
   const income = insightBundle.income
   const expenses = insightBundle.expenses
   const savings = insightBundle.savings
-  const goals = insightBundle.goals
-  const health = insightBundle.health
   const cutoff = insightBundle.cutoff
 
   // ==========================================
@@ -262,62 +244,6 @@ export function buildCandidateSections({
       subject: 'position.pace',
       templateId: 'position.pace',
       variables: { paceStatus: paceStatus.toLowerCase() },
-    })
-    hasCurrent = true
-  }
-
-  if (
-    goals?.metrics &&
-    goals.metrics.activeGoals > 0 &&
-    typeof goals.metrics.overallCompletionRate === 'number'
-  ) {
-    const rate = goals.metrics.overallCompletionRate
-    candidates.push({
-      evidence: [
-        {
-          label: 'Goal Completion Rate',
-          source: 'goals.metrics.overallCompletionRate',
-          value: rate,
-        },
-      ],
-      horizon: 'current',
-      key: 'position_goals',
-      relatedInsights: ['goal'],
-      relatedRecommendations: [],
-      sectionType: 'currentPosition',
-      subject: 'position.goals',
-      templateId: 'position.goals',
-      variables: {
-        activeGoals: goals.metrics.activeGoals,
-        completionRate: formatPercent(rate),
-      },
-    })
-    hasCurrent = true
-  }
-
-  if (
-    health?.status &&
-    typeof health.score === 'number'
-  ) {
-    candidates.push({
-      evidence: [
-        {
-          label: 'Health Score',
-          source: 'health.score',
-          value: health.score,
-        },
-      ],
-      horizon: 'current',
-      key: 'position_health',
-      relatedInsights: ['health'],
-      relatedRecommendations: [],
-      sectionType: 'currentPosition',
-      subject: 'position.health',
-      templateId: 'position.health',
-      variables: {
-        healthScore: health.score,
-        healthStatus: health.status,
-      },
     })
     hasCurrent = true
   }
@@ -532,58 +458,6 @@ export function buildCandidateSections({
       templateId: 'risk.savings.low',
       variables: { savingsRate: formatPercent(rate) },
     })
-    hasCurrent = true
-  }
-
-  if (goals?.metrics?.goalsWithoutContributions?.length > 0) {
-    const count = goals.metrics.goalsWithoutContributions.length
-    const sev = findBreakdownSeverity(goals.breakdown, [
-      GOAL_RULE_IDS.goalsWithoutContributions,
-    ])
-    candidates.push({
-      domain: 'goal',
-      evidence: [
-        {
-          label: 'Goals Without Contributions Count',
-          source: 'goals.metrics.goalsWithoutContributions.length',
-          value: count,
-        },
-      ],
-      horizon: 'current',
-      key: 'risk_goals_no_contributions',
-      relatedInsights: ['goal'],
-      relatedRecommendations: [],
-      sectionType: 'risks',
-      severity: sev,
-      subject: 'goal_contributions',
-      templateId: 'risk.goal.noContributions',
-      variables: { goalCount: count },
-    })
-    hasCurrent = true
-  }
-
-  if (health?.status === 'Critical' || health?.status === 'Needs Attention') {
-    const sev = findHealthRiskSeverity(health.breakdown)
-    candidates.push({
-      domain: 'health',
-      evidence: [
-        {
-          label: 'Health Status',
-          source: 'health.status',
-          value: health.status,
-        },
-      ],
-      horizon: 'current',
-      key: 'risk_health_status',
-      relatedInsights: ['health'],
-      relatedRecommendations: [],
-      sectionType: 'risks',
-      severity: sev,
-      subject: 'health_status',
-      templateId: 'risk.health',
-      variables: { healthStatus: health.status },
-    })
-    hasCurrent = true
   }
 
   // ==========================================
@@ -742,52 +616,6 @@ export function buildCandidateSections({
       templateId: 'positive.savingsConsistency',
       variables: {},
     })
-    hasCurrent = true
-  }
-
-  if (goals?.metrics?.completedGoals > 0) {
-    const count = goals.metrics.completedGoals
-    candidates.push({
-      domain: 'goal',
-      evidence: [
-        {
-          label: 'Completed Goals',
-          source: 'goals.metrics.completedGoals',
-          value: count,
-        },
-      ],
-      horizon: 'current',
-      key: 'positive_goals_completed',
-      relatedInsights: ['goal'],
-      relatedRecommendations: [],
-      sectionType: 'positiveObservations',
-      subject: 'goals_completed',
-      templateId: 'positive.goalsCompleted',
-      variables: { completedGoals: count },
-    })
-    hasCurrent = true
-  }
-
-  if (health?.status === 'Excellent' || health?.status === 'Healthy') {
-    candidates.push({
-      domain: 'health',
-      evidence: [
-        {
-          label: 'Health Status',
-          source: 'health.status',
-          value: health.status,
-        },
-      ],
-      horizon: 'current',
-      key: 'positive_health_status',
-      relatedInsights: ['health'],
-      relatedRecommendations: [],
-      sectionType: 'positiveObservations',
-      subject: 'health_status',
-      templateId: 'positive.health',
-      variables: { healthStatus: health.status },
-    })
-    hasCurrent = true
   }
 
   // ==========================================

@@ -21,7 +21,6 @@ export function Header({ onMenuClick }) {
     searchValue,
     showSearch,
     onSearchChange,
-    healthScore,
     nextCutoff,
     statusSize,
   } = config
@@ -116,14 +115,6 @@ export function Header({ onMenuClick }) {
         ) : null}
 
         <div className="hidden items-center gap-4 md:flex">
-          <span
-            className={[
-              'font-label-caps font-bold uppercase tracking-wider text-secondary',
-              statusClassName,
-            ].join(' ')}
-          >
-            Health Score: {healthScore}
-          </span>
           <span
             className={[
               'font-label-caps uppercase tracking-wider text-outline',

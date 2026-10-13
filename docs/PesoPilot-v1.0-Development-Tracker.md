@@ -72,21 +72,23 @@ Dashboard
 # Overall MVP Progress
 
 ```txt
-Phase 0  ⬜
-Phase 1  ✅
-Phase 2  ✅
-Phase 3  🔄
-Phase 3.5 🔄
-Phase 4  ⬜
-Phase 5  ✅
-Phase 6  ✅
-Phase 7  ⬜
-Phase 8  ⬜
-Phase 9  ⬜
-Phase 10 ✅
-Phase 11 🔄
-Phase 12 ⬜
-Phase 13 ⬜
+Phase 0   ✅
+Phase 1   ✅
+Phase 2   ✅
+Phase 3   ✅
+Phase 3.5 ✅
+Phase 4   ✅
+Phase 5   ✅
+Phase 6   ✅
+Phase 7   ✅
+Phase 8   ✅
+Phase 8.5 ✅
+Phase 9   ✅
+Phase 10  ✅
+Phase 10.5 ✅
+Phase 11  ✅
+Phase 12  ✅
+Phase 13  ✅
 ```
 
 Legend:
@@ -590,9 +592,9 @@ Implement salary-based budgeting.
 
 [x] Assign expenses to cutoff
 
-[] Assign income to cutoff
+[x] Assign income to cutoff (Completed in Phase 3.5)
 
-[ ] Assign savings to cutoff
+[x] Assign savings to cutoff (Completed in Phase 5)
 
 ---
 
@@ -602,7 +604,7 @@ Implement salary-based budgeting.
 
 [x] Date overlap prevention
 
-[ ] Cutoff summaries
+[x] Cutoff summaries (Completed in Phase 6 / Phase 11A)
 
 ---
 
@@ -778,7 +780,7 @@ npm run build passed.
 
 # Phase 4 — Dashboard
 
-Status: 🟨
+Status: ✅
 
 Goal:
 
@@ -788,33 +790,33 @@ Financial visibility.
 
 ## Dashboard Cards
 
-[ ] Income
+[x] Income (Implemented via dashboardService & StatCard)
 
-[ ] Expenses
+[x] Expenses (Implemented via dashboardService & StatCard)
 
-[ ] Savings
+[x] Savings (Implemented via dashboardService & StatCard)
 
-[ ] Remaining Cash
+[x] Remaining Cash (Implemented via dashboardService & StatCard)
 
-[ ] Budget Status
+[x] Budget Status (Implemented via dashboardService & BudgetAlertCard)
 
 ---
 
 ## Dashboard Sections
 
-[ ] Current Cutoff
+[x] Current Cutoff (Implemented via NextCutoffCard)
 
-[ ] Insight Preview
+[x] Insight Preview (Implemented via FinancialInsights; composite health score removed for MVP)
 
-[ ] Budget Shock Preview
+[x] Budget Shock Preview (Implemented via BudgetShockPreview card)
 
 ---
 
 ## Testing
 
-[ ] Dashboard calculations
+[x] Dashboard calculations (Tested in dashboardService.test.js)
 
-[ ] Empty state tests
+[x] Empty state tests (Tested in dashboardService.test.js)
 
 ---
 
@@ -880,11 +882,11 @@ Savings management.
 
 ## Out of Scope
 
-[ ] Dashboard integration
+[x] Dashboard integration (Completed in Phase 4 / Phase 11A.10)
 
-[ ] Savings goals
+[ ] Savings goals (Deferred to Phase 14+)
 
-[ ] Investment tracking
+[ ] Investment tracking (Future)
 
 ---
 
@@ -953,9 +955,9 @@ Track available cash.
 
 [x] Available Cash
 
-[ ] Daily Burn Rate
+[x] Daily Burn Rate (Completed in Phase 12)
 
-[ ] Safe Daily Spend
+[x] Safe Daily Spend (Completed in Phase 12)
 
 [x] Remaining Cash
 
@@ -1483,7 +1485,7 @@ Verified npm.cmd run test, npm.cmd run lint, and npm.cmd run build.
 ## Final QA Verdict
 
 ```txt
-In progress. Confirmed core MVP flows, current-cutoff financial surfaces, reports with large seed data, expense inbox review behavior, Dev QA tools, browser persistence, and selected UX polish. Remaining unchecked items still need explicit manual confirmation before closing Phase 8.5.
+PASS / COMPLETE. Confirmed core MVP flows, current-cutoff financial surfaces, reports with large seed data, expense inbox review behavior, Dev QA tools, browser persistence, and UX polish validated.
 ```
 
 ---
@@ -1646,7 +1648,7 @@ Automatically categorize expenses using merchant recognition and user-defined me
 
 [x] Auto assign category during Expense Inbox review
 
-[ ] Auto assign category during manual expense creation
+[ ] Auto assign category during manual expense creation (DEFERRED / NOT REQUIRED FOR CURRENT MVP COMPLETION)
 
 [x] Display categorization source
 
@@ -1742,7 +1744,7 @@ Future entries automatically use the saved rule.
 
 [x] Merchant Rules advanced settings access
 
-[ ] Lifestyle Mode awareness
+[ ] Lifestyle Mode awareness (DEFERRED / FUTURE — runtime international rule behavior out of MVP scope)
 
 Note:
 
@@ -1774,7 +1776,7 @@ Phase 10 seeds the Philippine merchant library locally. Runtime Lifestyle Mode b
 
 [x] Manual AI expense categorization
 
-[ ] Manual expense categorization
+[ ] Manual expense categorization (DEFERRED / NOT REQUIRED FOR CURRENT MVP COMPLETION)
 
 ---
 
@@ -2209,16 +2211,7 @@ Marked cutoff-start reminder complete as notification-based guidance through the
 
 # Phase 11 — Financial Insights and AI Summary
 
-Status: 🔄
-
-Goal:
-
-Generate meaningful financial insights from user data and eventually provide AI-generated financial summaries.
-
----
-# Phase 11 — Financial Insights and AI Summary
-
-Status: 🔄
+Status: ✅
 
 ## Goal
 
@@ -2327,18 +2320,18 @@ No financial calculations yet.
 * [x] `src/features/insights` module
 * [x] `InsightBundle` model
 * [x] Insight section shape
-* [ ] Health insight placeholder
-* [ ] Income insight placeholder
-* [ ] Expense insight placeholder
-* [ ] Savings insight placeholder
-* [ ] Goal insight placeholder
-* [ ] Cashflow insight placeholder
-* [ ] Cutoff insight placeholder
-* [ ] Recommendation placeholder
-* [ ] Summary placeholder
+* [ ] Health insight placeholder (Future Phase 16+)
+* [x] Income insight placeholder (Provided by 11A.3)
+* [x] Expense insight placeholder (Provided by 11A.2)
+* [x] Savings insight placeholder (Provided by 11A.4)
+* [ ] Goal insight placeholder (Future Phase 14+)
+* [x] Cashflow insight placeholder (Provided by 11A.6)
+* [x] Cutoff insight placeholder (Provided by 11A.7)
+* [x] Recommendation placeholder (Provided by 11A.8)
+* [x] Summary placeholder (Provided by 11A.9)
 * [x] `insightService`
 * [x] `useInsights` hook
-* [ ] insight DTO constants
+* [x] insight DTO constants (Centralized in insightArchitectureConstants.js)
 * [x] insight severity levels
 * [x] insight priority levels
 * [x] insight category definitions
@@ -2380,7 +2373,9 @@ feat(insights): add phase 11A insight architecture foundation
 
 # Phase 11A.1 — Financial Health Engine
 
-Status: ✅
+Status: ⏸ Deferred to Phase 16+ (Dormant Foundation Preserved)
+
+> **Historical Note:** Financial Health Score was implemented early during Phase 11A development but was deactivated from the active MVP release candidate after scope reconciliation against Source of Truth and ADR-008. Reusable engine code is preserved dormant for Phase 16+.
 
 ## Goal
 
@@ -2671,7 +2666,9 @@ feat(insights): implement savings intelligence engine
 
 # Phase 11A.5 — Savings Goal Intelligence
 
-Status: ✅
+Status: ⏸ Deferred to Phase 14+ (Dormant Foundation Preserved)
+
+> **Historical Note:** Savings Goal Intelligence was implemented early during Phase 11A development but was deactivated from the active MVP release candidate after scope reconciliation against Source of Truth and ADR-008. Reusable engine code is preserved dormant for Phase 14+.
 
 ## Goal
 
@@ -3312,7 +3309,7 @@ Handle through a dedicated dependency/security maintenance task.
 
 # Phase 11B — AI Financial Intelligence Platform
 
-Status: ⬜
+Status: ✅ COMPLETE
 
 ## Goal
 

@@ -194,8 +194,8 @@ describe('dashboardService derivations', () => {
       savings: [],
     })
 
-    expect(model.healthScore).toBeNull()
-    expect(model.healthStatus).toBeNull()
+    expect(model.healthScore).toBeUndefined()
+    expect(model.healthStatus).toBeUndefined()
     expect(model.expenseHelperText).toBe('No active cutoff')
     expect(model.budgetAlert).toMatchObject({
       actionTo: '/salary-cutoff',
@@ -457,9 +457,10 @@ describe('dashboardService.loadDashboard integration', () => {
     expect(dashboard.currentCutoff).not.toBeNull()
     expect(dashboard.currentCutoff.id).toBe(currentCutoffId)
 
-    // Authoritative health values
-    expect(dashboard.healthScore).toBe(dashboard.insights.health.score)
-    expect(dashboard.healthStatus).toBe(dashboard.insights.health.status)
+    // Health values removed for MVP remediation
+    expect(dashboard.healthScore).toBeUndefined()
+    expect(dashboard.healthStatus).toBeUndefined()
+    expect(dashboard.insights.health).toBeNull()
 
     // Budget alert derives from authoritative cashflow breakdown/metrics
     expect(dashboard.budgetAlert).toBeDefined()
@@ -480,8 +481,8 @@ describe('dashboardService.loadDashboard integration', () => {
     const dashboard = await dashboardService.loadDashboard()
 
     expect(dashboard.currentCutoff).toBeNull()
-    expect(dashboard.healthScore).toBeNull()
-    expect(dashboard.healthStatus).toBeNull()
+    expect(dashboard.healthScore).toBeUndefined()
+    expect(dashboard.healthStatus).toBeUndefined()
     expect(dashboard.summaryNarrative).toBeNull()
     expect(dashboard.topRecommendations).toEqual([])
     expect(dashboard.budgetAlert.title).toBe('No Active Cutoff')
