@@ -8,8 +8,11 @@ import { expenseRepository } from '@/lib/db/repositories/expenseRepository.js'
 import { savingsRepository } from '@/lib/db/repositories/savingsRepository.js'
 import { dashboardService } from './dashboardService.js'
 
-describe('Dashboard Performance Benchmark (< 2 seconds)', () => {
-  it('measures 5 consecutive loadDashboard runs with active cutoff', async () => {
+// NOTE: This test measures dashboardService.loadDashboard() in an isolated Node/Vitest test environment.
+// It provides service-level data retrieval evidence but does NOT establish full production browser rendering.
+// It must not be cited as the sole release acceptance evidence for browser performance.
+describe('Dashboard Service-Level Performance Benchmark (< 2 seconds)', () => {
+  it('measures 5 consecutive service-level loadDashboard runs with active cutoff', async () => {
     const FIXED_DATE = new Date('2026-06-05T12:00:00.000Z')
     const TS = '2026-06-01T00:00:00.000Z'
 

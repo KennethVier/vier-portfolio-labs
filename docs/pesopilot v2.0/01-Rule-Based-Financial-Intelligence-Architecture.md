@@ -6,7 +6,6 @@
 > **Phase:** Phase 11A — Rule-Based Financial Intelligence
 > **Owner:** Kenneth Vier Cerrado
 > **Last Updated:** June 2026
-> **MVP Scope Note:** Under ADR-008 and the authoritative Source of Truth, the active MVP release candidate encompasses Phase 0–13. Composite Financial Health Score (Phase 16+) and Savings Goal Intelligence (Phase 14+) specifications in this document describe future-ready architectures whose implementations remain preserved as dormant capabilities, disconnected from the active Phase 0–13 MVP production runtime.
 
 ---
 

@@ -1,4 +1,196 @@
+import { GOAL_RULE_IDS } from '../../insights/rules/goal/goalRuleConstants.js'
+import { HEALTH_RULE_IDS } from '../../insights/rules/health/healthRuleConstants.js'
+import {
+  RECOMMENDATION_ACTION_KEYS,
+  RECOMMENDATION_RULE_IDS,
+} from '../../insights/rules/recommendation/recommendationRuleConstants.js'
+
 export const CONTEXT_VERSION = '1.0.0'
+
+// ---------------------------------------------------------------------------
+// v1 MVP AI context boundary (ADR-008 scope)
+//
+// Savings Goals (Phase 14+) and the composite Financial Health Score
+// (Phase 16+) are outside the v1 MVP. Historical RecommendationBundles and
+// FinancialSummaries may still embed that legacy content, so it is excluded
+// here, at the point where deterministic context enters the AI prompt.
+//
+// Policy:
+// - Exclusion is decided ONLY from structured provenance (domain, id,
+//   actionKey, sourceRuleIds, evidence ruleId/source, paragraph key,
+//   templateId, relatedInsights, relatedRecommendations). Free text is never
+//   scanned, so ordinary wording such as "goal" or "healthy" is unaffected.
+// - Mixed provenance is excluded conservatively: if ANY provenance marker of a
+//   recommendation or summary paragraph references a prohibited source, the
+//   whole item is dropped from the AI context. Text is never rewritten.
+// - Health rule ids that collide with authorized rule ids (e.g.
+//   'remaining_cash') are NOT used as markers; Health recommendations are
+//   identified by their own domain/id/actionKey instead.
+// - Source objects and stored summaries are never mutated or deleted.
+// ---------------------------------------------------------------------------
+
+const PROHIBITED_DOMAINS = new Set(['goal', 'goals', 'health'])
+
+const PROHIBITED_RECOMMENDATION_IDS = new Set([
+  RECOMMENDATION_RULE_IDS.goalNoContributions,
+  RECOMMENDATION_RULE_IDS.healthLowStatus,
+])
+
+const PROHIBITED_ACTION_KEYS = new Set([
+  RECOMMENDATION_ACTION_KEYS.reviewGoalContributions,
+  RECOMMENDATION_ACTION_KEYS.reviewFinancialHealth,
+])
+
+// Goal rule ids do not collide with any authorized domain rule id.
+const PROHIBITED_SOURCE_RULE_IDS = new Set([
+  ...Object.values(GOAL_RULE_IDS),
+  HEALTH_RULE_IDS.goalContributionParticipation,
+])
+
+// Legacy Phase 14+/16+ summary paragraph keys and template ids.
+const PROHIBITED_PARAGRAPH_KEYS = new Set([
+  'position_goals',
+  'position_health',
+  'risk_goals_no_contributions',
+  'risk_health_status',
+  'positive_goals_completed',
+  'positive_health_status',
+])
+
+const PROHIBITED_TEMPLATE_IDS = new Set([
+  'position.goals',
+  'position.health',
+  'risk.goal.noContributions',
+  'risk.health',
+  'positive.goalsCompleted',
+  'positive.health',
+].map((id) => id.toLowerCase()))
+
+const PROHIBITED_EVIDENCE_SOURCE_PREFIXES = [
+  'goals.',
+  'health.',
+  'goal.',
+  'goals/',
+  'goal/',
+  'health/',
+]
+
+const MAX_EVIDENCE_TRAVERSAL_DEPTH = 10
+const MAX_EVIDENCE_TRAVERSAL_NODES = 1024
+
+function normalizeIdentifier(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function isProhibitedEvidence(evidence) {
+  const seen = new Set()
+  let visited = 0
+
+  function inspect(node, depth) {
+    // Count primitives and array elements too, so wide structures have a bound.
+    visited += 1
+    if (visited > MAX_EVIDENCE_TRAVERSAL_NODES || depth > MAX_EVIDENCE_TRAVERSAL_DEPTH) {
+      return true
+    }
+    if (!node || typeof node !== 'object') return false
+    if (seen.has(node)) return true
+
+    seen.add(node)
+    try {
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          if (inspect(item, depth + 1)) return true
+        }
+        return false
+      }
+
+      const source = normalizeIdentifier(node.source)
+      if (
+        PROHIBITED_DOMAINS.has(source) ||
+        PROHIBITED_EVIDENCE_SOURCE_PREFIXES.some((prefix) => source.startsWith(prefix))
+      ) return true
+
+      const ruleId = normalizeIdentifier(node.ruleId)
+      if (PROHIBITED_SOURCE_RULE_IDS.has(ruleId) || PROHIBITED_RECOMMENDATION_IDS.has(ruleId)) {
+        return true
+      }
+      if (
+        asArray(node.sourceRuleIds).some((id) =>
+          PROHIBITED_SOURCE_RULE_IDS.has(normalizeIdentifier(id)),
+        ) ||
+        PROHIBITED_DOMAINS.has(normalizeIdentifier(node.domain)) ||
+        PROHIBITED_ACTION_KEYS.has(normalizeIdentifier(node.actionKey))
+      ) return true
+
+      for (const key in node) {
+        if (Object.hasOwn(node, key) && inspect(node[key], depth + 1)) return true
+      }
+      return false
+    } catch {
+      // Only structural evidence inspection is caught; an unreadable item is excluded.
+      return true
+    } finally {
+      seen.delete(node)
+    }
+  }
+
+  return inspect(evidence, 0)
+}
+
+function isProhibitedRecommendation(r) {
+  if (!r || typeof r !== 'object') return true
+  try {
+    if (PROHIBITED_DOMAINS.has(normalizeIdentifier(r.domain))) return true
+    if (PROHIBITED_RECOMMENDATION_IDS.has(normalizeIdentifier(r.id))) return true
+    if (PROHIBITED_ACTION_KEYS.has(normalizeIdentifier(r.actionKey))) return true
+    if (asArray(r.sourceRuleIds).some((id) =>
+      PROHIBITED_SOURCE_RULE_IDS.has(normalizeIdentifier(id)),
+    )) return true
+    return isProhibitedEvidence(r.evidence)
+  } catch {
+    return true
+  }
+}
+
+function collectExcludedRecommendationIds(recommendationBundle) {
+  const excluded = new Set(PROHIBITED_RECOMMENDATION_IDS)
+  for (const r of asArray(recommendationBundle?.recommendations)) {
+    if (r && typeof r === 'object' && isProhibitedRecommendation(r)) {
+      try {
+        const id = normalizeIdentifier(r.id)
+        if (id) excluded.add(id)
+      } catch {
+        // An unreadable id cannot be referenced reliably by a summary.
+      }
+    }
+  }
+  return excluded
+}
+
+function isProhibitedParagraph(p, excludedRecommendationIds) {
+  if (!p || typeof p !== 'object') return true
+  try {
+    const key = normalizeIdentifier(p.key)
+    if (PROHIBITED_PARAGRAPH_KEYS.has(key)) return true
+    if (PROHIBITED_TEMPLATE_IDS.has(normalizeIdentifier(p.templateId))) return true
+    if (asArray(p.relatedInsights).some((d) =>
+      PROHIBITED_DOMAINS.has(normalizeIdentifier(d)),
+    )) return true
+    if (asArray(p.relatedRecommendations).some((id) =>
+      excludedRecommendationIds.has(normalizeIdentifier(id)),
+    )) return true
+    if (key.startsWith('action_') && excludedRecommendationIds.has(key.slice(7))) {
+      return true
+    }
+    return isProhibitedEvidence(p.evidence)
+  } catch {
+    return true
+  }
+}
 
 function getDomainProp(domain, prop) {
   if (!domain || typeof domain !== 'object') return undefined
@@ -88,7 +280,9 @@ function selectRecommendations(recommendationBundle) {
     return []
   }
 
-  return recommendationBundle.recommendations.map((r) => ({
+  return recommendationBundle.recommendations
+    .filter((r) => !isProhibitedRecommendation(r))
+    .map((r) => ({
     id: r.id,
     domain: r.domain,
     actionKey: r.actionKey,
@@ -104,7 +298,7 @@ function selectRecommendations(recommendationBundle) {
   }))
 }
 
-function selectFinancialSummary(financialSummary) {
+function selectFinancialSummary(financialSummary, excludedRecommendationIds) {
   if (!financialSummary || typeof financialSummary !== 'object') {
     return {}
   }
@@ -137,7 +331,9 @@ function selectFinancialSummary(financialSummary) {
         type: section?.type ?? '',
         title: section?.title ?? '',
         paragraphs: Array.isArray(section?.paragraphs)
-          ? section.paragraphs.map((p) => ({
+          ? section.paragraphs
+              .filter((p) => !isProhibitedParagraph(p, excludedRecommendationIds))
+              .map((p) => ({
               key: p?.key ?? '',
               text: p?.text ?? '',
               horizon: p?.horizon ?? '',
@@ -192,7 +388,10 @@ export function selectPromptContext({
   }
 
   const recommendations = selectRecommendations(recommendationBundle)
-  const selectedFinancialSummary = selectFinancialSummary(financialSummary)
+  const selectedFinancialSummary = selectFinancialSummary(
+    financialSummary,
+    collectExcludedRecommendationIds(recommendationBundle),
+  )
 
   let selectedConversationContext = null
   if (conversationContext && typeof conversationContext === 'object') {

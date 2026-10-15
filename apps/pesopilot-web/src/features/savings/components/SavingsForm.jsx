@@ -55,13 +55,20 @@ export function SavingsForm({
   selectedGoal = null,
   selectedGoalId = null,
 }) {
+  const initialValues = mapSavingsToFormValues({
+    currentCutoffId,
+    mode,
+    savings: editingSavings,
+    selectedGoal,
+    selectedGoalId,
+  })
   const {
     formState: { errors },
     handleSubmit,
     register,
     reset,
   } = useForm({
-    defaultValues: savingsFormDefaults,
+    defaultValues: initialValues,
     resolver: zodResolver(savingsSchema),
   })
   const isGoalContribution =
@@ -110,10 +117,7 @@ export function SavingsForm({
   const content = (
       <form className="space-y-4" onSubmit={handleSubmit(submitSavings)}>
         {isGoalContribution ? (
-          <>
-            <input type="hidden" {...register('source')} />
-            <input type="hidden" {...register('goalId')} />
-          </>
+          <input type="hidden" {...register('source')} />
         ) : null}
         <div>
           <h2 className="font-heading text-lg font-semibold text-content">
@@ -153,6 +157,7 @@ export function SavingsForm({
             min="0"
             step="0.01"
             type="number"
+            defaultValue={initialValues.amount ?? ''}
             error={errors.amount?.message}
             {...register('amount')}
           />
@@ -186,7 +191,11 @@ export function SavingsForm({
             error={errors.date?.message}
             {...register('date')}
           />
-          <input type="hidden" {...register('goalId')} />
+          <input
+            type="hidden"
+            {...register('goalId')}
+            defaultValue={initialValues.goalId ?? ''}
+          />
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-content">
               Salary cutoff
@@ -212,6 +221,7 @@ export function SavingsForm({
             <span className="mb-1 block text-xs font-semibold text-content">Note</span>
             <textarea
               className="min-h-20 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-content outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              defaultValue={initialValues.note ?? ''}
               {...register('note')}
             />
           </label>

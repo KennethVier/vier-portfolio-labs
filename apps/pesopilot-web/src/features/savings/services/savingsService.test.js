@@ -171,7 +171,7 @@ describe('savingsService', () => {
     )
   })
 
-  it('filters contributions by goal and labels legacy savings as General Savings', async () => {
+  it('filters by historical goalId and preserves goalId without Goal-name decoration', async () => {
     const goal = await savingsService.createSavingsGoal({
       name: 'Education',
       targetAmount: '',
@@ -192,20 +192,22 @@ describe('savingsService', () => {
       source: 'General Savings',
     })
 
-    await expect(savingsService.loadSavings({ goalId: goal.id })).resolves.toEqual([
+    const byGoal = await savingsService.loadSavings({ goalId: goal.id })
+    expect(byGoal).toEqual([
       expect.objectContaining({
         id: goalSavings.id,
         goalId: goal.id,
-        goalName: 'Education',
       }),
     ])
+    expect(byGoal[0]).not.toHaveProperty('goalName')
 
-    await expect(savingsService.loadSavings({ source: 'General Savings' })).resolves.toEqual([
+    const general = await savingsService.loadSavings({ source: 'General Savings' })
+    expect(general).toEqual([
       expect.objectContaining({
         goalId: null,
-        goalName: 'General Savings',
       }),
     ])
+    expect(general[0]).not.toHaveProperty('goalName')
   })
 
   it('loads salary cutoffs for association', async () => {

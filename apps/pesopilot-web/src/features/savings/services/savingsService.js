@@ -130,27 +130,6 @@ function decorateSavingsWithCutoffs(savingsRecords, cutoffs) {
   }))
 }
 
-function buildGoalLookup(goals) {
-  return new Map(goals.map((goal) => [String(goal.id), goal]))
-}
-
-function getGoalLabel(goalsById, goalId) {
-  if (!goalId) {
-    return 'General Savings'
-  }
-
-  return goalsById.get(String(goalId))?.name ?? 'Deleted Goal'
-}
-
-function decorateSavingsWithGoals(savingsRecords, goals) {
-  const goalsById = buildGoalLookup(goals)
-
-  return savingsRecords.map((savings) => ({
-    ...savings,
-    goalName: getGoalLabel(goalsById, savings.goalId),
-  }))
-}
-
 function buildSavingsKpis(savingsRecords, currentCutoff) {
   const typeTotals = new Map()
   const currentSavings = filterRecordsByCurrentCutoff(savingsRecords, currentCutoff)
@@ -293,16 +272,15 @@ function buildGoalSummaries(goals, savingsRecords) {
 
 export const savingsService = {
   async loadSavings(filters = EMPTY_SAVINGS_FILTERS) {
-    const [savingsRecords, cutoffs, goals] = await Promise.all([
+    // v1 MVP: Savings loading does not read the Phase 14+ Goals store.
+    // Historical goalId values on savings records are preserved untouched.
+    const [savingsRecords, cutoffs] = await Promise.all([
       savingsRepository.findAll(),
       salaryCutoffRepository.findAll(),
-      savingsGoalRepository.findAll(),
     ])
 
     const filteredSavings = applySavingsFilters(savingsRecords, filters)
-    return sortSavings(
-      decorateSavingsWithGoals(decorateSavingsWithCutoffs(filteredSavings, cutoffs), goals),
-    )
+    return sortSavings(decorateSavingsWithCutoffs(filteredSavings, cutoffs))
   },
 
   async loadSalaryCutoffs() {
@@ -403,7 +381,6 @@ export const savingsServiceInternals = {
   applySavingsFilters,
   buildGoalSummaries,
   buildSavingsKpis,
-  decorateSavingsWithGoals,
   decorateSavingsWithCutoffs,
   sortSavings,
 }

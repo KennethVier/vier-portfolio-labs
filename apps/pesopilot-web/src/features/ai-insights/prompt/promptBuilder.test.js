@@ -202,7 +202,8 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
             evidence: [{ source: 'cashflow.remainingCash', value: 20000 }],
             horizon: 'current',
             key: 'exec_p1',
-            relatedInsights: ['health', 'cashflow'],
+            // MVP: Health-linked paragraphs are excluded at the AI context boundary.
+            relatedInsights: ['cashflow'],
             relatedRecommendations: ['rec_1'],
             templateId: 'exec.template',
             text: 'Financial position is stable with positive cashflow.',
@@ -444,7 +445,7 @@ describe('Prompt Builder Feature (Phase 11B.1)', () => {
         'Financial position is stable with positive cashflow.',
       )
       expect(p1.horizon).toBe('current')
-      expect(p1.relatedInsights).toEqual(['health', 'cashflow'])
+      expect(p1.relatedInsights).toEqual(['cashflow'])
       expect(p1.relatedRecommendations).toEqual(['rec_1'])
 
       // Excluded properties
