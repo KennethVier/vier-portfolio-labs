@@ -5219,6 +5219,38 @@ APPROVED.
 
 ---
 
+# Batch 1 — Privacy and Backup Integrity
+
+Status: ✅ COMPLETE (independently accepted checkpoint)
+
+Acceptance date: 2026-10-18
+Branch: `pesopilot-dev`
+Accepted implementation commit: `1187c1716aba7a31dd9d3222e89134b61329e6b1`
+
+## Verified scope
+
+- [x] Safe full-replacement and selective backup import contracts for the approved stores.
+- [x] Atomic Dexie restore and complete rollback across all 13 approved stores.
+- [x] Preserve unselected stores and historical `goalId` references.
+- [x] Accurate post-commit synchronization warnings; committed restores are not misreported as rolled back.
+- [x] Correct import confirmation/summary UI and focused regression coverage.
+- [x] Remove external font/analytics references from the affected frontend; bundle local fonts with accurate license and provenance notices.
+- [x] Independent Codex acceptance: `PESOPILOT BATCH 1 APPROVED FOR CHECKPOINT COMMIT`.
+
+## Acceptance evidence
+
+- Frontend regression: 1,041 tests passed across 98 files.
+- Settings regression: 86 tests passed.
+- Independent audit harness: 62 checks passed.
+- ESLint, production build, and `git diff --check`: PASS.
+- 16 accepted application files committed; checkpoint pushed to GitHub.
+
+## Release boundary
+
+This is a code checkpoint, not full MVP release certification. Keep the existing MVP Release Checklist below open until each release gate has separate verification. Deployment environment/promotion and production smoke tests must be tracked separately. React Router maintenance, 10,000-record performance, full offline UAT, and backend authentication remain separate tasks rather than retroactive Batch 1 defects.
+
+---
+
 # MVP Release Checklist
 
 Before MVP Release:
