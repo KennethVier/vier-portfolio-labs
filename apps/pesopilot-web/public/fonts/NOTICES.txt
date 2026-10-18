@@ -1,0 +1,58 @@
+================================================================================
+PESOPILOT THIRD-PARTY FONT NOTICES AND ATTRIBUTIONS
+================================================================================
+
+This directory contains self-hosted fonts utilized by the PesoPilot web
+application for local, privacy-preserving, offline-first typography.
+
+The font assets and their respective copyright notices, versions, SHA-256
+checksums, and licenses are detailed below.
+
+--------------------------------------------------------------------------------
+1. Inter
+--------------------------------------------------------------------------------
+Filename:    inter-latin.woff2
+Family:      Inter (Variable Latin, weights 400-700)
+Version:     Version 4.001;git-66647c0bb
+SHA-256:     3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62
+Upstream:    https://github.com/rsms/inter
+Copyright:   Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+License:     SIL Open Font License, Version 1.1 (OFL-1.1)
+License Doc: See OFL-1.1.txt in this directory
+
+--------------------------------------------------------------------------------
+2. IBM Plex Sans
+--------------------------------------------------------------------------------
+Filename:    ibm-plex-sans-latin.woff2
+Family:      IBM Plex Sans (Latin, weights 600-700)
+Version:     Version 3.201
+SHA-256:     e2291e842cf5af167122a22881a740c7f2dda7716f1e8cd76680264f4a859470
+Upstream:    https://github.com/IBM/plex
+Copyright:   Copyright 2019 IBM Corp. All rights reserved.
+Notice:      Reserved Font Name "Plex"
+License:     SIL Open Font License, Version 1.1 (OFL-1.1)
+License Doc: See OFL-1.1.txt in this directory
+
+--------------------------------------------------------------------------------
+3. JetBrains Mono
+--------------------------------------------------------------------------------
+Filename:    jetbrains-mono-latin.woff2
+Family:      JetBrains Mono (Latin, weight 500)
+Version:     Version 2.211
+SHA-256:     cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a
+Upstream:    https://github.com/JetBrains/JetBrainsMono
+Copyright:   Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+License:     SIL Open Font License, Version 1.1 (OFL-1.1)
+License Doc: See OFL-1.1.txt in this directory
+
+--------------------------------------------------------------------------------
+4. Material Symbols Outlined
+--------------------------------------------------------------------------------
+Filename:    material-symbols-outlined.woff2
+Family:      Material Symbols Outlined 24pt (Variable icon font, weights 100-700)
+Version:     Version 2.975
+SHA-256:     8a5104d7ad4d43c4ec1da4e632d990bb523966fcff487d773ff75e75901ca828
+Upstream:    https://github.com/google/material-design-icons
+Copyright:   Copyright 2026 Google LLC.  All Rights Reserved.
+License:     Apache License, Version 2.0 (Apache-2.0)
+License Doc: See APACHE-2.0.txt in this directory

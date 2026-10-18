@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal.jsx'
 
 import { useSettings } from '../hooks/useSettings.js'
 import {
+  APPROVED_STORE_NAMES,
   SETTINGS_OPTIONS,
   settingsService,
 } from '../services/settingsService.js'
@@ -504,7 +505,7 @@ export function SettingsPage() {
     try {
       setLocalError('')
       const backupData = await readJsonFile(file)
-      settingsService.validateBackupData(backupData)
+      settingsService.validateBackupData(backupData, { requireComplete: true })
       setPendingImportData(backupData)
       setIsImportModalOpen(true)
     } catch (importError) {
@@ -513,9 +514,14 @@ export function SettingsPage() {
   }
 
   async function handleConfirmImport() {
-    await importData(pendingImportData)
-    setPendingImportData(null)
-    setIsImportModalOpen(false)
+    try {
+      await importData(pendingImportData, { requireComplete: true })
+    } catch {
+      // Transaction or pre-commit validation error is surfaced via useSettings
+    } finally {
+      setPendingImportData(null)
+      setIsImportModalOpen(false)
+    }
   }
 
   async function handleConfirmReset() {
@@ -608,7 +614,19 @@ export function SettingsPage() {
 
       <ConfirmationModal
         confirmationPhrase="IMPORT"
-        description="Importing replaces existing local PesoPilot data."
+        description={
+          pendingImportData
+            ? `Importing will replace all local PesoPilot records across ${
+                Object.keys(pendingImportData.stores || {}).filter((storeName) =>
+                  APPROVED_STORE_NAMES.includes(storeName),
+                ).length
+              } stores with backup data${
+                pendingImportData.exportedAt
+                  ? ` exported on ${new Date(pendingImportData.exportedAt).toLocaleDateString()}`
+                  : ''
+              }.`
+            : 'Importing replaces existing local PesoPilot data.'
+        }
         isOpen={isImportModalOpen}
         isSaving={isSaving}
         onClose={() => setIsImportModalOpen(false)}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSettingsStore } from '@/app/settingsStore.js'
 
-import { settingsService } from '../services/settingsService.js'
+import { getSyncWarningMessage, settingsService } from '../services/settingsService.js'
 
 const initialActionState = {
   message: '',
@@ -109,13 +109,37 @@ export function useSettings() {
   }, [])
 
   const importData = useCallback(
-    async (backupData) => {
+    async (backupData, options = {}) => {
       try {
         setIsSaving(true)
         setError('')
-        const result = await settingsService.importBackupData(backupData)
-        setSettings(result.settings)
-        applyPreferences(result.settings)
+        const result = await settingsService.importBackupData(backupData, options)
+
+        let syncWarning = result.syncWarning || null
+
+        try {
+          if (result.settings) {
+            setSettings(result.settings)
+            applyPreferences(result.settings)
+          }
+        } catch (prefError) {
+          syncWarning =
+            syncWarning ||
+            getSyncWarningMessage(
+              prefError,
+              'Display preferences could not be applied.',
+            )
+        }
+
+        if (syncWarning) {
+          setActionState({
+            message:
+              'Backup imported successfully, but some preferences could not be applied.',
+            tone: 'warning',
+          })
+          return { ...result, syncWarning }
+        }
+
         setActionState({
           message: 'Backup imported. Local data has been replaced.',
           tone: 'success',
