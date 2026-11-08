@@ -1,8 +1,22 @@
 # Business-only backup format and recovery
 
+## Boutique POS photo extension (format 3)
+
+The polish build exports format **3**, `databaseVersion: 3`, with the six transaction stores plus `productPhotos`. It continues to accept valid format 1 and 2 backups with `databaseVersion: 2` and exactly their original six stores. Format 3 requires the photo array, even when empty. Older builds cannot restore format 3 or open the upgraded local schema; keep a backup from before upgrading if an older build must be used.
+
+The Dexie v3 migration only adds `productPhotos: 'familyId'`; it never modifies existing records. Each photo belongs to the existing explicit catalog identity `[isSample, category, family]`, or `['product', productId]` for products without catalog metadata. No names are parsed and no stock relationship is inferred. Actual and Sample family keys remain distinct.
+
+Photos are JPEG data URLs in IndexedDB, never localStorage. JPEG/PNG/WebP input is limited to 2 MiB and decoded dimensions to 32 megapixels. Local canvas processing preserves aspect ratio, scales the longest edge to at most 960 pixels without enlarging, flattens transparency onto white, and tries JPEG quality 0.85/0.72/0.6. Stored photos are limited to 192 KiB each and 30 per workspace. Temporary selection/processing object URLs are revoked. Encoding strips source metadata; the original file is not retained.
+
+Photo schema validation checks strict fields, JPEG MIME/base64/frame signature, actual byte count, bounded width/height matching the encoded JPEG frame, unique family keys and membership in the backed-up product catalog. Import also decodes all photos and verifies dimensions before any database write, both when preparing review and confirming replacement. The existing 10 MiB JSON limit remains, including photos; the photo cap leaves space for transaction history, but a sufficiently large ledger can still exceed the limit. Export refuses oversized files without modifying data. Remove/replace photos with smaller ones before retrying; do not edit transaction backups by hand.
+
+Read snapshots, stale-review checks and atomic replacement now span all seven stores. A photo-write failure rolls back the entire replacement. Changes to photos after review invalidate that review. Restoring an older backup replaces the photo store with an empty array: the owner review explicitly warns that all current photos will be removed. Download a current format 3 backup first if those photos need preserving. Nothing is silently merged.
+
+Automated unit/integration tests cover photo round trips, rollback on late photo failure, stale photo review, legacy restores, invalid media and unchanged Personal records. Image/canvas platform APIs are controlled in happy-dom tests; real Safari decoding, Photos/Files selection and physical iPad behavior remain manual acceptance work. See [local review](07-POS-Polish-Local-Review.md).
+
 ## POS redesign compatibility (local review)
 
-The POS redesign exports **format version 2**, with `databaseVersion: 2` and the same six Business stores. It accepts both existing format 1 backups and format 2 backups. No Personal stores, database indexes, or schema migration change. Older builds that only understand format 1 will reject new exports; use this redesign or a later compatible build to restore format 2.
+The earlier POS redesign exported **format version 2**, with `databaseVersion: 2` and the same six Business stores. It accepted both existing format 1 backups and format 2 backups. No Personal stores, database indexes, or schema migration changed in that redesign. Older builds that only understand format 1 reject format 2 exports; use the redesign or a later compatible build to restore format 2.
 
 Format 2 permits an optional, strict `products.catalog` object: required `category` (1–80 characters) and `family` (1–120), optional `scent`/`size` (1–80), `type` (`Solo` or `Set`), and a development sample key in the `pos-demo-v1-` namespace. Products without metadata stay independently selectable; metadata is never inferred by splitting names. Format 1 continues to reject this new field. Unknown metadata fields and invalid values are rejected before writes.
 

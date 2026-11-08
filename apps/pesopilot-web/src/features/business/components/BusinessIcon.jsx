@@ -7,6 +7,8 @@ const paths = {
   shawl: 'M6 3h12l3 17-9-4-9 4z M9 4l3 12 3-12',
   bottle: 'M9 3h6v4H9z M8 7h8l2 4v10H6V11z M9 13h6 M9 17h4',
   pillow: 'M4 4l3 1h10l3-1-1 4v8l1 4-3-1H7l-3 1 1-4V8z',
+  rub: 'M5 9h14v12H5z M4 5h16v4H4z M8 14h8 M9 17h6',
+  roll: 'M9 8h6v13H9z M9 5a3 3 0 0 1 6 0v3H9z M10 13h4',
   search: 'M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14 M15 15l6 6',
 }
 

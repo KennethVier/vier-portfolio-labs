@@ -9,6 +9,8 @@ import { businessDb } from '../repositories/businessDb.js'
 import { businessService } from '../services/businessService.js'
 import { posCatalogService } from '../services/posCatalogService.js'
 import { dailyAuditService, getManilaDate } from '../services/dailyAuditService.js'
+import { productFamilyId } from '../constants/productPresentation.js'
+import { fixturePhoto } from '../services/productPhotoFixture.js'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 let container
@@ -76,9 +78,30 @@ afterEach(async () => {
 })
 
 describe('real Business UI and IndexedDB workflow', () => {
+  it('shows a family photo on the POS and sale modal, keeps sample placeholders, and labels partial availability', async () => {
+    const catalog = { family: 'Hallelujah Rub', category: 'Hallelujah Rub', type: 'Solo' }
+    const solo = await businessService.addProduct({ name: 'Actual Solo', catalog, pricePesos: '199', openingStock: 1 })
+    await businessService.addProduct({ name: 'Actual Set', catalog: { ...catalog, type: 'Set' }, pricePesos: '150', openingStock: 0 })
+    await businessDb.productPhotos.put(fixturePhoto(productFamilyId(solo)))
+    await posCatalogService.loadSampleCatalog(true)
+    await render()
+    const card = container.querySelector('[data-product-card]')
+    expect(card.querySelector('img').alt).toBe('Hallelujah Rub product photo')
+    expect(card.textContent).toContain('1 of 2 variants in stock')
+    await choose('Hallelujah Rub')
+    expect(container.querySelector('[role="dialog"] img')).not.toBeNull()
+    await click('Close')
+    await click('Sample Catalog')
+    expect(container.querySelectorAll('[data-product-card] img')).toHaveLength(0)
+    await go('Inventory')
+    expect(container.querySelector('.photo-editor img')).not.toBeNull()
+  })
+
   it('requires sample confirmation and shows the catalog immediately with no automatic inserts', async () => {
     await render()
     expect(await businessDb.products.count()).toBe(0)
+    expect(container.querySelector('.sample-utilities').open).toBe(false)
+    await act(async () => container.querySelector('.sample-utilities summary').click())
     await click('Load Sample Catalog')
     const confirm = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Confirm Load Sample Catalog')
     expect(confirm.disabled).toBe(true)

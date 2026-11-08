@@ -1,3 +1,4 @@
+import { productFamilyId } from '../constants/productPresentation.js'
 import { CATALOG_CATEGORIES, SAMPLE_SCENTS } from '../constants/catalogMetadata.js'
 import { businessRepository } from '../repositories/businessRepository.js'
 
@@ -46,7 +47,7 @@ export const posCatalogService = {
       const productCategory = metadata?.category ?? 'Other Products'
       if (category !== 'All Products' && category !== productCategory) continue
       // Old products remain independently selectable; their names are never parsed.
-      const key = metadata ? JSON.stringify([productCategory, metadata.family]) : product.id
+      const key = productFamilyId(product)
       if (!groups.has(key)) groups.set(key, { id: key, name: metadata?.family ?? product.name, category: productCategory, sample, products: [] })
       groups.get(key).products.push(product)
     }

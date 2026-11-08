@@ -1,3 +1,4 @@
+import { ProductPhotoManager } from '../components/ProductPhotoManager.jsx'
 import { BusinessShell } from '../components/BusinessShell.jsx'
 import { WorkspaceStatus } from '../components/WorkspaceStatus.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
@@ -27,6 +28,7 @@ export function BusinessAdminPage({ screen }) {
     {screen === 'inventory' ? <>
       <p className="rounded-lg border border-outline-variant bg-surface-container-low p-4 text-sm text-content-muted">Sample products are labeled below; their stock is fictional. Each sample variant has independent stock. Actual products can share stock only when you explicitly select an existing group.</p>
       <ProductForm products={actualProducts} addProduct={workspace.addProduct} disabled={disabled} />
+      <ProductPhotoManager products={workspace.products} photos={workspace.photos} uploadPhoto={workspace.uploadPhoto} removePhoto={workspace.removePhoto} disabled={disabled} />
       <InventoryPanel products={workspace.products} adjustStock={workspace.adjustStock} disabled={disabled} />
     </> : null}
     {screen === 'history' && !disabled ? <><p className="text-sm text-content-muted">Sample recordings are labeled “Sample” and are included in history and audit totals. They are demonstration data.</p><SalesHistory sales={workspace.sales} /></> : null}

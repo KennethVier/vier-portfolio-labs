@@ -1,3 +1,4 @@
+import { ProductVisual } from '../components/ProductVisual.jsx'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
@@ -12,8 +13,6 @@ import { useBusinessWorkspace } from '../hooks/useBusinessWorkspace.js'
 import { useWorkspaceRoute } from '../hooks/useWorkspaceRoute.js'
 import { posCatalogService } from '../services/posCatalogService.js'
 import { CATALOG_CATEGORIES } from '../constants/catalogMetadata.js'
-
-const categoryTones = ['bg-primary-fixed text-primary', 'bg-secondary-fixed text-on-secondary-fixed', 'bg-tertiary-fixed text-on-tertiary-fixed', 'bg-surface-container-high text-primary']
 
 export function BusinessDashboardPage() {
   useWorkspaceRoute('business')
@@ -36,17 +35,17 @@ export function BusinessDashboardPage() {
   return <BusinessShell>
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div><p className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">Point of sale</p><h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Record Sales</h1><p className="mt-2 text-base text-content-muted">Select a product to record a sale.</p></div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="catalog-utilities flex flex-wrap items-center gap-3">
         {hasSample ? <div aria-label="Catalog source" className="flex rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
           {[false, true].map((value) => <Button key={String(value)} variant={sample === value ? 'primary' : 'ghost'} aria-pressed={sample === value} onClick={() => { setSampleChoice(value); setCategory('All Products'); setSearch('') }}>{value ? 'Sample Catalog' : 'Actual Inventory'}</Button>)}
         </div> : null}
-        <SampleCatalogAction loadSampleCatalog={workspace.loadSampleCatalog} disabled={disabled} onLoaded={() => { setSampleChoice(true); setCategory('All Products'); setSearch('') }} />
+        <details className="sample-utilities"><summary>Sample utilities</summary><div className="pt-2"><p className="mb-2 text-xs text-content-muted">Development tools · fictional inventory only</p><SampleCatalogAction loadSampleCatalog={workspace.loadSampleCatalog} disabled={disabled} onLoaded={() => { setSampleChoice(true); setCategory('All Products'); setSearch('') }} /></div></details>
       </div>
     </div>
-    {sample ? <div className="rounded-lg border border-tertiary bg-tertiary-fixed p-4 text-sm text-on-tertiary-fixed"><strong>Sample catalog · fictional stock.</strong> Test recordings appear as Sample in audit and history. These quantities are separate from actual inventory.</div> : null}
+    {sample ? <div className="sample-notice rounded-lg border p-3 text-sm"><strong>Sample catalog · fictional stock.</strong> Test recordings appear as Sample in audit and history. These quantities are separate from actual inventory.</div> : null}
     {notice ? <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-secondary bg-surface-container-lowest p-4 text-secondary"><p>{notice}</p><Button variant="ghost" onClick={() => setNotice('')}>Dismiss</Button></div> : null}
     <WorkspaceStatus workspace={workspace} />
-    <section aria-label="Product catalog" className="space-y-5">
+    <section aria-label="Product catalog" className="pos-catalog space-y-5">
       <div className="relative max-w-xl"><Input label="Search products" type="search" placeholder="Search a product, scent, or size…" value={search} onChange={(event) => setSearch(event.target.value)} className="min-h-12 pl-11" /><span className="pointer-events-none absolute bottom-3.5 left-3 text-content-muted"><BusinessIcon name="search" /></span></div>
       <div aria-label="Product categories" className="flex gap-2 overflow-x-auto pb-2">
         {categories.map((item) => <Button key={item} className="shrink-0 rounded-lg px-4" variant={category === item ? 'primary' : 'secondary'} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</Button>)}
@@ -60,19 +59,22 @@ export function BusinessDashboardPage() {
             const max = Math.max(...prices)
             const scents = new Set(family.products.map((product) => product.catalog?.scent).filter(Boolean)).size
             const inStock = family.products.some((product) => product.stockQuantity > 0)
-            const tone = categoryTones[Math.max(0, CATALOG_CATEGORIES.indexOf(family.category)) % categoryTones.length]
-            return <button key={family.id} data-product-card aria-label={`Record sale: ${family.name}`} disabled={!inStock} onClick={() => { setSelected(family); setNotice('') }} className="group flex min-h-64 flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-5 text-left transition-colors hover:border-primary hover:bg-surface-container-low focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60">
-              <div className="mb-5 flex w-full items-start justify-between gap-2"><span className={`flex h-14 w-14 items-center justify-center rounded-xl ${tone}`}><BusinessIcon name={family.category === 'Shawls' ? 'shawl' : family.category === 'Magic Pillows' ? 'pillow' : 'bottle'} className="h-8 w-8" /></span><span className={`rounded-md px-2 py-1 text-xs font-semibold ${inStock ? 'bg-surface-container-low text-secondary' : 'bg-error-container text-error'}`}>{inStock ? family.products.length === 1 ? `${family.products[0].stockQuantity} available` : 'In stock' : 'Out of stock'}</span></div>
+            const stockedVariants = family.products.filter((product) => product.stockQuantity > 0).length
+            return <button key={family.id} data-product-card aria-label={`Record sale: ${family.name}`} disabled={!inStock} onClick={() => { setSelected(family); setNotice('') }} className="product-card group">
+              <ProductVisual family={family} photo={workspace.photos.find((photo) => photo.familyId === family.id)} />
+              <div className="product-card-body">
+              <span className={`stock-label ${inStock ? '' : 'stock-label-empty'}`}>{inStock ? family.products.length === 1 ? `${family.products[0].stockQuantity} available` : `${stockedVariants} of ${family.products.length} variants in stock` : 'Out of stock'}</span>
               <span className="text-xs text-content-muted">{family.category}</span>
-              <span className="mt-1 font-heading text-xl font-semibold">{family.name}</span>
+              <span className="product-card-title mt-1 font-heading text-xl font-semibold">{family.name}</span>
               <span className="mt-2 font-mono text-lg font-semibold text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
-              <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents available` : family.products.length > 1 ? `${family.products.length} sizes available` : 'Single product'}</span>
+              <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents · ${family.products.length} variants` : family.products.length > 1 ? `${family.products.length} sizes available` : 'Single product'}</span>
               <span className="mt-auto flex w-full items-center justify-between border-t border-outline-variant pt-4 text-sm font-semibold text-primary"><span className="pt-3">Tap to record sale</span><span aria-hidden="true" className="pt-3">↗</span></span>
+              </div>
             </button>
           })}
         </div> : <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-14 text-center"><BusinessIcon className="mx-auto mb-4 h-10 w-10 text-primary" name="inventory" /><h3 className="font-heading text-xl font-semibold">{visibleProducts.length ? 'No matching products' : 'No products yet'}</h3><p className="mx-auto mt-2 max-w-md text-content-muted">{visibleProducts.length ? 'Try a different search or category.' : 'Add your products in Inventory, or explicitly load the sample catalog to try a recording.'}</p>{visibleProducts.length ? <Button className="mt-5" variant="secondary" onClick={() => { setSearch(''); setCategory('All Products') }}>Clear filters</Button> : <Link to="/business/inventory" className="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 font-semibold text-white">Open Inventory</Link>}</div>}
       </> : null}
     </section>
-    {selected ? <RecordSaleModal family={selected} products={products} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setNotice(message) }} /> : null}
+    {selected ? <RecordSaleModal photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setNotice(message) }} /> : null}
   </BusinessShell>
 }

@@ -28,13 +28,13 @@ afterEach(async () => {
 })
 
 describe('Business-only backup integrity and atomic replacement', () => {
-  it('round trips all six stores, shared pools, original snapshots and daily audit without touching Personal', async () => {
+  it('round trips all seven stores, shared pools, original snapshots and daily audit without touching Personal', async () => {
     const personalBefore = await Promise.all(db.tables.map((table) => table.toArray()))
     await fixture()
     const before = await snapshot()
     const audit = await dailyAuditService.getReport(getManilaDate())
     const text = await businessBackupService.exportText()
-    expect(JSON.parse(text)).toMatchObject({ app: 'PesoPilot Business', version: 2, databaseVersion: 2 })
+    expect(JSON.parse(text)).toMatchObject({ app: 'PesoPilot Business', version: 3, databaseVersion: 3 })
     expect(Object.keys(JSON.parse(text).stores)).toEqual(Object.keys(before))
     await businessService.addProduct({ name: 'Replace me', pricePesos: '1' })
     const plan = await businessBackupService.prepareRestore(text)
@@ -84,8 +84,8 @@ describe('Business-only backup integrity and atomic replacement', () => {
 
   it.each([
     ['Personal file', (b) => { b.app = 'PesoPilot' }],
-    ['future format', (b) => { b.version = 3 }],
-    ['future schema', (b) => { b.databaseVersion = 3 }],
+    ['future format', (b) => { b.version = 4 }],
+    ['future schema', (b) => { b.databaseVersion = 4 }],
     ['extra Personal store', (b) => { b.stores.expenses = [] }],
     ['missing events', (b) => { delete b.stores.auditEvents }],
     ['extra product fields', (b) => { b.stores.products[0].html = '<img onerror=alert(1)>' }],

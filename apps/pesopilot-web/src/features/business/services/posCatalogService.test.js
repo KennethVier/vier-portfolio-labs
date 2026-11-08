@@ -78,7 +78,7 @@ it('rolls the entire sample insertion back on a late write failure', async () =>
   businessDb.auditEvents.hook('creating', fail)
   try { await expect(posCatalogService.loadSampleCatalog(true)).rejects.toThrow('Storage failure') }
   finally { businessDb.auditEvents.hook('creating').unsubscribe(fail) }
-  expect(await Promise.all(businessDb.tables.map((table) => table.count()))).toEqual([0, 0, 0, 0, 0, 0])
+  expect(await Promise.all(businessDb.tables.map((table) => table.count()))).toEqual([0, 0, 0, 0, 0, 0, 0])
 })
 
 it('filters categories and search while preserving complete variant choices and separating actual stock', async () => {
@@ -101,14 +101,14 @@ it('refuses actual products sharing sample stock and refuses forged sample metad
   expect(await businessDb.products.count()).toBe(52)
 })
 
-it('round trips sample identity, independent stock, sales and audit through format 2', async () => {
+it('round trips sample identity, independent stock, sales and audit through format 3', async () => {
   await posCatalogService.loadSampleCatalog(true)
   const product = (await businessService.listProducts())[0]
   await businessService.completeSale({ ownerConfirmed: true, requestKey: 'round-trip', paymentMethod: 'gcash', items: [{ productId: product.id, quantity: 3 }] })
   const before = await businessBackupRepository.read()
   const audit = await dailyAuditService.getReport(getManilaDate())
   const text = await businessBackupService.exportText()
-  expect(JSON.parse(text).version).toBe(2)
+  expect(JSON.parse(text).version).toBe(3)
   await businessService.adjustStock({ productId: product.id, quantity: 1, direction: 'add', reason: 'fictional' })
   await businessBackupService.restore(await businessBackupService.prepareRestore(text), true)
   expect(await businessBackupRepository.read()).toEqual(before)
@@ -116,14 +116,16 @@ it('round trips sample identity, independent stock, sales and audit through form
   expect(await posCatalogService.loadSampleCatalog(true)).toBe(0)
 })
 
-it('restores legacy format 1 without invented variant metadata, then exports format 2', async () => {
+it('restores legacy format 1 without invented variant metadata, then exports format 3', async () => {
   await businessService.addProduct({ name: 'Legacy Solo', pricePesos: '199', openingStock: 4 })
   const backup = JSON.parse(await businessBackupService.exportText())
   backup.version = 1
+  backup.databaseVersion = 2
+  delete backup.stores.productPhotos
   const plan = await businessBackupService.prepareRestore(JSON.stringify(backup))
   await businessBackupService.restore(plan, true)
   expect((await businessService.listProducts())[0].catalog).toBeUndefined()
-  expect(JSON.parse(await businessBackupService.exportText()).version).toBe(2)
+  expect(JSON.parse(await businessBackupService.exportText()).version).toBe(3)
 })
 
 it.each([

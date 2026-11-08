@@ -1,9 +1,11 @@
+import { productPhotoService } from '../services/productPhotoService.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { businessService } from '../services/businessService.js'
 import { posCatalogService } from '../services/posCatalogService.js'
 
 export function useBusinessWorkspace() {
   const [products, setProducts] = useState([])
+  const [photos, setPhotos] = useState([])
   const [sales, setSales] = useState([])
   const [events, setEvents] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -15,13 +17,15 @@ export function useBusinessWorkspace() {
     const current = ++sequence.current
     setIsLoading(true)
     try {
-      const [nextProducts, nextSales, nextEvents] = await Promise.all([
+      const [nextProducts, nextSales, nextEvents, nextPhotos] = await Promise.all([
         businessService.listProducts(),
         businessService.listSalesHistory(),
         businessService.listAuditEvents(),
+        productPhotoService.list(),
       ])
       if (!mounted.current || current !== sequence.current) return
       setProducts(nextProducts)
+      setPhotos(nextPhotos)
       setSales(nextSales)
       setEvents(nextEvents)
       setError(null)
@@ -55,8 +59,10 @@ export function useBusinessWorkspace() {
   }, [refresh])
 
   return {
-    products, sales, events, isLoading, error, refresh,
+    products, photos, sales, events, isLoading, error, refresh,
     summary: businessService.summarizeSales(sales),
+    uploadPhoto: (file, familyId) => mutate(() => productPhotoService.upload(file, familyId)),
+    removePhoto: (familyId) => mutate(() => productPhotoService.remove(familyId)),
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
