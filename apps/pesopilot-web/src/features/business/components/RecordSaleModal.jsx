@@ -21,17 +21,17 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
     sale.setProductId((exact ?? choices[0]).id)
   }
 
-  return <BusinessDialog title={sale.review ? 'Confirm completed sale' : family.name} canClose={sale.canEdit} onClose={onClose}>
-    {photo ? <div className="sale-product-visual"><ProductVisual family={family} photo={photo} /><div><p className="font-semibold">{family.name}</p><p className="text-sm text-content-muted">{family.category}</p></div></div> : null}
+  return <BusinessDialog title={sale.review ? 'Confirm completed sale' : <span className="business-product-name">{family.name}</span>} canClose={sale.canEdit} onClose={onClose}>
+    {photo ? <div className="sale-product-visual"><ProductVisual family={family} photo={photo} /><div><p className="business-product-name">{family.name}</p><p className="text-sm text-content-muted">{family.category}</p></div></div> : null}
     {sale.review ? <section aria-label="Review sale" className="space-y-5">
       <p className="text-sm text-content-muted">Review this recording before deducting stock.</p>
       {family.sample ? <p className="rounded-lg bg-tertiary-fixed p-3 text-sm text-on-tertiary-fixed">Sample sale · fictional stock and demonstration history.</p> : null}
       <div className="sale-summary rounded-lg p-4">
-        <p className="font-heading text-xl font-semibold">{sale.review.productName}</p>
+        <p className="business-product-name text-xl">{sale.review.productName}</p>
         {sale.review.variantLabel ? <p className="mt-1 text-content-muted">{sale.review.variantLabel}</p> : null}
-        <p className="mt-2 text-content-muted">{sale.review.quantity} × {peso(sale.review.unitPriceCentavos)}</p>
+        <p className="mt-2 text-content-muted">{sale.review.quantity} × <span className="business-amount">{peso(sale.review.unitPriceCentavos)}</span></p>
         <p className="mt-2">Payment method: <strong>{BUSINESS_PAYMENT_LABELS[sale.review.paymentMethod]}</strong></p>
-        <p className="mt-4 font-mono text-2xl font-semibold text-primary">Total: {peso(sale.review.totalCentavos)}</p>
+        <p className="business-amount mt-4 text-2xl text-primary">Total: {peso(sale.review.totalCentavos)}</p>
       </div>
       <p className="text-sm text-content-muted">By confirming, you verify this sale is complete. Stock will be deducted once. Payment is recorded manually; no external payment is verified.</p>
       <div className="flex flex-col gap-3 sm:flex-row-reverse">
@@ -42,7 +42,7 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
       <fieldset disabled={disabled || sale.saving} className="space-y-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-content-muted">{family.category}{family.sample ? ' · Sample / fictional stock' : ''}</p>
-          <p className="shrink-0 font-mono text-xl font-semibold text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
+          <p className="business-amount shrink-0 text-xl text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
         </div>
         {ambiguous ? <label className="block text-sm font-semibold">Product variant
           <select className={selectClass} value={sale.productId} onChange={(event) => sale.setProductId(event.target.value)}>
@@ -71,9 +71,9 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
           {BUSINESS_PAYMENT_METHODS.map((method) => <Button key={method} aria-pressed={sale.paymentMethod === method} variant={sale.paymentMethod === method ? 'primary' : 'secondary'} onClick={() => sale.setPaymentMethod(method)}>{BUSINESS_PAYMENT_LABELS[method]}</Button>)}
         </div></fieldset>
         <div aria-live="polite" className="sale-summary rounded-xl p-4">
-          <p className="mb-2 text-sm text-content-muted">{family.name}{sale.product?.catalog ? ` · ${[sale.product.catalog.scent, sale.product.catalog.type, sale.product.catalog.size].filter(Boolean).join(' · ')}` : ''}</p>
+          <p className="mb-2 text-sm text-content-muted"><span className="business-product-name">{family.name}</span>{sale.product?.catalog ? ` · ${[sale.product.catalog.scent, sale.product.catalog.type, sale.product.catalog.size].filter(Boolean).join(' · ')}` : ''}</p>
           <p className="mb-3 text-sm text-content-muted">Quantity: {sale.quantity || '—'} · Payment: {BUSINESS_PAYMENT_LABELS[sale.paymentMethod]}</p>
-          <div className="flex items-center justify-between"><span className="font-semibold">Total</span><span className="font-mono text-3xl font-semibold text-primary">{sale.preview ? peso(sale.preview.totalCentavos) : '—'}</span></div>
+          <div className="flex items-center justify-between"><span className="font-semibold">Total</span><span className="business-amount text-3xl text-primary">{sale.preview ? peso(sale.preview.totalCentavos) : '—'}</span></div>
         </div>
         {!sale.preview ? <p role="alert" className="text-sm text-error">{sale.validation}</p> : null}
         <Button type="submit" className="min-h-12 w-full text-base" disabled={!sale.preview}>Record Sale</Button>

@@ -34,8 +34,8 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
             </tr></thead>
             <tbody>{products.map((item) => (
               <tr key={item.id} className="border-b border-outline-variant">
-                <th scope="row" className="p-2 font-medium">{item.name}{item.catalog?.sampleKey ? <span className="block text-xs text-tertiary">Sample · fictional stock</span> : null}</th>
-                <td className="p-2 font-mono">{peso(item.unitPriceCentavos)}</td>
+                <th scope="row" className="business-product-name p-2">{item.name}{item.catalog?.sampleKey ? <span className="block text-xs font-normal text-tertiary">Sample · fictional stock</span> : null}</th>
+                <td className="business-amount p-2">{peso(item.unitPriceCentavos)}</td>
                 <td className="p-2">{item.inventoryPoolName}</td>
                 <td className="p-2 font-mono">{item.stockQuantity}</td>
                 <td className={`p-2 ${item.stockQuantity === 0 ? 'text-error' : 'text-secondary'}`}>

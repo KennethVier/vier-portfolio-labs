@@ -2,9 +2,18 @@
 @font-face {
   font-family: 'Plus Jakarta Sans';
   font-style: normal;
-  font-weight: 200 800;
+  font-weight: 400 800;
   font-display: swap;
   src: url('/fonts/business/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
+}
+
+/* A visual approximation for boutique branding, not the identified logo font. */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/business/cinzel-latin-wght-normal.woff2') format('woff2');
 }
 
 /* Royal palette stays scoped to the Business workspace and its dialogs. */
@@ -18,6 +27,14 @@
   --business-gold-border: #E1D3B1;
   --business-light-muted: #C1CCDF;
   --business-font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --business-font-brand: 'Cinzel', Georgia, serif;
+  --business-weight-body: 500;
+  --business-weight-heading: 800;
+  --business-weight-product: 700;
+  --business-weight-amount: 800;
+  --business-weight-action: 700;
+  --business-weight-brand: 700;
+  --business-weight-decorative: 600;
   /* Darker blue ink keeps small links readable on cream; action fills stay royal. */
   --color-primary: #3155C2;
   --color-primary-container: #2645A0;
@@ -33,7 +50,7 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   font-family: var(--business-font);
-  font-weight: 500;
+  font-weight: var(--business-weight-body);
   color: var(--business-ivory);
   background: radial-gradient(ellipse at 85% 0, #163965 0, transparent 48%), var(--business-navy);
 }
@@ -46,11 +63,14 @@
 .business-touch button,
 .business-touch input,
 .business-touch select { font-family: var(--business-font); }
-.business-touch :is(h1, h2, h3) { font-weight: 800; }
-.business-touch button, .business-touch nav a { font-weight: 700; }
-.business-touch .font-mono { font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.business-touch :is(h1, h2, h3) { font-family: var(--business-font); font-weight: var(--business-weight-heading); }
+.business-touch button, .business-touch nav a { font-weight: var(--business-weight-action); }
+.business-touch .font-mono { font-family: var(--business-font); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.business-touch .business-product-name { font-family: var(--business-font); font-weight: var(--business-weight-product); }
+.business-touch .business-amount { font-family: var(--business-font); font-weight: var(--business-weight-amount); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.business-touch .business-wordmark { font-family: var(--business-font-brand); font-weight: var(--business-weight-brand); letter-spacing: .015em; }
+.business-touch .business-boutique-heading { font-family: var(--business-font-brand); font-weight: var(--business-weight-decorative); letter-spacing: .04em; }
 .business-brand { color: var(--business-ivory); }
-.business-brand .font-heading { font-weight: 800; }
 .business-brand .text-primary { color: var(--business-gold); }
 .business-brand .text-content-muted { color: var(--business-light-muted); }
 .business-brand-mark { color: var(--business-gold); border: 1px solid var(--business-gold); background: linear-gradient(145deg, #27446C, var(--business-navy)); box-shadow: inset 0 0 0 3px #0B2347, 0 3px 12px #0000001A; }
@@ -125,7 +145,7 @@
 .product-visual-emblem { display: grid; place-items: center; width: 100px; height: 100px; border: 1px solid #D8B45D80; border-radius: 30px; background: #FFFCF5A6; box-shadow: 0 6px 20px #0B234708; }
 .product-visual-caption { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .product-card-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; width: 100%; padding: 18px 20px 20px; background: linear-gradient(#FFFFFF, #FFFCF5); }
-.product-card-title { display: -webkit-box; min-height: 52px; line-height: 1.3; font-weight: 800; letter-spacing: -.035em; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.product-card-title { display: -webkit-box; min-height: 52px; line-height: 1.3; font-weight: var(--business-weight-product); letter-spacing: -.035em; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .product-card-body > span:last-child { margin-top: 18px; padding-top: 0; }
 .stock-label { margin-bottom: 12px; padding: 5px 9px; border-radius: 8px; background: #EDF5F0; color: #346249; font-size: 11px; font-weight: 600; }
 .stock-label-empty { background: #FCECEE; color: #9B303B; }
@@ -144,7 +164,7 @@
 .business-dialog > div { top: var(--business-viewport-top, 0px); bottom: auto; height: var(--business-viewport-height, 100vh); padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
 .business-dialog > div > section { display: flex; flex-direction: column; max-height: calc(var(--business-viewport-height, 100vh) - 32px); max-height: calc(min(100dvh, var(--business-viewport-height, 100dvh)) - 32px); border: 1px solid var(--business-gold); border-radius: 20px; max-width: 620px; box-shadow: 0 20px 80px #030F2466; }
 .business-dialog > div > section > header { flex-shrink: 0; align-items: center; background: var(--business-ivory); border-bottom-color: var(--business-gold-border); padding: 20px 24px; }
-.business-dialog h2 { font-size: 26px; line-height: 1.2; font-weight: 800; letter-spacing: -.035em; }
+.business-dialog h2 { font-size: 26px; line-height: 1.2; font-weight: var(--business-weight-heading); letter-spacing: -.035em; }
 .business-dialog > div > section > div { min-height: 0; max-height: none; padding: 24px; overscroll-behavior: contain; scroll-padding-bottom: 24px; }
 .business-dialog > div > section > header button { border: 1px solid var(--business-gold-border); padding: 8px 12px; background: var(--business-cream); }
 .business-dialog button { min-height: 48px; }
@@ -161,7 +181,7 @@
 .photo-picker:focus-within { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 .audit-kpi { border-radius: 16px; border-color: var(--business-gold-border); box-shadow: 0 6px 20px #030F241A; }
 .audit-kpi-money { background: #FBF4E3; }
-.audit-kpi-money p:last-child { color: var(--business-navy); }
+.audit-kpi-money p:last-child { color: var(--business-navy); font-weight: var(--business-weight-amount); }
 .audit-kpi-quantity { background: #F2F6F3; }
 .audit-kpi-quantity p:last-child { color: #395748; }
 .audit-table-scroll { max-height: 68dvh; border-radius: 12px; }

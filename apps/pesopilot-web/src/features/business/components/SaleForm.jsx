@@ -16,7 +16,7 @@ export function SaleForm({ products, completeSale, disabled }) {
         <section aria-label="Review sale" className="space-y-3">
           <h3 className="font-semibold">Confirm completed sale</h3>
           <p>{sale.review.productName} · {sale.review.quantity} × {peso(sale.review.unitPriceCentavos)}</p>
-          <p className="font-mono font-semibold">Total: {peso(sale.review.totalCentavos)}</p>
+          <p className="business-amount">Total: {peso(sale.review.totalCentavos)}</p>
           <p>Payment method: {BUSINESS_PAYMENT_LABELS[sale.review.paymentMethod]}</p>
           <p className="text-sm text-content-muted">By confirming, you verify this sale is complete. Stock will be deducted once.</p>
           <div className="flex flex-wrap gap-3">
@@ -43,7 +43,7 @@ export function SaleForm({ products, completeSale, disabled }) {
                 {BUSINESS_PAYMENT_METHODS.map((method) => <option key={method} value={method}>{BUSINESS_PAYMENT_LABELS[method]}</option>)}
               </select>
             </label>
-            {sale.preview ? <p className="font-mono" aria-live="polite">{sale.preview.quantity} × {peso(sale.preview.unitPriceCentavos)} = {peso(sale.preview.totalCentavos)}</p> :
+            {sale.preview ? <p aria-live="polite">{sale.preview.quantity} × <span className="business-amount">{peso(sale.preview.unitPriceCentavos)}</span> = <span className="business-amount">{peso(sale.preview.totalCentavos)}</span></p> :
               <p className="text-sm text-content-muted">{sale.validation}</p>}
             <Button type="submit" disabled={!sale.preview}>Review Sale</Button>
           </fieldset>

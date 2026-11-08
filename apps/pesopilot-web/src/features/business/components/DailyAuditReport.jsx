@@ -6,7 +6,7 @@ import { peso } from './businessPresentation.js'
 function PaymentCells({ payments }) {
   return BUSINESS_PAYMENT_METHODS.map((method) => <Fragment key={method}>
     <td className="p-3 text-right font-mono">{payments[method].quantity}</td>
-    <td className="p-3 text-right font-mono">{peso(payments[method].centavos)}</td>
+    <td className="business-amount p-3 text-right">{peso(payments[method].centavos)}</td>
   </Fragment>)
 }
 
@@ -49,8 +49,8 @@ export function DailyAuditReport({ report }) {
                 <td className="p-3 text-right font-mono">{group.remainingQuantity}{group.removedQuantity ? <span className="block text-xs font-normal">{group.removedQuantity} non-sale removals</span> : null}</td>
               </tr>
               {group.rows.map((row) => <tr key={row.id} className="border-t border-outline-variant">
-                <td className="p-3 font-mono">{row.priceCentavos === null ? 'Historical price unavailable' : peso(row.priceCentavos)}</td>
-                <th scope="row" className="p-3 pl-6 font-normal">{row.name}</th>
+                <td className="p-3">{row.priceCentavos === null ? 'Historical price unavailable' : <span className="business-amount">{peso(row.priceCentavos)}</span>}</td>
+                <th scope="row" className="business-product-name p-3 pl-6">{row.name}</th>
                 <td className="p-3 text-content-muted">Shared above</td>
                 <PaymentCells payments={row.payments} />
                 <td className="p-3 text-right font-mono">{row.totalSold}</td>

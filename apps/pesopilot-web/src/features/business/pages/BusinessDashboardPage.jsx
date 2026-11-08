@@ -34,7 +34,7 @@ export function BusinessDashboardPage() {
 
   return <BusinessShell>
     <div className="business-page-heading flex flex-wrap items-center justify-between gap-4">
-      <div><p className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">Point of sale</p><h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Record Sales</h1><p className="mt-2 text-base text-content-muted">Select a product to record a sale.</p></div>
+      <div><p className="business-boutique-heading mb-2 text-xs uppercase text-primary">Point of sale</p><h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Record Sales</h1><p className="mt-2 text-base text-content-muted">Select a product to record a sale.</p></div>
       <div className="catalog-utilities flex flex-wrap items-center gap-3">
         {hasSample ? <div aria-label="Catalog source" className="flex rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
           {[false, true].map((value) => <Button key={String(value)} variant={sample === value ? 'primary' : 'ghost'} aria-pressed={sample === value} onClick={() => { setSampleChoice(value); setCategory('All Products'); setSearch('') }}>{value ? 'Sample Catalog' : 'Actual Inventory'}</Button>)}
@@ -65,8 +65,8 @@ export function BusinessDashboardPage() {
               <div className="product-card-body">
               <span className={`stock-label ${inStock ? '' : 'stock-label-empty'}`}>{inStock ? family.products.length === 1 ? `${family.products[0].stockQuantity} available` : `${stockedVariants} of ${family.products.length} variants in stock` : 'Out of stock'}</span>
               <span className="text-xs text-content-muted">{family.category}</span>
-              <span className="product-card-title mt-1 font-heading text-xl font-semibold">{family.name}</span>
-              <span className="mt-2 font-mono text-lg font-semibold text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
+              <span className="business-product-name product-card-title mt-1 font-heading text-xl">{family.name}</span>
+              <span className="business-amount mt-2 text-lg text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
               <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents · ${family.products.length} variants` : family.products.length > 1 ? `${family.products.length} sizes available` : 'Single product'}</span>
               <span className="mt-auto flex w-full items-center justify-between border-t border-outline-variant pt-4 text-sm font-semibold text-primary"><span className="pt-3">Tap to record sale</span><span aria-hidden="true" className="pt-3">↗</span></span>
               </div>

@@ -14,7 +14,7 @@ export function BusinessShell({ children }) {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-4 sm:px-8">
         <Link to="/business" className="business-brand flex min-h-11 items-center gap-3 rounded focus-visible:outline-primary">
           <span className="business-brand-mark flex h-11 w-11 items-center justify-center rounded-lg"><BusinessIcon name="pos" /></span>
-          <span><span className="block font-heading text-xl font-semibold tracking-tight">PesoPilot <span className="text-primary">Business</span></span><span className="block text-xs text-content-muted">Your daily sales workspace</span></span>
+          <span><span className="business-wordmark block text-xl">PesoPilot <span className="text-primary">Business</span></span><span className="block text-xs text-content-muted">Your daily sales workspace</span></span>
         </Link>
         <nav aria-label="Business navigation" className="flex w-full gap-1 overflow-x-auto xl:w-auto">
           {links.map(([path, label, icon]) => <NavLink key={path} to={path} end={path === '/business'} className={({ isActive }) => `flex shrink-0 items-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-primary ${isActive ? 'bg-primary-fixed text-primary' : 'text-content-muted hover:bg-surface-container-low'}`}><BusinessIcon name={icon} />{label}</NavLink>)}

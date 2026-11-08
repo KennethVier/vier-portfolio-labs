@@ -13,7 +13,7 @@ function PhotoEditor({ family, photo, uploadPhoto, removePhoto, disabled }) {
   return <article className="photo-editor">
     <ProductVisual family={family} photo={preview ?? photo} />
     <div className="min-w-0 flex-1">
-      <h3 className="font-semibold">{family.name}</h3>
+      <h3 className="business-product-name">{family.name}</h3>
       <p className="mb-3 text-xs text-content-muted">{family.category} · {family.sample ? 'Sample / fictional stock' : 'Actual inventory'}</p>
       <label className={`photo-picker ${disabled || action.saving ? 'opacity-60' : ''}`}>
         {action.saving ? 'Saving photo…' : photo ? 'Replace photo' : 'Add product photo'}
