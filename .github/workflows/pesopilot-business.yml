@@ -2,22 +2,33 @@ name: PesoPilot Business Prototype
 
 on:
   pull_request:
-    branches: [pesopilot-dev]
+    branches:
+      - pesopilot-dev
+      - feature/pesopilot-business-foundation
+      - feature/pesopilot-business-workflows
+      - feature/pesopilot-business-daily-audit
     paths:
       - 'apps/pesopilot-web/**'
       - 'docs/pesopilot-business/**'
+      - '.github/workflows/pesopilot-business.yml'
+
+permissions:
+  contents: read
 
 jobs:
   business-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: apps/pesopilot-web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
           cache: npm
           cache-dependency-path: apps/pesopilot-web/package-lock.json
       - run: npm ci

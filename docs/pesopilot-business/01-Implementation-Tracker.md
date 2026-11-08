@@ -14,6 +14,38 @@ Status: ISOLATED FEATURE BRANCH. Not part of v1.0 release approval.
 
 Implementation notes: B1/B2/B3 are staged on a dedicated branch. The Business route includes initial product entry, stock receiving, single-product completed-sale UI, business summary, and internal event preview. Code is provisional until repository test/QA gates pass. No claim of a production-ready private URL, payment processing, or client audit export.
 
+## Business Mode Batch 4 — Independent QA, reliability, security and backup
+
+Date: 2026-11-08, Asia/Manila. Implementation and local automated validation performed; **browser/security/client acceptance gates remain open**. This section does not mark Business Mode complete or production-ready. Earlier batch notes below describe their historical state; this section supersedes their backup/CI status.
+
+Branch: `feature/pesopilot-business-qa`, isolated worktree `.worktrees/pesopilot-business-qa`, based on freshly fetched Batch 3 remote head `1aa904f2d2a0b49f3e361818b0547e1abb31eb86`. Verified PR #6 still targets Batch 2 workflows. Original uncommitted work and PRs #4-#6 preserved. v1.0 Source of Truth and Personal schema/logic unchanged. No merge or deployment.
+
+Audit scope: cumulative foundation/onboarding/navigation, inventory and shared pools, owner-confirmed Cash/GCash/Coop POS, idempotency and transaction failures, historical audit/Manila boundaries, v1-to-v2 migration, Personal isolation, backup contracts, dependencies and privacy/access. Full findings, automated evidence and browser matrix: [Batch 4 review](03-QA-Reliability-and-Privacy-Review.md).
+
+Fixes: audit now rejects corrupt prior-day stock chains/sales before using their opening balances, plus wrong same-day movement timestamps. Added Business-only validated JSON download/atomic replacement with explicit owner review, all-history reconciliation, bounded import, late-write rollback and stale-review protection against other connections. Existing retry limits are now disclosed beside POS. CI targets exact Business stack bases and relevant paths, uses current action SHA pins, Node 24, locked installation and all existing required validation commands. Compatible dependency patches reduced affected packages from 12 to 9.
+
+Tests added: 41 risk-driven cases covering malformed/incompatible backups, relationships/events/centavos, full rollback, confirmation/cancellation/duplicate clicks, Personal preservation, independent-connection idempotency/shared-stock contention, stale restore review, interrupted migration/reopening, valid legacy event payloads with new GCash, and corrupt historical opening balances. Existing full Personal/Business regressions retained.
+
+| Validation | Actual result |
+| --- | --- |
+| `npm ci` | PASS after stopping the local QA server to release Windows esbuild file lock |
+| `npm run test` | PASS — 110 files, 1,163 tests; 122 cumulative Business tests |
+| `npm run lint` | PASS — 0 errors/warnings |
+| `npm run build` | PASS — 926 modules, local production output |
+| `npm audit --audit-level=high` | FAIL, exit 1 — 2 critical, 2 high, 5 moderate (9 affected packages) |
+| GitHub Actions on QA draft PR | Pending draft PR creation; actual remote result will be recorded after inspection |
+| Real browser QA | BLOCKED — browser host unavailable; Windows fallback stopped input because the browser URL could not be verified for policy enforcement |
+
+Business backup status: **implemented, automated validation passed; real-browser recovery/owner acceptance pending**. It covers exactly products, pools, sales, items, movements and internal events; Personal backup is independent. Restore validates before writes, never merges ledgers, requires owner confirmation and aborts on changed current records or any failed write. Plaintext files are private owner-managed artifacts, with no upload or encryption. See [format, limits and recovery procedure](04-Business-Backup-and-Restore.md).
+
+Dependency/security status: compatible patch updates for Happy DOM 21.0.4, follow-redirects 1.16.2 and selector-parser 6.1.5. Remaining Vite, Vitest/worker, router and Zod findings require reviewed major upgrades. [Dependency table](05-Dependency-Security-Review.md) records severity, direct/transitive relation, fixes and reachability qualifications. Scoped OWASP Top 10:2025/ASVS 5.0 review found no Business HTML evaluation, credentials, financial logging or external backup transmission. This is not formal security compliance.
+
+Privacy/release blockers: `/business` is unauthenticated, browser-profile-local and erasable; it is not a private remote dashboard. Require an owner-controlled device/profile, stable HTTPS origin, daily private backups and a demonstrated restore before considering a controlled pilot. Complete real-browser mobile/keyboard/native forms, refresh persistence, duplicated/concurrent tabs, actual storage errors and backup/recovery checks. Offline execution after load and **offline shell reload** remain separately unverified; there is no service worker/cache strategy guaranteeing cold reload. Resolve dependency findings and agree the access/privacy model before release. No auth, staff accounts, remote database or sync added.
+
+Client decisions remain unresolved: exact Reload Qty meaning; one-unit consumption for Roll-On/Rub Solo and Set; meaning of the PHP 7,718 cash panel; immediate versus deferred Coop Pay settlement. No answers or automatic reconciliation were invented.
+
+Next release-readiness action: review the failed dependency gate, finish the browser/offline and recovery matrix in a working environment, obtain client acceptance of the provisional inventory/payment semantics and privacy/backup model, then make a separate pilot/release decision. Keep all stacked PRs unmerged.
+
 ## Business Mode Batch 2 — Inventory & Sales Workflow Hardening
 
 Date: 2026-11-08 (Asia/Manila).

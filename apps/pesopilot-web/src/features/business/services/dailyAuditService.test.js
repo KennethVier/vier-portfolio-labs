@@ -33,6 +33,33 @@ afterEach(async () => {
 })
 
 describe('daily audit from real recorded Business transactions', () => {
+  it('rejects corrupt prior-day chains and sales before using them as opening inventory', async () => {
+    const product = await addProduct('Historical', 5)
+    await sell(product, 'cash', 1)
+    const source = await businessRepository.readDailyAuditSource()
+    expect(buildDailyAudit('2026-11-06', source).summary.openingQuantity).toBe(4)
+    const brokenChain = structuredClone(source)
+    brokenChain.movements[0].afterQuantity = 99
+    expect(() => buildDailyAudit('2026-11-06', brokenChain)).toThrow('chain does not reconcile')
+    const brokenSale = structuredClone(source)
+    brokenSale.sales[0].totalCentavos += 1
+    expect(() => buildDailyAudit('2026-11-06', brokenSale)).toThrow('totals do not reconcile')
+    const missingMovement = structuredClone(source)
+    missingMovement.movements.pop()
+    expect(() => buildDailyAudit('2026-11-06', missingMovement)).toThrow('do not reconcile')
+    const unknown = structuredClone(source)
+    unknown.movements[0].type = 'unknown'
+    expect(() => buildDailyAudit('2026-11-06', unknown)).toThrow('unsupported')
+  })
+
+  it('rejects a sale movement shifted within the same Manila day', async () => {
+    const product = await addProduct()
+    at('2026-11-06T01:00:00Z')
+    await sell(product, 'cash', 1)
+    const source = await businessRepository.readDailyAuditSource()
+    source.movements.at(-1).occurredAt = '2026-11-06T02:00:00Z'
+    expect(() => buildDailyAudit('2026-11-06', source)).toThrow('sale date')
+  })
   it('reconciles every November 6 sample row and counts shared pools exactly once', async () => {
     const products = []
     const sharedPools = new Map()

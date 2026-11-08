@@ -1,6 +1,7 @@
 import { businessDb } from './businessDb.js'
 
-export const businessRepository = {
+export function createBusinessRepository(businessDb) {
+  return {
   listProducts() {
     return businessDb.transaction('r', businessDb.products, businessDb.inventoryPools, async () => {
       const pools = new Map((await businessDb.inventoryPools.toArray()).map((pool) => [pool.id, pool]))
@@ -238,3 +239,6 @@ export const businessRepository = {
     )
   },
 }
+}
+
+export const businessRepository = createBusinessRepository(businessDb)
