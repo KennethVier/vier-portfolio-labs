@@ -1,8 +1,9 @@
 import { WORKSPACE_STORAGE_KEY } from '../constants/businessConstants.js'
 
-export function getActiveWorkspace(storage = globalThis.localStorage) {
+export function getActiveWorkspace(storage) {
   try {
-    return storage?.getItem(WORKSPACE_STORAGE_KEY) === 'business'
+    const chosenStorage = storage ?? globalThis.localStorage
+    return chosenStorage?.getItem(WORKSPACE_STORAGE_KEY) === 'business'
       ? 'business'
       : 'personal'
   } catch {
@@ -10,14 +11,15 @@ export function getActiveWorkspace(storage = globalThis.localStorage) {
   }
 }
 
-export function setActiveWorkspace(value, storage = globalThis.localStorage) {
+export function setActiveWorkspace(value, storage) {
   if (value !== 'business' && value !== 'personal') {
     throw new Error('Invalid workspace')
   }
 
   try {
-    storage?.setItem(WORKSPACE_STORAGE_KEY, value)
-    return Boolean(storage)
+    const chosenStorage = storage ?? globalThis.localStorage
+    chosenStorage?.setItem(WORKSPACE_STORAGE_KEY, value)
+    return Boolean(chosenStorage)
   } catch {
     return false
   }

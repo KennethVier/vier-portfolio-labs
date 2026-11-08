@@ -4,9 +4,9 @@ import { businessDb } from '../repositories/businessDb.js'
 import { businessService } from './businessService.js'
 
 async function clearBusiness() {
-  await businessDb.transaction('rw', businessDb.tables, async () => {
-    await Promise.all(businessDb.tables.map((table) => table.clear()))
-  })
+  for (const table of businessDb.tables) {
+    await table.clear()
+  }
 }
 
 beforeEach(async () => {
