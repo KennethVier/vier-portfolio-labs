@@ -17,6 +17,10 @@ const BusinessAuditPage = lazy(() =>
   })),
 )
 
+const BusinessAdminPage = lazy(() =>
+  import('@/features/business/pages/BusinessAdminPage.jsx').then((module) => ({ default: module.BusinessAdminPage })),
+)
+
 const ExpensesPage = lazy(() =>
   import('@/features/expenses/pages/ExpensesPage.jsx').then((module) => ({
     default: module.ExpensesPage,
@@ -131,6 +135,10 @@ export const router = createBrowserRouter([
     path: '/business/audit',
     element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit'),
   },
+  ...['inventory', 'history', 'settings'].map((screen) => ({
+    path: `/business/${screen}`,
+    element: wrapLazyRoute(<BusinessAdminPage screen={screen} />, `Loading business ${screen}`),
+  })),
   {
     path: '/',
     element: <App />,

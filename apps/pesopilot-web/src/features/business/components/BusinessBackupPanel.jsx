@@ -8,7 +8,7 @@ export function BusinessBackupPanel({ refresh, disabled }) {
     <Card className="space-y-3 p-5">
       <h2 className="font-heading text-lg font-semibold">Business Backup &amp; Restore</h2>
       <p className="text-sm text-content-muted">
-        Download Business records before clearing browser storage and after each selling day.
+        Download Business records and product photos before clearing browser storage and after each selling day.
         Personal backups do not include Business records. Files are unencrypted and contain sensitive sales data;
         keep them private. Files stay on this device unless you share them yourself.
       </p>
@@ -21,6 +21,7 @@ export function BusinessBackupPanel({ refresh, disabled }) {
       {backup.plan ? <section aria-label="Review Business restore" className="space-y-3 rounded border border-outline-variant p-3">
         <p>This replaces every Business record in this browser profile. Newer sales will be lost. Nothing is merged.
           Download the current backup first, resolve any uncertain sales, and stop sales in other tabs.</p>
+        {backup.plan.backup.version < 3 ? <p className="rounded-lg bg-tertiary-fixed p-3 text-sm">This older backup contains no photos. Replacing records also removes all current product photos.</p> : null}
         <dl className="grid grid-cols-2 gap-2 text-sm">
           {Object.entries(backup.plan.backup.stores).map(([name, rows]) => <div key={name}>
             <dt>{name}</dt><dd className="font-mono">{rows.length}</dd>

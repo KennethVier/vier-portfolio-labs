@@ -1,7 +1,11 @@
 import { z } from 'zod'
 import { getManilaDate } from './dailyAuditService.js'
+import { catalogMetadataSchema } from '../constants/catalogMetadata.js'
 
-export const BUSINESS_BACKUP_VERSION = 1
+import { productPhotoSchema } from './productPhotoValidation.js'
+import { productFamilyId, PRODUCT_PHOTO_MAX_COUNT } from '../constants/productPresentation.js'
+
+export const BUSINESS_BACKUP_VERSION = 3
 export const BUSINESS_BACKUP_MAX_BYTES = 10 * 1024 * 1024
 const text = z.string().min(1).max(240).refine((value) => value.trim().length > 0)
 const name = text.refine((value) => value.length <= 120)
@@ -39,18 +43,20 @@ const event = z.object({
 }).strict()
 const records = (schema) => z.array(schema).max(100000)
 const format = z.object({
-  app: z.literal('PesoPilot Business'), version: z.literal(BUSINESS_BACKUP_VERSION),
-  databaseVersion: z.literal(2), exportedAt: time,
+  app: z.literal('PesoPilot Business'), version: z.union([z.literal(1), z.literal(2), z.literal(BUSINESS_BACKUP_VERSION)]),
+  databaseVersion: z.union([z.literal(2), z.literal(3)]), exportedAt: time,
   stores: z.object({
     products: records(z.object({
       id: text, name, unitPriceCentavos: positive, stockQuantity: natural, createdAt: time,
       inventoryPoolId: text, inventoryPoolName: name.optional(), inventoryUnitsPerSale: z.literal(1),
       initialNameSnapshot: name, initialPriceCentavos: positive, legacyMetadata: z.boolean().optional(),
+      catalog: catalogMetadataSchema.optional(),
     }).strict()),
     inventoryPools: records(z.object({ id: text, name, stockQuantity: natural, createdAt: time }).strict()),
     sales: records(z.object({ id: text, requestKey: text, paymentMethod: payment,
       totalCentavos: positive, confirmedAt: time }).strict()),
     saleItems: records(item), inventoryMovements: records(movement), auditEvents: records(event),
+    productPhotos: z.array(productPhotoSchema).max(PRODUCT_PHOTO_MAX_COUNT).optional(),
   }).strict(),
 }).strict()
 
@@ -95,7 +101,7 @@ export function validateBusinessBackup(input) {
   for (const [storeName, schema] of Object.entries(format.shape.stores.shape)) {
     const rows = input?.stores?.[storeName]
     if (Array.isArray(rows)) for (const row of rows) {
-      if (!schema.element.safeParse(row).success) {
+      if (!(schema.element ?? schema.unwrap().element).safeParse(row).success) {
         throw new Error('Invalid or incompatible Business backup. No records were replaced.')
       }
     }
@@ -104,6 +110,12 @@ export function validateBusinessBackup(input) {
   if (!parsed.success) throw new Error('Invalid or incompatible Business backup. No records were replaced.')
   const backup = parsed.data // validated copy; never retain caller-owned objects
   const { products, inventoryPools, sales, saleItems, inventoryMovements, auditEvents } = backup.stores
+  requireIntegrity(backup.version === 3 ? backup.databaseVersion === 3 && Array.isArray(backup.stores.productPhotos) :
+    backup.databaseVersion === 2 && backup.stores.productPhotos === undefined)
+  const familyIds = new Set(products.map(productFamilyId))
+  const photos = backup.stores.productPhotos ?? []
+  uniqueMap(photos, 'familyId')
+  for (const photo of photos) requireIntegrity(familyIds.has(photo.familyId))
   const productMap = uniqueMap(products)
   const pools = uniqueMap(inventoryPools)
   const saleMap = uniqueMap(sales)
@@ -112,10 +124,20 @@ export function validateBusinessBackup(input) {
   uniqueMap(inventoryMovements)
   uniqueMap(auditEvents)
   const usedPools = new Set()
+  const sampleKeys = new Set()
+  const sampleByPool = new Map()
   for (const product of products) {
     const pool = pools.get(product.inventoryPoolId)
     requireIntegrity(pool && product.stockQuantity === pool.stockQuantity)
     usedPools.add(pool.id)
+    requireIntegrity(backup.version !== 1 || product.catalog === undefined)
+    const sampleKey = product.catalog?.sampleKey
+    if (sampleKey) {
+      requireIntegrity(!sampleKeys.has(sampleKey) && product.id === sampleKey && product.inventoryPoolId === product.id)
+      sampleKeys.add(sampleKey)
+    }
+    if (sampleByPool.has(pool.id)) requireIntegrity(sampleByPool.get(pool.id) === Boolean(sampleKey))
+    sampleByPool.set(pool.id, Boolean(sampleKey))
   }
   requireIntegrity(usedPools.size === pools.size)
 

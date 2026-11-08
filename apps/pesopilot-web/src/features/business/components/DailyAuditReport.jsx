@@ -6,13 +6,13 @@ import { peso } from './businessPresentation.js'
 function PaymentCells({ payments }) {
   return BUSINESS_PAYMENT_METHODS.map((method) => <Fragment key={method}>
     <td className="p-3 text-right font-mono">{payments[method].quantity}</td>
-    <td className="p-3 text-right font-mono">{peso(payments[method].centavos)}</td>
+    <td className="business-amount p-3 text-right">{peso(payments[method].centavos)}</td>
   </Fragment>)
 }
 
 export function DailyAuditReport({ report }) {
   const { summary, groups } = report
-  return <div className="space-y-5">
+  return <div className="daily-audit space-y-5">
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {[
         ...BUSINESS_PAYMENT_METHODS.map((method) => [`${BUSINESS_PAYMENT_LABELS[method]} sales`, peso(summary.payments[method].centavos)]),
@@ -21,7 +21,7 @@ export function DailyAuditReport({ report }) {
         ['Opening inventory', summary.openingQuantity],
         ['Available inventory', summary.availableQuantity],
         ['Remaining inventory', summary.remainingQuantity],
-      ].map(([label, value]) => <Card key={label} className="p-5">
+      ].map(([label, value]) => <Card key={label} className={`audit-kpi ${typeof value === 'number' ? 'audit-kpi-quantity' : 'audit-kpi-money'} p-5`}>
         <p className="text-xs uppercase text-content-muted">{label}</p>
         <p className="mt-2 font-mono text-2xl font-semibold text-primary">{value}</p>
       </Card>)}
@@ -33,14 +33,14 @@ export function DailyAuditReport({ report }) {
       <Card className="p-5">
         <h2 className="mb-2 font-heading text-lg font-semibold">Product audit</h2>
         <p className="mb-3 text-sm text-content-muted">Stock appears once per group. Variant sales each consume one unit from that group (provisional). Scroll horizontally on smaller screens.</p>
-        <div className="overflow-x-auto rounded border border-outline-variant" role="region" aria-label="Daily product audit table" tabIndex={0}>
+        <div className="audit-table-scroll overflow-x-auto rounded border border-outline-variant" role="region" aria-label="Daily product audit table" tabIndex={0}>
           <table className="w-full whitespace-nowrap text-left text-sm">
             <caption className="sr-only">Daily Sales Audit for {report.date}, Asia/Manila. All amounts are PHP. Group stock is counted once.</caption>
             <thead className="bg-surface-container-low"><tr>
               {['Price (PHP)', 'Item', 'Reload / Available Quantity', 'Cash Payment Quantity', 'Cash Sales (PHP)', 'GCash Payment Quantity', 'GCash Sales (PHP)', 'Coop Payment Quantity', 'Coop Sales (PHP)', 'Total Sold', 'Remaining Stock'].map((label) => <th key={label} scope="col" className="p-3">{label}</th>)}
             </tr></thead>
             {groups.map((group) => <tbody key={group.id} className="border-t border-outline-variant">
-              <tr className="bg-surface-container-low font-semibold">
+              <tr className="audit-group bg-surface-container-low font-semibold">
                 <td className="p-3">—</td>
                 <th scope="row" className="p-3">{group.name} (stock group)</th>
                 <td className="p-3 text-right font-mono">{group.availableQuantity}<span className="block text-xs font-normal text-content-muted">{group.openingQuantity} opening + {group.addedQuantity} added</span></td>
@@ -49,8 +49,8 @@ export function DailyAuditReport({ report }) {
                 <td className="p-3 text-right font-mono">{group.remainingQuantity}{group.removedQuantity ? <span className="block text-xs font-normal">{group.removedQuantity} non-sale removals</span> : null}</td>
               </tr>
               {group.rows.map((row) => <tr key={row.id} className="border-t border-outline-variant">
-                <td className="p-3 font-mono">{row.priceCentavos === null ? 'Historical price unavailable' : peso(row.priceCentavos)}</td>
-                <th scope="row" className="p-3 pl-6 font-normal">{row.name}</th>
+                <td className="p-3">{row.priceCentavos === null ? 'Historical price unavailable' : <span className="business-amount">{peso(row.priceCentavos)}</span>}</td>
+                <th scope="row" className="business-product-name p-3 pl-6">{row.name}</th>
                 <td className="p-3 text-content-muted">Shared above</td>
                 <PaymentCells payments={row.payments} />
                 <td className="p-3 text-right font-mono">{row.totalSold}</td>

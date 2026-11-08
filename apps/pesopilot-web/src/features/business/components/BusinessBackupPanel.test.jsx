@@ -59,6 +59,17 @@ it('requires a validated file and explicit owner confirmation before replacing r
   expect(container.querySelector('input[type="checkbox"]')).toBeNull()
 })
 
+it('warns that restoring an older backup removes current photos before owner confirmation', async () => {
+  const backup = JSON.parse(await businessBackupService.exportText())
+  backup.version = 2
+  backup.databaseVersion = 2
+  delete backup.stores.productPhotos
+  await select(JSON.stringify(backup))
+  await settle(() => expect(container.textContent).toContain('older backup contains no photos'))
+  expect(container.textContent).toContain('removes all current product photos')
+  expect(button('Replace Business Records').disabled).toBe(true)
+})
+
 it('rejects corrupt files, clears earlier confirmation, and supports cancellation without mutation', async () => {
   await businessService.addProduct({ name: 'Preserved', pricePesos: '10' })
   const text = await businessBackupService.exportText()

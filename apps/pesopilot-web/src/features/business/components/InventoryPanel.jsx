@@ -34,8 +34,8 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
             </tr></thead>
             <tbody>{products.map((item) => (
               <tr key={item.id} className="border-b border-outline-variant">
-                <th scope="row" className="p-2 font-medium">{item.name}</th>
-                <td className="p-2 font-mono">{peso(item.unitPriceCentavos)}</td>
+                <th scope="row" className="business-product-name p-2">{item.name}{item.catalog?.sampleKey ? <span className="block text-xs font-normal text-tertiary">Sample · fictional stock</span> : null}</th>
+                <td className="business-amount p-2">{peso(item.unitPriceCentavos)}</td>
                 <td className="p-2">{item.inventoryPoolName}</td>
                 <td className="p-2 font-mono">{item.stockQuantity}</td>
                 <td className={`p-2 ${item.stockQuantity === 0 ? 'text-error' : 'text-secondary'}`}>
@@ -53,7 +53,7 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
           <label className="text-sm">Product to adjust
             <select required className={selectClass} value={productId} onChange={(e) => setProductId(e.target.value)}>
               <option value="">Select product</option>
-              {products.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.stockQuantity} available</option>)}
+              {products.map((item) => <option key={item.id} value={item.id}>{item.catalog?.sampleKey ? 'Sample · ' : ''}{item.name} · {item.stockQuantity} available</option>)}
             </select>
           </label>
           <label className="text-sm">Adjustment direction
@@ -63,6 +63,7 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
           </label>
           <Input label="Adjustment quantity" required type="number" min="1" step="1" max={direction === 'remove' ? product?.stockQuantity : undefined} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           <Input label="Adjustment reason" required maxLength={240} placeholder="e.g. Received delivery or damaged units" value={reason} onChange={(e) => setReason(e.target.value)} />
+          {product?.catalog?.sampleKey ? <p className="text-sm text-tertiary">Sample adjustment: this changes fictional stock only.</p> : null}
           <Button type="submit" disabled={!productId}>{action.saving ? 'Saving…' : 'Record Stock Adjustment'}</Button>
         </fieldset>
       </form>

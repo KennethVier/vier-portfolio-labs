@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { businessService } from '../services/businessService.js'
 
-export function useSaleWorkflow(products, completeSale) {
-  const [productId, setProductId] = useState('')
+export function useSaleWorkflow(products, completeSale, initialProductId = '', onRecorded) {
+  const [productId, setProductId] = useState(initialProductId)
   const [quantity, setQuantity] = useState('1')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [review, setReview] = useState(null)
@@ -25,7 +25,8 @@ export function useSaleWorkflow(products, completeSale) {
     if (!preview || locked.current) return
     setError('')
     setNotice('')
-    setReview({ ...preview, productId, productName: product.name, paymentMethod })
+    setReview({ ...preview, productId, productName: product.name, paymentMethod,
+      variantLabel: [product.catalog?.scent, product.catalog?.type, product.catalog?.size].filter(Boolean).join(' · ') })
   }
 
   function editSale() {
@@ -54,8 +55,10 @@ export function useSaleWorkflow(products, completeSale) {
       setReview(null)
       setProductId('')
       setQuantity('1')
-      setNotice(result.duplicate ? 'This sale was already recorded. Stock was not deducted again.' :
-        'Sale recorded. Stock and internal history updated.')
+      const message = result.duplicate ? 'This sale was already recorded. Stock was not deducted again.' :
+        'Sale recorded. Stock and internal history updated.'
+      setNotice(message)
+      onRecorded?.(message)
     } catch (failure) {
       if (failure.saleNotRecorded) pending.current = null
       setError(failure.message || 'Unable to confirm the result. Retry this same sale.')

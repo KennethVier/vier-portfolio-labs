@@ -76,6 +76,7 @@ it('exports valid migrated Cash/Coop history with untouched legacy payloads and 
       items: [{ productId: 'one', quantity: 1 }],
     })
     const stores = Object.fromEntries(await Promise.all(upgraded.tables.map(async (table) => [table.name, await table.toArray()])))
+    delete stores.productPhotos
     expect(validateBusinessBackup({ app: 'PesoPilot Business', version: 1, databaseVersion: 2,
       exportedAt: '2026-11-08T00:00:00.000Z', stores }).stores.sales).toHaveLength(3)
     expect((await upgraded.inventoryPools.get('one')).stockQuantity).toBe(2)

@@ -43,6 +43,8 @@ export function createBusinessDb(name = 'pesopilot-business') {
       item.inventoryUnitsPerSale = 1
     })
   })
+  // Additive media store: existing products, stock and historical snapshots stay intact.
+  database.version(3).stores({ productPhotos: 'familyId' })
   return database
 }
 

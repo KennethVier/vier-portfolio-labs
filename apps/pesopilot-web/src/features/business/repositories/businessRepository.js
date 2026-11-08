@@ -1,4 +1,5 @@
 import { businessDb } from './businessDb.js'
+import { findDuplicateProduct } from '../constants/productCatalog.js'
 
 export function createBusinessRepository(businessDb) {
   return {
@@ -45,6 +46,25 @@ export function createBusinessRepository(businessDb) {
     return businessDb.auditEvents.orderBy('occurredAt').reverse().toArray()
   },
 
+  addSampleCatalog(products) {
+    return businessDb.transaction('rw', businessDb.products, businessDb.inventoryPools,
+      businessDb.inventoryMovements, businessDb.auditEvents, async () => {
+        let inserted = 0
+        for (const product of products) {
+          const existing = await businessDb.products.get(product.id)
+          if (existing) {
+            if (existing.catalog?.sampleKey !== product.catalog.sampleKey) {
+              throw new Error('Sample identifier conflicts with an existing product. Nothing was inserted.')
+            }
+            continue
+          }
+          await this.addProduct(product)
+          inserted += 1
+        }
+        return inserted
+      })
+  },
+
   async addProduct(product) {
     await businessDb.transaction(
       'rw',
@@ -53,10 +73,21 @@ export function createBusinessRepository(businessDb) {
       businessDb.inventoryMovements,
       businessDb.auditEvents,
       async () => {
+        // Check under the same write lock, before adding a pool or opening stock.
+        if (findDuplicateProduct(await businessDb.products.toArray(), product)) {
+          throw new Error('This product is already in your inventory. Use stock adjustment to add more stock.')
+        }
         let pool
         if (product.inventoryPoolId !== product.id) {
           pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
           if (!pool) throw new Error('Inventory pool not found')
+          if (!Number.isSafeInteger(pool.stockQuantity) || pool.stockQuantity < 0) throw new Error('Existing stock quantity is invalid. Choose another stock group.')
+          const members = await businessDb.products.where('inventoryPoolId').equals(pool.id).toArray()
+          if (members.length === 0) throw new Error('Choose an existing stock group with a saved product.')
+          if (members.some((member) => member.stockQuantity !== pool.stockQuantity)) throw new Error('Existing stock quantities do not agree. Review this stock group before sharing it.')
+          if (members.some((member) => Boolean(member.catalog?.sampleKey) !== Boolean(product.catalog?.sampleKey))) {
+            throw new Error('Sample and actual inventory must remain separate')
+          }
           if (product.stockQuantity !== 0) throw new Error('Shared variants must not add opening stock')
         } else {
           pool = { id: product.id, name: product.inventoryPoolName, stockQuantity: product.stockQuantity, createdAt: product.createdAt }
@@ -192,7 +223,7 @@ export function createBusinessRepository(businessDb) {
           lineItems.push({
             saleId: sale.id,
             productId: product.id,
-            productNameSnapshot: product.name,
+            productNameSnapshot: product.catalog?.sampleKey ? `Sample · ${product.name}` : product.name,
             inventoryPoolId: pool.id,
             poolNameSnapshot: pool.name,
             inventoryUnitsPerSale: 1,

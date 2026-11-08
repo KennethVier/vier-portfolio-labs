@@ -17,10 +17,10 @@ export function SalesHistory({ sales }) {
             <tbody>{sales.map((sale) => (
               <tr key={sale.id} className="border-b border-outline-variant align-top">
                 <td className="p-2"><time dateTime={sale.confirmedAt}>{dateTime(sale.confirmedAt)}</time></td>
-                <td className="p-2">{sale.items.map((item) => <p key={item.id}>{item.productNameSnapshot}</p>)}</td>
+                <td className="business-product-name p-2">{sale.items.map((item) => <p key={item.id}>{item.productNameSnapshot}</p>)}</td>
                 <td className="p-2 font-mono">{sale.items.map((item) => <p key={item.id}>{item.quantity}</p>)}</td>
-                <td className="p-2 font-mono">{sale.items.map((item) => <p key={item.id}>{peso(item.unitPriceCentavos)}</p>)}</td>
-                <td className="p-2 font-mono">{peso(sale.totalCentavos)}</td>
+                <td className="business-amount p-2">{sale.items.map((item) => <p key={item.id}>{peso(item.unitPriceCentavos)}</p>)}</td>
+                <td className="business-amount p-2">{peso(sale.totalCentavos)}</td>
                 <td className="p-2">{BUSINESS_PAYMENT_LABELS[sale.paymentMethod] ?? 'Unknown payment method'}</td>
                 <td className="p-2">
                   <details>
@@ -28,7 +28,7 @@ export function SalesHistory({ sales }) {
                     <dl className="mt-2 space-y-1 break-all">
                       <dt className="font-semibold">Transaction ID</dt><dd>{sale.id}</dd>
                       <dt className="font-semibold">Line totals</dt>
-                      <dd>{sale.items.map((item) => <p key={item.id}>{item.productNameSnapshot}: {peso(item.lineTotalCentavos)}</p>)}</dd>
+                      <dd>{sale.items.map((item) => <p key={item.id}><span className="business-product-name">{item.productNameSnapshot}</span>: <span className="business-amount">{peso(item.lineTotalCentavos)}</span></p>)}</dd>
                       <dt className="font-semibold">Status</dt><dd>Owner-confirmed completed sale</dd>
                     </dl>
                   </details>

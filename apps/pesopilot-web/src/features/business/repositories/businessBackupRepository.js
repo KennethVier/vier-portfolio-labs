@@ -1,7 +1,7 @@
 import { businessDb } from './businessDb.js'
 
 export const BUSINESS_BACKUP_STORES = [
-  'products', 'inventoryPools', 'sales', 'saleItems', 'inventoryMovements', 'auditEvents',
+  'products', 'inventoryPools', 'sales', 'saleItems', 'inventoryMovements', 'auditEvents', 'productPhotos',
 ]
 
 async function readStores() {
@@ -22,7 +22,7 @@ export const businessBackupRepository = {
         throw new Error('Business data changed. Validate the backup again before replacing it.')
       }
       for (const name of BUSINESS_BACKUP_STORES) await businessDb.table(name).clear()
-      for (const name of BUSINESS_BACKUP_STORES) await businessDb.table(name).bulkAdd(stores[name])
+      for (const name of BUSINESS_BACKUP_STORES) await businessDb.table(name).bulkAdd(stores[name] ?? [])
     })
   },
 }
