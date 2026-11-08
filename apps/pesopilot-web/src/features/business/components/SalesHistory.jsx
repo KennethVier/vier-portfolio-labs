@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card.jsx'
 import { dateTime, peso } from './businessPresentation.js'
+import { BUSINESS_PAYMENT_LABELS } from '../constants/businessConstants.js'
 
 export function SalesHistory({ sales }) {
   return (
@@ -20,7 +21,7 @@ export function SalesHistory({ sales }) {
                 <td className="p-2 font-mono">{sale.items.map((item) => <p key={item.id}>{item.quantity}</p>)}</td>
                 <td className="p-2 font-mono">{sale.items.map((item) => <p key={item.id}>{peso(item.unitPriceCentavos)}</p>)}</td>
                 <td className="p-2 font-mono">{peso(sale.totalCentavos)}</td>
-                <td className="p-2">{sale.paymentMethod === 'cash' ? 'Cash' : 'Coop (manual)'}</td>
+                <td className="p-2">{BUSINESS_PAYMENT_LABELS[sale.paymentMethod] ?? 'Unknown payment method'}</td>
                 <td className="p-2">
                   <details>
                     <summary className="cursor-pointer text-primary">View transaction</summary>

@@ -7,6 +7,7 @@ import { businessDb } from '../repositories/businessDb.js'
 import { businessService } from './businessService.js'
 import { getActiveWorkspace } from './workspacePreference.js'
 import { workspaceService } from './workspaceService.js'
+import { dailyAuditService, getManilaDate } from './dailyAuditService.js'
 
 beforeEach(async () => {
   localStorage.clear()
@@ -50,6 +51,9 @@ describe('workspace onboarding and personal data isolation', () => {
     const product = await businessService.addProduct({ name: 'Pillow', pricePesos: '350', openingStock: 3 })
     await businessService.adjustStock({ productId: product.id, quantity: 1, direction: 'add', reason: 'Delivery' })
     await businessService.completeSale({ ownerConfirmed: true, requestKey: 'isolated', paymentMethod: 'cash', items: [{ productId: product.id, quantity: 1 }] })
+    const variant = await businessService.addProduct({ name: 'Shared variant', pricePesos: '150', inventoryPoolId: product.inventoryPoolId })
+    await businessService.completeSale({ ownerConfirmed: true, requestKey: 'isolated-gcash', paymentMethod: 'gcash', items: [{ productId: variant.id, quantity: 1 }] })
+    expect((await dailyAuditService.getReport(getManilaDate())).summary.totalSold).toBe(2)
     workspaceService.rememberRoute('personal')
     expect(await Promise.all(db.tables.map((table) => table.toArray()))).toEqual(before)
     expect(db.tables).toHaveLength(13)

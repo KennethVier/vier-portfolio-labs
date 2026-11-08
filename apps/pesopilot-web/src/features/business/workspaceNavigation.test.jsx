@@ -65,6 +65,17 @@ async function render() {
 }
 
 describe('actual workspace routes and first-use selection', () => {
+  it('opens the dedicated audit route without mounting Personal cutoff flows', async () => {
+    await navigate('/business/audit')
+    await render()
+    await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
+    expect(getActiveWorkspace()).toBe('business')
+    expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
+    await click('Back to Business')
+    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await click('Daily Sales Audit')
+    await settle(() => expect(router.state.location.pathname).toBe('/business/audit'))
+  })
   it('offers first-use choice, enters Business without cutoff guidance, and switches both ways', async () => {
     await render()
     await settle(() => expect(container.textContent).toContain('How will you use PesoPilot?'))

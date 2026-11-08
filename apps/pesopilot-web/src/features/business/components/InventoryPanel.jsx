@@ -30,12 +30,13 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Products, unit prices and available stock</caption>
             <thead><tr className="border-b border-outline-variant">
-              {['Product', 'Unit price', 'Available quantity', 'Status'].map((label) => <th key={label} scope="col" className="p-2">{label}</th>)}
+              {['Product', 'Unit price', 'Stock group', 'Available quantity (shared per group)', 'Status'].map((label) => <th key={label} scope="col" className="p-2">{label}</th>)}
             </tr></thead>
             <tbody>{products.map((item) => (
               <tr key={item.id} className="border-b border-outline-variant">
                 <th scope="row" className="p-2 font-medium">{item.name}</th>
                 <td className="p-2 font-mono">{peso(item.unitPriceCentavos)}</td>
+                <td className="p-2">{item.inventoryPoolName}</td>
                 <td className="p-2 font-mono">{item.stockQuantity}</td>
                 <td className={`p-2 ${item.stockQuantity === 0 ? 'text-error' : 'text-secondary'}`}>
                   {item.stockQuantity === 0 ? 'Out of stock' : 'In stock'}
@@ -46,7 +47,7 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
         </div>
       )}
       <h3 className="mb-2 mt-5 font-semibold">Manual stock adjustment</h3>
-      <p className="mb-3 text-sm text-content-muted">Add received stock or remove damaged/miscounted units. Every adjustment requires a reason.</p>
+      <p className="mb-3 text-sm text-content-muted">Add received stock or remove damaged/miscounted units. Every adjustment requires a reason and affects the selected product’s entire stock group. Shared quantities are not additive.</p>
       <form onSubmit={submit}>
         <fieldset disabled={disabled || action.saving || products.length === 0} className="grid items-end gap-3 sm:grid-cols-2">
           <label className="text-sm">Product to adjust

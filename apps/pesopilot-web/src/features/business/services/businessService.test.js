@@ -84,7 +84,7 @@ describe('Business Mode: independent inventory and sale safety', () => {
 
   it.each(['card', '', 'Cash', null])('rejects unsupported payment method %s', async (paymentMethod) => {
     const product = await businessService.addProduct(productInput)
-    await expect(completeSale(requestFor(product, { paymentMethod }))).rejects.toThrow('Cash or Coop')
+    await expect(completeSale(requestFor(product, { paymentMethod }))).rejects.toThrow('Cash, GCash or Coop Pay')
     expect(await businessDb.sales.count()).toBe(0)
   })
 

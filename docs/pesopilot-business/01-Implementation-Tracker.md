@@ -7,9 +7,9 @@ Status: ISOLATED FEATURE BRANCH. Not part of v1.0 release approval.
 | B0 Proposal, scope, and boundaries | Complete (provisional) | New v1.1 proposal; v1.0 authority untouched |
 | B1 Workspace choice and distinct business route | Batch 2 implemented; review pending | First use, existing personal users, direct routes and bidirectional switching covered by tests; no business cutoff requirement |
 | B2 Local product/stock foundation | Batch 2 implemented; review pending | Validated products; explicit signed adjustments with required reasons; nonnegative stock; retained movement/event history |
-| B3 Manual Cash/Coop completed sale | Batch 2 implemented; review pending | Review total, explicit owner confirmation, atomic writes, immutable snapshots, duplicate/retry handling and read-only sales history |
-| B4 Client-format audit | **BLOCKED — waiting for sample** | Sample mapping, test fixtures and reconciliation remain undefined; no report/export implemented |
-| B5 Integration/security/offline QA | Automated checks passed; manual/security gates pending | 1,107 tests pass; lint/build pass; browser access blocked; backup/access/privacy decisions outstanding |
+| B3 Manual Cash/GCash/Coop Pay completed sale | Batch 3 implemented; review pending | Explicit owner confirmation, atomic shared-pool writes, snapshots, duplicate/retry handling and read-only sales history |
+| B4 Client-format audit | Batch 3 implemented; user validation pending | November 6 sample reconciles; Manila dates, shared stock and payment breakdown implemented; Reload Qty and cash reconciliation questions remain open |
+| B5 Integration/security/offline QA | Automated checks passed; manual/security gates pending | Batch 3: 1,122 tests pass; lint/build pass; browser access blocked; backup/access/privacy decisions outstanding |
 | B6 Merge/deploy | Not authorized | Separate approved PR and smoke test |
 
 Implementation notes: B1/B2/B3 are staged on a dedicated branch. The Business route includes initial product entry, stock receiving, single-product completed-sale UI, business summary, and internal event preview. Code is provisional until repository test/QA gates pass. No claim of a production-ready private URL, payment processing, or client audit export.
@@ -66,3 +66,62 @@ Known limitations and remaining work:
 - Client-specific audit reporting remains **BLOCKED — waiting for sample**. No schema, columns, reconciliation assumptions or exports were invented.
 
 Next recommended batch: complete real-browser/mobile/offline/multi-tab QA and agree Business backup/access/privacy requirements. Implement the client audit adapter only after the sample and acceptance rules arrive; obtain separate release approval before merging or deploying.
+
+## Business Mode Batch 3 — Daily Sales Audit and Payment Methods
+
+Date: 2026-11-08 (Asia/Manila). Implemented; **user validation and acceptance pending**, not marked complete.
+
+Branch: `feature/pesopilot-business-daily-audit`, based on fetched `origin/feature/pesopilot-business-workflows` at `8ac2e6b` (Batch 2 draft PR #5). Work is isolated in `.worktrees/pesopilot-business-daily-audit`; original `pesopilot-dev` and its uncommitted Insights work are preserved. PR #4, Personal's 13 stores, v1.0 authority, master and deployment configuration are unchanged. The separate draft PR targets the workflows branch; no merge or deployment is authorized.
+
+### Implemented surface
+
+- Cash / GCash / Coop Pay are accepted and displayed distinctly in POS review, completed sale snapshots, history, dashboard and daily audit. All remain owner-confirmed manual labels, with no gateway or settlement verification.
+- `/business/audit` has a Philippine date selector, loading/error/retry and empty states, daily summary, and the client's 11 columns in a horizontally scrollable table. Each stock group owns one inventory row with variants beneath it. Row totals and sales amounts cannot be edited. Focus refresh and stale-response protection prevent an older date's request from replacing the selected report.
+- A deterministic audit service reads one consistent read-only Dexie snapshot, groups days by Asia/Manila, and sums integer-centavo sale-item amounts. Variant rows use saved sale names/prices; different historical names/prices produce distinct rows. Stock comes from movement history, never today's product quantity.
+- Stock totals distinguish opening quantity, same-day opening/receiving/additions, sales consumption and non-sale removals. Legacy foundation `stock_received` events are supported. Remaining = opening + additions − sales consumption − non-sale removals. The UI exposes removals explicitly rather than disguising them as sales.
+- Business DB v2 adds `inventoryPools`. Its transaction-backed upgrade creates one independent pool per saved product, retains stock and original sale/item/movement/event records, and adds pool references without changing monetary amounts or Personal data. No existing stocks are merged automatically. No new dependencies or lockfile changes.
+- New variants can select an existing pool with zero new opening stock; owners receive additional inventory through a reasoned stock adjustment. Different prices remain independent. Combined variant requests are validated before commit, each sale consumes one unit per variant (provisional), and pool/cache/movement/sale/item/event writes roll back together. Existing request-key idempotency remains intact.
+
+### Validation evidence
+
+Run from `apps/pesopilot-web` with `npm.cmd` on Windows:
+
+| Command | Actual result |
+| --- | --- |
+| `npm run test` | PASS — 106 files, 1,122 tests, zero failures |
+| `npm run lint` | PASS — zero errors / warnings |
+| `npm run build` | PASS — 921 modules transformed |
+
+Business coverage: 8 files / 81 tests, including the full sample calculated from real transactions (405 available, 48 Cash units / ₱7,741, 31 Coop units / ₱6,343, zero GCash, 79 sold, 326 remaining, ₱14,084 overall). Roll-On and Rub remaining stocks are 73 and 68. A separate fixture verifies GCash; other coverage includes restocks/removals, independent/shared stock, combined insufficient stock, competing variants, rollback, duplicates, changed prices, Manila midnight boundaries, old/new asynchronous date responses, read errors, no-sales days, real v1 upgrade/reopen, route isolation, and unchanged Personal stores.
+
+The final review identified historical `stock_received` events from the foundation; the audit recognizes them and the saved-v1 migration fixture includes an intraday receipt. Tests were rerun after this correction. Existing non-failing React Router future-flag and server-rendered useLayoutEffect notices remain. No test pass is claimed for browser scenarios.
+
+Browser QA availability was checked. The browser access host was unavailable; native fallback timed out waiting for app approval. Browser QA could not proceed. Desktop/mobile layout, native keyboard/date controls, offline/reload and actual multi-tab contention still need real-browser verification.
+
+### Security review and remaining limitations
+
+Changed-surface review used OWASP Top 10:2025 and applicable ASVS 5.0 control areas: input validation, output encoding, transaction/data integrity, access control, configuration and error handling. No additional changed-surface vulnerability was identified in the code review. React escapes names/reasons; services validate quantities/payment/centavos; shared writes are transactional; the audit uses a read-only consistent snapshot and refuses inconsistent sale/movement totals; report failures show a generic error. No secrets, financial debug logs, new dependencies or external payment calls were introduced. This is not an OWASP compliance certification. Dependency scan was not run; user command: `npm audit --audit-level=high` (no automatic fix).
+
+- Existing legacy sales retain original item snapshots. Legacy unsold historical prices were never recorded and cannot be reconstructed: those prices are explicitly unavailable, and names are labeled as captured at migration. New unsold products use creation snapshots. There is no catalog price-change/history editor in this batch.
+- Existing independent products cannot yet be reassigned/merged into one pool. Create variants under the correct pool; any future regrouping needs its own historical-stock transfer design. The POS UI remains single-product per sale; the transaction service supports multi-item/shared-pool requests.
+- “Reload Qty” provisionally means opening + applicable additions; confirm with the client. One stock unit per Solo/Set sale also needs confirmation. No bundle multipliers are inferred.
+- The ₱7,718 panel (₱6,570 Onhand Cash + ₱150 JRIDE + ₱300 GRAB + ₱599 GCASH PAY + ₱99 GCASH PAY) has unresolved meaning. It is separate from ₱7,741 Cash Sales. No automatic expense/receipt/GCash classification or reconciliation is implemented.
+- No authentication, private URL guarantee, tamper-proof ledger, Business backup/restore, cloud sync, exports, refunds, payroll, tax, suppliers, staff, accounting or AI. Audit reads currently scan local history; large-history optimization remains future work. The earlier uncertain-request and browser storage limitations still apply.
+- Existing CI filters do not cover PRs targeting the workflows feature branch; recorded local checks are not a claim of remote CI success. No deployment was run.
+
+Next batch: client confirmation of Reload Qty, consumption and reconciliation semantics; then real-browser/mobile/offline/multi-tab QA and separately approved Business access/privacy/backup planning. Detailed cash reconciliation waits for clarified financial meanings. User/ChatGPT owns acceptance and completion status.
+
+### Follow-up prompt comparison — 2026-11-08
+
+Compared the revised “Daily Sales Audit & Three Payment Methods” prompt with the implemented Batch 3 branch. The verified parent remains `feature/pesopilot-business-workflows` at `8ac2e6b4b7455396c15b36702745d6dd958deeb5`; [draft PR #6](https://github.com/KennethVier/vier-portfolio-labs/pull/6) targets that branch. PRs #4 and #5 are unchanged.
+
+The revised prompt adds no missing financial or persistence behavior: three manual MOPs, the selected Manila-date audit, exact transaction-built sample, separate GCash fixture, signed adjustments, historical snapshots, shared-pool multi-item validation, rollback/idempotency, saved-record migration, Personal isolation and Batch 2 regressions are already implemented and covered. Reconciliation remains deferred, with no invented classifications or formulas.
+
+Applied presentation/documentation differences:
+
+- Aligned the table wording to “Reload / Available Quantity” and expanded payment quantity headings. The complete supported columns are: Price (PHP), Item, Reload / Available Quantity, Cash Payment Quantity, Cash Sales (PHP), GCash Payment Quantity, GCash Sales (PHP), Coop Payment Quantity, Coop Sales (PHP), Total Sold, Remaining Stock.
+- Changed “Stock added today” to “Stock added on selected date” so historical reports describe their selected day accurately; simplified the available-inventory summary label.
+- Used “Coop Pay” consistently in the dashboard and identified all three manual payment labels in POS/dashboard settlement notices.
+- No calculation, schema, transaction, dependency or Personal Finance change was required. Existing provisional Reload Qty/consumption assumptions and access/privacy/backup/browser QA gates remain. No acceptance status is marked complete.
+- Follow-up validation executed: `npm run test` PASS (106 files / 1,122 tests, zero failures), `npm run lint` PASS (zero errors / warnings), `npm run build` PASS (921 modules). Existing non-failing React Router/useLayoutEffect notices remain. Real-browser scenarios remain unverified; the earlier browser-host/native-approval blocker was not retested for these copy changes.
+- Follow-up changed-surface security review considered OWASP Top 10:2025 and applicable ASVS 5.0 output-encoding/integrity controls. Text changes preserve React escaping and introduce no persistence, authorization or dependency change; no new finding identified. Dependency scan remains unrun (`npm audit --audit-level=high`).

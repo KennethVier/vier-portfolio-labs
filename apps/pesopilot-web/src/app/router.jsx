@@ -11,6 +11,12 @@ const BusinessDashboardPage = lazy(() =>
   })),
 )
 
+const BusinessAuditPage = lazy(() =>
+  import('@/features/business/pages/BusinessAuditPage.jsx').then((module) => ({
+    default: module.BusinessAuditPage,
+  })),
+)
+
 const ExpensesPage = lazy(() =>
   import('@/features/expenses/pages/ExpensesPage.jsx').then((module) => ({
     default: module.ExpensesPage,
@@ -120,6 +126,10 @@ export const router = createBrowserRouter([
   {
     path: '/business',
     element: wrapLazyRoute(<BusinessDashboardPage />, 'Loading business workspace'),
+  },
+  {
+    path: '/business/audit',
+    element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit'),
   },
   {
     path: '/',

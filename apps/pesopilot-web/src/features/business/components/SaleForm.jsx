@@ -3,19 +3,20 @@ import { Card } from '@/components/ui/Card.jsx'
 import { Input } from '@/components/ui/Input.jsx'
 import { useSaleWorkflow } from '../hooks/useSaleWorkflow.js'
 import { peso, selectClass } from './businessPresentation.js'
+import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 
 export function SaleForm({ products, completeSale, disabled }) {
   const sale = useSaleWorkflow(products, completeSale)
   return (
     <Card className="p-5">
       <h2 className="mb-2 font-heading text-lg font-semibold">Complete Sale</h2>
-      <p className="mb-3 text-sm text-content-muted">Record a completed sale after owner verification. Coop is a manual label; this does not verify external settlement.</p>
+      <p className="mb-3 text-sm text-content-muted">Record a completed sale after owner verification. Cash, GCash and Coop Pay are manual labels; this does not verify external settlement.</p>
       {sale.review ? (
         <section aria-label="Review sale" className="space-y-3">
           <h3 className="font-semibold">Confirm completed sale</h3>
           <p>{sale.review.productName} · {sale.review.quantity} × {peso(sale.review.unitPriceCentavos)}</p>
           <p className="font-mono font-semibold">Total: {peso(sale.review.totalCentavos)}</p>
-          <p>Payment method: {sale.review.paymentMethod === 'cash' ? 'Cash' : 'Coop (manual)'}</p>
+          <p>Payment method: {BUSINESS_PAYMENT_LABELS[sale.review.paymentMethod]}</p>
           <p className="text-sm text-content-muted">By confirming, you verify this sale is complete. Stock will be deducted once.</p>
           <div className="flex flex-wrap gap-3">
             <Button onClick={sale.confirmSale} disabled={disabled || sale.saving}>
@@ -38,7 +39,7 @@ export function SaleForm({ products, completeSale, disabled }) {
             <Input label="Sale quantity" required type="number" min="1" step="1" max={sale.product?.stockQuantity} value={sale.quantity} onChange={(e) => sale.setQuantity(e.target.value)} />
             <label className="block text-sm">Payment method
               <select className={selectClass} value={sale.paymentMethod} onChange={(e) => sale.setPaymentMethod(e.target.value)}>
-                <option value="cash">Cash</option><option value="coop">Coop (manual)</option>
+                {BUSINESS_PAYMENT_METHODS.map((method) => <option key={method} value={method}>{BUSINESS_PAYMENT_LABELS[method]}</option>)}
               </select>
             </label>
             {sale.preview ? <p className="font-mono" aria-live="polite">{sale.preview.quantity} × {peso(sale.preview.unitPriceCentavos)} = {peso(sale.preview.totalCentavos)}</p> :
