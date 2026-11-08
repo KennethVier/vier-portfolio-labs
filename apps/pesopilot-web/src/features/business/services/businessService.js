@@ -15,7 +15,7 @@ function assertQuantity(value, { allowZero = false } = {}) {
   return value
 }
 
-function parsePriceCentavos(input) {
+export function parsePriceCentavos(input) {
   const text = String(input).trim()
   if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(text)) {
     throw new Error('Price must be a PHP amount with up to two decimal places')

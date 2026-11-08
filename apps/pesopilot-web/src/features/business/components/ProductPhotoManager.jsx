@@ -40,8 +40,8 @@ export function ProductPhotoManager({ products, photos, uploadPhoto, removePhoto
   const [sample, setSample] = useState(false)
   const families = posCatalogService.families(products, { sample })
   return <Card className="space-y-4 p-5">
-    <div><h2 className="font-heading text-xl font-semibold">Product photos</h2>
-      <p className="mt-2 text-sm text-content-muted">One optional photo per product family, shared across its variants. JPEG, PNG or WebP, up to 2 MiB. Photos are resized locally, saved on this device, and included in Business backups. Up to 30 photos.</p></div>
+    <div id="product-photos" className="scroll-mt-6"><h2 className="font-heading text-xl font-semibold">Product photos</h2>
+      <p className="mt-2 text-sm text-content-muted">One optional photo per product card, shared across its options. JPEG, PNG or WebP, up to 2 MiB. Photos are resized locally, saved on this device, and included in Business backups. Up to 30 photos.</p></div>
     <div aria-label="Photo catalog source" className="flex flex-wrap gap-2">{[false, true].map((value) => <Button key={String(value)} aria-pressed={sample === value} variant={sample === value ? 'primary' : 'secondary'} onClick={() => setSample(value)}>{value ? 'Sample photos' : 'Actual photos'}</Button>)}</div>
     {families.length ? <div className="grid gap-3 lg:grid-cols-2">{families.map((family) => <PhotoEditor key={family.id} family={family} photo={photos.find((photo) => photo.familyId === family.id)} uploadPhoto={uploadPhoto} removePhoto={removePhoto} disabled={disabled} />)}</div> : <p className="text-sm text-content-muted">No {sample ? 'sample' : 'actual'} products to photograph yet.</p>}
   </Card>

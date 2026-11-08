@@ -1,4 +1,5 @@
 import { businessDb } from './businessDb.js'
+import { findDuplicateProduct } from '../constants/productCatalog.js'
 
 export function createBusinessRepository(businessDb) {
   return {
@@ -72,11 +73,18 @@ export function createBusinessRepository(businessDb) {
       businessDb.inventoryMovements,
       businessDb.auditEvents,
       async () => {
+        // Check under the same write lock, before adding a pool or opening stock.
+        if (findDuplicateProduct(await businessDb.products.toArray(), product)) {
+          throw new Error('This product is already in your inventory. Use stock adjustment to add more stock.')
+        }
         let pool
         if (product.inventoryPoolId !== product.id) {
           pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
           if (!pool) throw new Error('Inventory pool not found')
+          if (!Number.isSafeInteger(pool.stockQuantity) || pool.stockQuantity < 0) throw new Error('Existing stock quantity is invalid. Choose another stock group.')
           const members = await businessDb.products.where('inventoryPoolId').equals(pool.id).toArray()
+          if (members.length === 0) throw new Error('Choose an existing stock group with a saved product.')
+          if (members.some((member) => member.stockQuantity !== pool.stockQuantity)) throw new Error('Existing stock quantities do not agree. Review this stock group before sharing it.')
           if (members.some((member) => Boolean(member.catalog?.sampleKey) !== Boolean(product.catalog?.sampleKey))) {
             throw new Error('Sample and actual inventory must remain separate')
           }
