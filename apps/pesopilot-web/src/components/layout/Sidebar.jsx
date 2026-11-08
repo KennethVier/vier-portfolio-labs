@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 
+import { setActiveWorkspace } from '@/features/business/services/workspacePreference.js'
+
 const navItems = [
   { icon: 'dashboard', label: 'Dashboard', to: '/dashboard' },
   { icon: 'payments', label: 'Expenses', to: '/expenses' },
@@ -12,6 +14,7 @@ const navItems = [
   { icon: 'bar_chart', label: 'Reports', to: '/reports' },
   { icon: 'inbox', label: 'Expense Inbox', to: '/expense-inbox' },
   { icon: 'settings', label: 'Settings', to: '/settings' },
+  { icon: 'storefront', label: 'Business Workspace', to: '/business', business: true },
   ...(import.meta.env.DEV
     ? [{ icon: 'construction', label: 'Dev Tools', to: '/dev-tools' }]
     : []),
@@ -46,7 +49,10 @@ function Navigation({ onNavigate }) {
         <NavLink
           key={item.to}
           to={item.to}
-          onClick={onNavigate}
+          onClick={() => {
+            if (item.business) setActiveWorkspace('business')
+            onNavigate?.()
+          }}
           className={({ isActive }) =>
             [
               'flex items-center gap-3 px-3 py-2 transition-colors duration-150',
