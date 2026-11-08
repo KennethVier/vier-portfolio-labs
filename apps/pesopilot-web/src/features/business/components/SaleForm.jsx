@@ -11,6 +11,7 @@ export function SaleForm({ products, completeSale, disabled }) {
     <Card className="p-5">
       <h2 className="mb-2 font-heading text-lg font-semibold">Complete Sale</h2>
       <p className="mb-3 text-sm text-content-muted">Record a completed sale after owner verification. Cash, GCash and Coop Pay are manual labels; this does not verify external settlement.</p>
+      <p className="mb-3 text-sm text-content-muted">If the page closes during confirmation, check Sales History before entering the sale again. Retry protection uses the request key in this form.</p>
       {sale.review ? (
         <section aria-label="Review sale" className="space-y-3">
           <h3 className="font-semibold">Confirm completed sale</h3>

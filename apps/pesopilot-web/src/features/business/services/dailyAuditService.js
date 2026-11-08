@@ -44,9 +44,65 @@ function addPayment(target, method, quantity, centavos) {
   target[method].centavos = add(target[method].centavos, centavos)
 }
 
+function validateHistoryThrough(end, { pools, products, sales, items, movements }) {
+  const poolIds = new Set(pools.map((pool) => pool.id))
+  const productMap = new Map(products.map((product) => [product.id, product]))
+  const saleMap = new Map(sales.filter((sale) => timestamp(sale.confirmedAt) < end).map((sale) => [sale.id, sale]))
+  const lineKey = (row) => JSON.stringify([row.saleId, row.productId])
+  const lines = new Map()
+  const totals = new Map()
+  for (const item of items) {
+    if (!saleMap.has(item.saleId)) continue
+    const key = lineKey(item)
+    if (lines.has(key) || !poolIds.has(item.inventoryPoolId) ||
+        productMap.get(item.productId)?.inventoryPoolId !== item.inventoryPoolId ||
+        !integer(item.quantity) || !integer(item.unitPriceCentavos) || item.inventoryUnitsPerSale !== 1 ||
+        integer(item.lineTotalCentavos) !== integer(item.quantity * item.unitPriceCentavos)) {
+      throw new Error('Audit sale and inventory history do not reconcile')
+    }
+    lines.set(key, item)
+    totals.set(item.saleId, add(totals.get(item.saleId) ?? 0, item.lineTotalCentavos))
+  }
+  for (const sale of saleMap.values()) {
+    if (!totals.has(sale.id)) throw new Error('Audit inventory movement has no matching sale item')
+    if (!BUSINESS_PAYMENT_METHODS.includes(sale.paymentMethod) || totals.get(sale.id) !== integer(sale.totalCentavos)) {
+      throw new Error('Audit sale totals do not reconcile')
+    }
+  }
+  const balances = new Map()
+  for (const movement of [...movements].sort((left, right) => left.id - right.id)) {
+    if (timestamp(movement.occurredAt) >= end) continue
+    const before = integer(movement.beforeQuantity)
+    const after = integer(movement.afterQuantity)
+    const delta = integer(movement.delta, true)
+    if (!poolIds.has(movement.inventoryPoolId) || productMap.get(movement.productId)?.inventoryPoolId !== movement.inventoryPoolId ||
+        before !== (balances.get(movement.inventoryPoolId) ?? 0) ||
+        after !== add(before, delta) || delta === 0) throw new Error('Audit stock movement chain does not reconcile')
+    balances.set(movement.inventoryPoolId, after)
+    if (movement.type === 'sale') {
+      const key = lineKey(movement)
+      const line = lines.get(key)
+      const sale = saleMap.get(movement.saleId)
+      if (!line || !sale || delta !== -line.quantity || movement.inventoryPoolId !== line.inventoryPoolId ||
+          timestamp(movement.occurredAt) !== timestamp(sale.confirmedAt)) {
+        throw new Error('Audit inventory movement has no matching sale item or sale date')
+      }
+      lines.delete(key)
+    } else if (!['opening_stock', 'stock_received', 'stock_adjustment'].includes(movement.type) ||
+        movement.saleId != null || (movement.type === 'stock_adjustment' && !movement.reason?.trim()) ||
+        (movement.type !== 'stock_adjustment' && delta < 0)) {
+      throw new Error('Audit contains an unsupported or untraceable inventory movement')
+    }
+  }
+  if (lines.size) throw new Error('Audit sale and inventory history do not reconcile')
+}
+
 // Pure projection of recorded history. No current price/stock is used to recalculate sales.
 export function buildDailyAudit(date, { products, pools, sales, items, movements }) {
   const { start, end } = dateRange(date)
+  // Opening stock depends on earlier history too. Refuse corrupt prior-day
+  // movements instead of rolling their deltas into a plausible opening balance.
+  validateHistoryThrough(end, { products, pools, sales, items, movements })
   const groups = new Map()
   for (const pool of pools) {
     if (timestamp(pool.createdAt) >= end) continue

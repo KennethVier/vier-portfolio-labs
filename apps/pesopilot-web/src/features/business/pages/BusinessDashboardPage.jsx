@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
 import { Card } from '@/components/ui/Card.jsx'
 import { InventoryPanel } from '../components/InventoryPanel.jsx'
+import { BusinessBackupPanel } from '../components/BusinessBackupPanel.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
 import { SaleForm } from '../components/SaleForm.jsx'
 import { SalesHistory } from '../components/SalesHistory.jsx'
@@ -58,6 +59,7 @@ export function BusinessDashboardPage() {
           <SaleForm products={products} completeSale={workspace.completeSale} disabled={disabled} />
         </div>
         <InventoryPanel products={products} adjustStock={workspace.adjustStock} disabled={disabled} />
+        <BusinessBackupPanel refresh={workspace.refresh} disabled={isLoading} />
         {!error && !isLoading ? <SalesHistory sales={sales} /> : null}
         <Card className="p-5">
           <h2 className="font-heading text-lg font-semibold">Internal Activity History</h2>
