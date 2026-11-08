@@ -110,3 +110,18 @@ Changed-surface review used OWASP Top 10:2025 and applicable ASVS 5.0 control ar
 - Existing CI filters do not cover PRs targeting the workflows feature branch; recorded local checks are not a claim of remote CI success. No deployment was run.
 
 Next batch: client confirmation of Reload Qty, consumption and reconciliation semantics; then real-browser/mobile/offline/multi-tab QA and separately approved Business access/privacy/backup planning. Detailed cash reconciliation waits for clarified financial meanings. User/ChatGPT owns acceptance and completion status.
+
+### Follow-up prompt comparison — 2026-11-08
+
+Compared the revised “Daily Sales Audit & Three Payment Methods” prompt with the implemented Batch 3 branch. The verified parent remains `feature/pesopilot-business-workflows` at `8ac2e6b4b7455396c15b36702745d6dd958deeb5`; [draft PR #6](https://github.com/KennethVier/vier-portfolio-labs/pull/6) targets that branch. PRs #4 and #5 are unchanged.
+
+The revised prompt adds no missing financial or persistence behavior: three manual MOPs, the selected Manila-date audit, exact transaction-built sample, separate GCash fixture, signed adjustments, historical snapshots, shared-pool multi-item validation, rollback/idempotency, saved-record migration, Personal isolation and Batch 2 regressions are already implemented and covered. Reconciliation remains deferred, with no invented classifications or formulas.
+
+Applied presentation/documentation differences:
+
+- Aligned the table wording to “Reload / Available Quantity” and expanded payment quantity headings. The complete supported columns are: Price (PHP), Item, Reload / Available Quantity, Cash Payment Quantity, Cash Sales (PHP), GCash Payment Quantity, GCash Sales (PHP), Coop Payment Quantity, Coop Sales (PHP), Total Sold, Remaining Stock.
+- Changed “Stock added today” to “Stock added on selected date” so historical reports describe their selected day accurately; simplified the available-inventory summary label.
+- Used “Coop Pay” consistently in the dashboard and identified all three manual payment labels in POS/dashboard settlement notices.
+- No calculation, schema, transaction, dependency or Personal Finance change was required. Existing provisional Reload Qty/consumption assumptions and access/privacy/backup/browser QA gates remain. No acceptance status is marked complete.
+- Follow-up validation executed: `npm run test` PASS (106 files / 1,122 tests, zero failures), `npm run lint` PASS (zero errors / warnings), `npm run build` PASS (921 modules). Existing non-failing React Router/useLayoutEffect notices remain. Real-browser scenarios remain unverified; the earlier browser-host/native-approval blocker was not retested for these copy changes.
+- Follow-up changed-surface security review considered OWASP Top 10:2025 and applicable ASVS 5.0 output-encoding/integrity controls. Text changes preserve React escaping and introduce no persistence, authorization or dependency change; no new finding identified. Dependency scan remains unrun (`npm audit --audit-level=high`).

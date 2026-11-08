@@ -34,7 +34,7 @@ export function BusinessDashboardPage() {
       <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-8">
         <p className="rounded border border-outline-variant bg-surface-container-low p-3 text-sm text-content-muted">
           v1.1 prototype: data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access.
-          There is no authentication or device sync. Coop is a manually recorded payment method, not proof of external payment settlement.
+          There is no authentication or device sync. Cash, GCash and Coop Pay are manually recorded payment methods, not proof of external payment settlement.
         </p>
         {isLoading ? <p role="status">Loading local business data…</p> : null}
         {error ? <div role="alert" className="space-y-2 text-error">
@@ -46,7 +46,7 @@ export function BusinessDashboardPage() {
             ['Recorded sales', peso(summary.totalCentavos)],
             ['Cash sales', peso(summary.cashCentavos)],
             ['GCash sales', peso(summary.gcashCentavos)],
-            ['Coop sales (manual)', peso(summary.coopCentavos)],
+            ['Coop Pay sales (manual)', peso(summary.coopCentavos)],
             ['Products', products.length],
           ].map(([label, value]) => <Card key={label} className="p-5">
             <p className="text-xs uppercase text-content-muted">{label}</p>

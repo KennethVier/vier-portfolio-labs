@@ -27,7 +27,7 @@ For each inventory pool:
 - Non-sale removals = negative stock adjustments during the day.
 - Remaining = available − sold consumption − non-sale removals.
 
-“Starting / Reload Qty” displays available quantity and identifies opening/additions separately. This is provisional pending the client's definition of Reload Qty. Manual removals appear explicitly outside the 11 required columns as well as alongside affected group remaining stock.
+“Reload / Available Quantity” displays available quantity and identifies opening/additions separately. This is provisional pending the client's definition of Reload Qty. Manual removals appear explicitly outside the 11 required columns as well as alongside affected group remaining stock. Addition/removal labels refer to the selected audit date, including historical reports.
 
 For each product/name/price snapshot row, Cash, GCash and Coop quantity/centavos are summed separately from sale items. Total Sold is their combined quantity. Sale totals and movement/item quantities must reconcile before a report is returned. Unknown payment/movement types, missing links and inconsistent totals produce an error instead of plausible financial zeroes.
 

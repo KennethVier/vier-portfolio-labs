@@ -19,14 +19,14 @@ export function DailyAuditReport({ report }) {
         ['Overall sales', peso(summary.totalCentavos)],
         ['Total items sold', summary.totalSold],
         ['Opening inventory', summary.openingQuantity],
-        ['Starting / available inventory', summary.availableQuantity],
+        ['Available inventory', summary.availableQuantity],
         ['Remaining inventory', summary.remainingQuantity],
       ].map(([label, value]) => <Card key={label} className="p-5">
         <p className="text-xs uppercase text-content-muted">{label}</p>
         <p className="mt-2 font-mono text-2xl font-semibold text-primary">{value}</p>
       </Card>)}
     </div>
-    <p className="text-sm text-content-muted">Stock added today: {summary.addedQuantity}. Non-sale stock removals: {summary.removedQuantity}.
+    <p className="text-sm text-content-muted">Stock added on selected date: {summary.addedQuantity}. Non-sale stock removals: {summary.removedQuantity}.
       {' '}Available = opening + additions; remaining = available − sold − non-sale removals.</p>
     {groups.length === 0 ? <Card className="p-5"><p>No inventory or sales recorded for this date.</p></Card> : <>
       {summary.totalSold === 0 ? <p role="status">No confirmed sales for this date. Recorded inventory is shown below.</p> : null}
@@ -37,7 +37,7 @@ export function DailyAuditReport({ report }) {
           <table className="w-full whitespace-nowrap text-left text-sm">
             <caption className="sr-only">Daily Sales Audit for {report.date}, Asia/Manila. All amounts are PHP. Group stock is counted once.</caption>
             <thead className="bg-surface-container-low"><tr>
-              {['Price (PHP)', 'Item', 'Starting / Reload Qty', 'Cash Payment Qty', 'Cash Sales (PHP)', 'GCash Payment Qty', 'GCash Sales (PHP)', 'Coop Payment Qty', 'Coop Sales (PHP)', 'Total Sold', 'Remaining Stock'].map((label) => <th key={label} scope="col" className="p-3">{label}</th>)}
+              {['Price (PHP)', 'Item', 'Reload / Available Quantity', 'Cash Payment Quantity', 'Cash Sales (PHP)', 'GCash Payment Quantity', 'GCash Sales (PHP)', 'Coop Payment Quantity', 'Coop Sales (PHP)', 'Total Sold', 'Remaining Stock'].map((label) => <th key={label} scope="col" className="p-3">{label}</th>)}
             </tr></thead>
             {groups.map((group) => <tbody key={group.id} className="border-t border-outline-variant">
               <tr className="bg-surface-container-low font-semibold">
