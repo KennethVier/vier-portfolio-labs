@@ -2,7 +2,25 @@ import { businessDb } from './businessDb.js'
 
 export const businessRepository = {
   listProducts() {
-    return businessDb.products.orderBy('name').toArray()
+    return businessDb.transaction('r', businessDb.products, businessDb.inventoryPools, async () => {
+      const pools = new Map((await businessDb.inventoryPools.toArray()).map((pool) => [pool.id, pool]))
+      return (await businessDb.products.orderBy('name').toArray()).map((product) => {
+        const pool = pools.get(product.inventoryPoolId)
+        if (!pool) throw new Error('Inventory pool not found')
+        return { ...product, stockQuantity: pool.stockQuantity, inventoryPoolName: pool.name }
+      })
+    })
+  },
+
+  readDailyAuditSource() {
+    return businessDb.transaction('r', [businessDb.products, businessDb.inventoryPools,
+      businessDb.sales, businessDb.saleItems, businessDb.inventoryMovements], async () => ({
+      products: await businessDb.products.toArray(),
+      pools: await businessDb.inventoryPools.toArray(),
+      sales: await businessDb.sales.toArray(),
+      items: await businessDb.saleItems.toArray(),
+      movements: await businessDb.inventoryMovements.toArray(),
+    }))
   },
 
   listSales() {
@@ -30,13 +48,27 @@ export const businessRepository = {
     await businessDb.transaction(
       'rw',
       businessDb.products,
+      businessDb.inventoryPools,
       businessDb.inventoryMovements,
       businessDb.auditEvents,
       async () => {
+        let pool
+        if (product.inventoryPoolId !== product.id) {
+          pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
+          if (!pool) throw new Error('Inventory pool not found')
+          if (product.stockQuantity !== 0) throw new Error('Shared variants must not add opening stock')
+        } else {
+          pool = { id: product.id, name: product.inventoryPoolName, stockQuantity: product.stockQuantity, createdAt: product.createdAt }
+          await businessDb.inventoryPools.add(pool)
+        }
+        const openingQuantity = product.stockQuantity
+        product = { ...product, stockQuantity: pool.stockQuantity }
         await businessDb.products.add(product)
-        if (product.stockQuantity > 0) {
+        if (product.inventoryPoolId === product.id && openingQuantity > 0) {
           const movement = {
             productId: product.id,
+            inventoryPoolId: pool.id,
+            poolNameSnapshot: pool.name,
             saleId: null,
             type: 'opening_stock',
             delta: product.stockQuantity,
@@ -61,25 +93,32 @@ export const businessRepository = {
     return businessDb.transaction(
       'rw',
       businessDb.products,
+      businessDb.inventoryPools,
       businessDb.inventoryMovements,
       businessDb.auditEvents,
       async () => {
         const product = await businessDb.products.get(productId)
         if (!product) throw new Error('Product not found')
-        const afterQuantity = product.stockQuantity + delta
+        const pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
+        if (!pool) throw new Error('Inventory pool not found')
+        if (!Number.isSafeInteger(pool.stockQuantity) || pool.stockQuantity < 0) throw new Error('Invalid stored stock')
+        const afterQuantity = pool.stockQuantity + delta
         if (!Number.isSafeInteger(afterQuantity)) throw new Error('Stock limit exceeded')
         if (afterQuantity < 0) throw new Error('Insufficient stock')
         const movement = {
           productId,
+          inventoryPoolId: pool.id,
+          poolNameSnapshot: pool.name,
           saleId: null,
           type: 'stock_adjustment',
           delta,
           reason,
-          beforeQuantity: product.stockQuantity,
+          beforeQuantity: pool.stockQuantity,
           afterQuantity,
           occurredAt,
         }
-        await businessDb.products.update(productId, { stockQuantity: afterQuantity })
+        await businessDb.inventoryPools.update(pool.id, { stockQuantity: afterQuantity })
+        await businessDb.products.where('inventoryPoolId').equals(pool.id).modify({ stockQuantity: afterQuantity })
         await businessDb.inventoryMovements.add(movement)
         await businessDb.auditEvents.add({
           saleId: null,
@@ -96,6 +135,7 @@ export const businessRepository = {
     return businessDb.transaction(
       'rw',
       businessDb.products,
+      businessDb.inventoryPools,
       businessDb.sales,
       businessDb.saleItems,
       businessDb.inventoryMovements,
@@ -119,6 +159,7 @@ export const businessRepository = {
         let totalCentavos = 0
         const lineItems = []
         const movements = []
+        const remainingByPool = new Map()
 
         for (const item of items) {
           const product = await businessDb.products.get(item.productId)
@@ -127,7 +168,15 @@ export const businessRepository = {
               item.expectedUnitPriceCentavos !== product.unitPriceCentavos) {
             throw new Error('Product price changed. Review the sale again')
           }
-          if (product.stockQuantity < item.quantity) {
+          const pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
+          if (!pool) throw new Error('Inventory pool not found')
+          if (!Number.isSafeInteger(pool.stockQuantity) || pool.stockQuantity < 0 ||
+              !Number.isSafeInteger(product.unitPriceCentavos) || product.unitPriceCentavos < 1) {
+            throw new Error('Invalid stored stock or price')
+          }
+          if (product.inventoryUnitsPerSale !== 1) throw new Error('Unsupported inventory consumption rule')
+          const beforeQuantity = remainingByPool.get(pool.id) ?? pool.stockQuantity
+          if (beforeQuantity < item.quantity) {
             throw new Error('Insufficient stock')
           }
 
@@ -137,21 +186,27 @@ export const businessRepository = {
             throw new Error('Sale amount exceeds supported limit')
           }
 
-          const afterQuantity = product.stockQuantity - item.quantity
+          const afterQuantity = beforeQuantity - item.quantity
+          remainingByPool.set(pool.id, afterQuantity)
           lineItems.push({
             saleId: sale.id,
             productId: product.id,
             productNameSnapshot: product.name,
+            inventoryPoolId: pool.id,
+            poolNameSnapshot: pool.name,
+            inventoryUnitsPerSale: 1,
             quantity: item.quantity,
             unitPriceCentavos: product.unitPriceCentavos,
             lineTotalCentavos,
           })
           movements.push({
             productId: product.id,
+            inventoryPoolId: pool.id,
+            poolNameSnapshot: pool.name,
             saleId: sale.id,
             type: 'sale',
             delta: -item.quantity,
-            beforeQuantity: product.stockQuantity,
+            beforeQuantity,
             afterQuantity,
             occurredAt: sale.confirmedAt,
           })
@@ -161,10 +216,9 @@ export const businessRepository = {
         await businessDb.sales.add(confirmedSale)
         await businessDb.saleItems.bulkAdd(lineItems)
 
-        for (const movement of movements) {
-          await businessDb.products.update(movement.productId, {
-            stockQuantity: movement.afterQuantity,
-          })
+        for (const [poolId, stockQuantity] of remainingByPool) {
+          await businessDb.inventoryPools.update(poolId, { stockQuantity })
+          await businessDb.products.where('inventoryPoolId').equals(poolId).modify({ stockQuantity })
         }
 
         await businessDb.inventoryMovements.bulkAdd(movements)

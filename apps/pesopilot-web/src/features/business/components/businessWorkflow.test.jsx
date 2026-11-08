@@ -72,7 +72,26 @@ describe('real Business UI and IndexedDB workflow', () => {
     expect(container.textContent).toContain('No completed sales yet')
     expect(container.textContent).toContain('do not provide secure account access')
     expect(container.textContent).not.toContain('No Current Cutoff')
-    expect([...field('Payment method').options].map((option) => option.value)).toEqual(['cash', 'coop'])
+    expect([...field('Payment method').options].map((option) => option.value)).toEqual(['cash', 'gcash', 'coop'])
+  })
+
+  it('creates a shared variant and records owner-confirmed GCash with its own label', async () => {
+    const product = await businessService.addProduct({ name: 'Roll-On Solo', pricePesos: '199', openingStock: 5, inventoryPoolName: 'Roll-On' })
+    await render()
+    await change('Product name', 'Roll-On Set')
+    await change('Unit price', '150')
+    await change('Inventory pool', product.inventoryPoolId)
+    expect([...container.querySelectorAll('label')].some((label) => label.textContent.includes('Opening quantity'))).toBe(false)
+    await click('Save Product')
+    const variant = (await businessService.listProducts()).find((item) => item.name === 'Roll-On Set')
+    await change('Sale product', variant.id)
+    await change('Payment method', 'gcash')
+    await click('Review Sale')
+    expect(container.textContent).toContain('Payment method: GCash')
+    await click('Owner: Confirm Completed Sale')
+    expect((await businessService.listSales())[0]).toMatchObject({ paymentMethod: 'gcash', totalCentavos: 15000 })
+    expect((await businessService.listProducts()).map((item) => item.stockQuantity)).toEqual([4, 4])
+    expect(container.querySelector('details').closest('tr').textContent).toContain('GCash')
   })
 
   it('creates a product, adjusts stock with a reason, previews and explicitly confirms Coop once', async () => {

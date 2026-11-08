@@ -33,15 +33,28 @@ export const businessService = {
   listSalesHistory: () => businessRepository.listSalesHistory(),
   listAuditEvents: () => businessRepository.listAuditEvents(),
 
-  async addProduct({ name, pricePesos, openingStock = 0 }) {
+  async addProduct({ name, pricePesos, openingStock = 0, inventoryPoolId, inventoryPoolName }) {
     const cleanName = typeof name === 'string' ? name.trim() : ''
     if (!cleanName || cleanName.length > 120) {
       throw new Error('Product name must contain 1–120 characters')
     }
+    if (inventoryPoolId !== undefined && (typeof inventoryPoolId !== 'string' || !inventoryPoolId.trim())) {
+      throw new Error('Choose a valid inventory pool')
+    }
+    if (inventoryPoolId && openingStock !== 0) throw new Error('Shared variants must not add opening stock')
+    const poolName = inventoryPoolName === undefined ? cleanName : typeof inventoryPoolName === 'string' ? inventoryPoolName.trim() : ''
+    if (!poolName || poolName.length > 120) throw new Error('Stock group name must contain 1–120 characters')
+    const id = newId()
+    const unitPriceCentavos = parsePriceCentavos(pricePesos)
     const product = {
-      id: newId(),
+      id,
       name: cleanName,
-      unitPriceCentavos: parsePriceCentavos(pricePesos),
+      initialNameSnapshot: cleanName,
+      initialPriceCentavos: unitPriceCentavos,
+      unitPriceCentavos,
+      inventoryPoolId: inventoryPoolId ?? id,
+      inventoryPoolName: poolName,
+      inventoryUnitsPerSale: 1,
       stockQuantity: assertQuantity(openingStock, { allowZero: true }),
       createdAt: new Date().toISOString(),
     }
@@ -76,7 +89,7 @@ export const businessService = {
   async completeSale({ items, paymentMethod, requestKey, ownerConfirmed }) {
     if (ownerConfirmed !== true) throw new Error('Owner confirmation is required')
     if (!BUSINESS_PAYMENT_METHODS.includes(paymentMethod)) {
-      throw new Error('Choose Cash or Coop')
+      throw new Error('Choose Cash, GCash or Coop Pay')
     }
     if (typeof requestKey !== 'string' || !requestKey.trim()) {
       throw new Error('A stable sale request key is required')
@@ -117,7 +130,8 @@ export const businessService = {
     return sales.reduce((summary, sale) => ({
       totalCentavos: summary.totalCentavos + sale.totalCentavos,
       cashCentavos: summary.cashCentavos + (sale.paymentMethod === 'cash' ? sale.totalCentavos : 0),
+      gcashCentavos: summary.gcashCentavos + (sale.paymentMethod === 'gcash' ? sale.totalCentavos : 0),
       coopCentavos: summary.coopCentavos + (sale.paymentMethod === 'coop' ? sale.totalCentavos : 0),
-    }), { totalCentavos: 0, cashCentavos: 0, coopCentavos: 0 })
+    }), { totalCentavos: 0, cashCentavos: 0, gcashCentavos: 0, coopCentavos: 0 })
   },
 }

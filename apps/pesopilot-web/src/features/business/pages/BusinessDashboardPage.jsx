@@ -25,7 +25,10 @@ export function BusinessDashboardPage() {
             <h1 className="font-heading text-2xl font-semibold">Business Workspace</h1>
             <p className="text-sm text-content-muted">Local inventory and manual sales</p>
           </div>
-          <Button variant="secondary" onClick={() => navigate('/dashboard')}>Switch to Personal</Button>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" onClick={() => navigate('/business/audit')}>Daily Sales Audit</Button>
+            <Button variant="secondary" onClick={() => navigate('/dashboard')}>Switch to Personal</Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-8">
@@ -42,6 +45,7 @@ export function BusinessDashboardPage() {
           {[
             ['Recorded sales', peso(summary.totalCentavos)],
             ['Cash sales', peso(summary.cashCentavos)],
+            ['GCash sales', peso(summary.gcashCentavos)],
             ['Coop sales (manual)', peso(summary.coopCentavos)],
             ['Products', products.length],
           ].map(([label, value]) => <Card key={label} className="p-5">
@@ -50,14 +54,14 @@ export function BusinessDashboardPage() {
           </Card>)}
         </div> : null}
         <div className="grid gap-5 lg:grid-cols-2">
-          <ProductForm addProduct={workspace.addProduct} disabled={disabled} />
+          <ProductForm products={products} addProduct={workspace.addProduct} disabled={disabled} />
           <SaleForm products={products} completeSale={workspace.completeSale} disabled={disabled} />
         </div>
         <InventoryPanel products={products} adjustStock={workspace.adjustStock} disabled={disabled} />
         {!error && !isLoading ? <SalesHistory sales={sales} /> : null}
         <Card className="p-5">
           <h2 className="font-heading text-lg font-semibold">Internal Activity History</h2>
-          <p className="mb-3 text-sm text-content-muted">Recent 15 events. Full records stay in local storage. Client audit report: BLOCKED — waiting for sample. This is not a tamper-proof audit log.</p>
+          <p className="mb-3 text-sm text-content-muted">Recent 15 events. Full records stay in local storage. Open Daily Sales Audit for the client-format report. This is not a tamper-proof audit log.</p>
           {!error && !isLoading ? events.length === 0 ? <p className="text-sm text-content-muted">No recorded activity.</p> : (
             <ul className="divide-y divide-outline-variant">{events.slice(0, 15).map((event) => (
               <li key={event.id} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
