@@ -34,7 +34,7 @@ describe('Business-only backup integrity and atomic replacement', () => {
     const before = await snapshot()
     const audit = await dailyAuditService.getReport(getManilaDate())
     const text = await businessBackupService.exportText()
-    expect(JSON.parse(text)).toMatchObject({ app: 'PesoPilot Business', version: 1, databaseVersion: 2 })
+    expect(JSON.parse(text)).toMatchObject({ app: 'PesoPilot Business', version: 2, databaseVersion: 2 })
     expect(Object.keys(JSON.parse(text).stores)).toEqual(Object.keys(before))
     await businessService.addProduct({ name: 'Replace me', pricePesos: '1' })
     const plan = await businessBackupService.prepareRestore(text)
@@ -84,7 +84,7 @@ describe('Business-only backup integrity and atomic replacement', () => {
 
   it.each([
     ['Personal file', (b) => { b.app = 'PesoPilot' }],
-    ['future format', (b) => { b.version = 2 }],
+    ['future format', (b) => { b.version = 3 }],
     ['future schema', (b) => { b.databaseVersion = 3 }],
     ['extra Personal store', (b) => { b.stores.expenses = [] }],
     ['missing events', (b) => { delete b.stores.auditEvents }],

@@ -1,5 +1,6 @@
 import { BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { businessRepository } from '../repositories/businessRepository.js'
+import { catalogMetadataSchema } from '../constants/catalogMetadata.js'
 
 function newId() {
   if (typeof globalThis.crypto?.randomUUID !== 'function') {
@@ -33,7 +34,7 @@ export const businessService = {
   listSalesHistory: () => businessRepository.listSalesHistory(),
   listAuditEvents: () => businessRepository.listAuditEvents(),
 
-  async addProduct({ name, pricePesos, openingStock = 0, inventoryPoolId, inventoryPoolName }) {
+  async addProduct({ name, pricePesos, openingStock = 0, inventoryPoolId, inventoryPoolName, catalog }) {
     const cleanName = typeof name === 'string' ? name.trim() : ''
     if (!cleanName || cleanName.length > 120) {
       throw new Error('Product name must contain 1–120 characters')
@@ -45,6 +46,8 @@ export const businessService = {
     const poolName = inventoryPoolName === undefined ? cleanName : typeof inventoryPoolName === 'string' ? inventoryPoolName.trim() : ''
     if (!poolName || poolName.length > 120) throw new Error('Stock group name must contain 1–120 characters')
     const id = newId()
+    const metadata = catalog === undefined ? undefined : catalogMetadataSchema.parse(catalog)
+    if (metadata?.sampleKey) throw new Error('Use Load Sample Catalog to create sample products')
     const unitPriceCentavos = parsePriceCentavos(pricePesos)
     const product = {
       id,
@@ -57,6 +60,7 @@ export const businessService = {
       inventoryUnitsPerSale: 1,
       stockQuantity: assertQuantity(openingStock, { allowZero: true }),
       createdAt: new Date().toISOString(),
+      ...(metadata ? { catalog: metadata } : {}),
     }
     return businessRepository.addProduct(product)
   },

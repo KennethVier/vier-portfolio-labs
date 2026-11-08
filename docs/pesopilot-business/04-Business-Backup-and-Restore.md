@@ -1,5 +1,15 @@
 # Business-only backup format and recovery
 
+## POS redesign compatibility (local review)
+
+The POS redesign exports **format version 2**, with `databaseVersion: 2` and the same six Business stores. It accepts both existing format 1 backups and format 2 backups. No Personal stores, database indexes, or schema migration change. Older builds that only understand format 1 will reject new exports; use this redesign or a later compatible build to restore format 2.
+
+Format 2 permits an optional, strict `products.catalog` object: required `category` (1–80 characters) and `family` (1–120), optional `scent`/`size` (1–80), `type` (`Solo` or `Set`), and a development sample key in the `pos-demo-v1-` namespace. Products without metadata stay independently selectable; metadata is never inferred by splitting names. Format 1 continues to reject this new field. Unknown metadata fields and invalid values are rejected before writes.
+
+Sample keys must be unique and match both the product ID and its independent inventory group ID. Actual and sample products cannot share stock, including through restore. Samples retain their remaining fictional quantities on round trip and are skipped by repeated sample loading. Their sale-time product snapshots are prefixed `Sample ·`; existing historical snapshots are not rewritten. Existing validation limits, reconciliation, owner confirmation, stale-review detection and atomic replacement continue to apply.
+
+The format 1 description below documents compatibility with existing backups.
+
 Batch 4, proposed v1.1. Implemented and automated tests passed; real-browser download/file chooser/recovery validation and owner acceptance remain pending.
 
 ## Owner procedure

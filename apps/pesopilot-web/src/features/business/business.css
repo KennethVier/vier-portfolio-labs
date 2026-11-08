@@ -1,0 +1,15 @@
+/* Business-only touch sizing; Personal Finance components retain their styling. */
+.business-touch button,
+.business-touch input:not([type='checkbox']),
+.business-touch select,
+.business-touch summary {
+  min-height: 44px;
+}
+.business-touch button { min-width: 44px; touch-action: manipulation; }
+.business-touch input:not([type='checkbox']), .business-touch select { font-size: 16px; }
+.business-touch input[type='checkbox'] { width: 24px; height: 24px; }
+.business-touch :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.business-touch button:active:not(:disabled) { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  .business-touch * { transition: none !important; }
+}

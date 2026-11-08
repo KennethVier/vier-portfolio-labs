@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { businessService } from '../services/businessService.js'
+import { posCatalogService } from '../services/posCatalogService.js'
 
 export function useBusinessWorkspace() {
   const [products, setProducts] = useState([])
@@ -59,5 +60,6 @@ export function useBusinessWorkspace() {
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
+    loadSampleCatalog: (confirmed) => mutate(() => posCatalogService.loadSampleCatalog(confirmed)),
   }
 }

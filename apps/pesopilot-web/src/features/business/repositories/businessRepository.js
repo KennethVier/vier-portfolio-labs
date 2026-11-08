@@ -45,6 +45,25 @@ export function createBusinessRepository(businessDb) {
     return businessDb.auditEvents.orderBy('occurredAt').reverse().toArray()
   },
 
+  addSampleCatalog(products) {
+    return businessDb.transaction('rw', businessDb.products, businessDb.inventoryPools,
+      businessDb.inventoryMovements, businessDb.auditEvents, async () => {
+        let inserted = 0
+        for (const product of products) {
+          const existing = await businessDb.products.get(product.id)
+          if (existing) {
+            if (existing.catalog?.sampleKey !== product.catalog.sampleKey) {
+              throw new Error('Sample identifier conflicts with an existing product. Nothing was inserted.')
+            }
+            continue
+          }
+          await this.addProduct(product)
+          inserted += 1
+        }
+        return inserted
+      })
+  },
+
   async addProduct(product) {
     await businessDb.transaction(
       'rw',
@@ -57,6 +76,10 @@ export function createBusinessRepository(businessDb) {
         if (product.inventoryPoolId !== product.id) {
           pool = await businessDb.inventoryPools.get(product.inventoryPoolId)
           if (!pool) throw new Error('Inventory pool not found')
+          const members = await businessDb.products.where('inventoryPoolId').equals(pool.id).toArray()
+          if (members.some((member) => Boolean(member.catalog?.sampleKey) !== Boolean(product.catalog?.sampleKey))) {
+            throw new Error('Sample and actual inventory must remain separate')
+          }
           if (product.stockQuantity !== 0) throw new Error('Shared variants must not add opening stock')
         } else {
           pool = { id: product.id, name: product.inventoryPoolName, stockQuantity: product.stockQuantity, createdAt: product.createdAt }
@@ -192,7 +215,7 @@ export function createBusinessRepository(businessDb) {
           lineItems.push({
             saleId: sale.id,
             productId: product.id,
-            productNameSnapshot: product.name,
+            productNameSnapshot: product.catalog?.sampleKey ? `Sample · ${product.name}` : product.name,
             inventoryPoolId: pool.id,
             poolNameSnapshot: pool.name,
             inventoryUnitsPerSale: 1,

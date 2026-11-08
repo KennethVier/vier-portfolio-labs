@@ -65,6 +65,24 @@ async function render() {
 }
 
 describe('actual workspace routes and first-use selection', () => {
+  it('navigates between POS, Inventory, Daily Audit, History and Backup without Personal flows', async () => {
+    await navigate('/business')
+    await render()
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
+    for (const [label, path, content] of [
+      ['Inventory', '/business/inventory', 'Manual stock adjustment'],
+      ['Daily Audit', '/business/audit', 'Audit date (Philippines)'],
+      ['Sales History', '/business/history', 'No completed sales yet'],
+      ['Settings / Backup', '/business/settings', 'Download Business Backup'],
+      ['POS', '/business', 'Record Sales'],
+    ]) {
+      await click(label)
+      await settle(() => expect(container.textContent).toContain(content))
+      expect(router.state.location.pathname).toBe(path)
+      expect(container.querySelector('nav [aria-current="page"]').textContent).toBe(label)
+    }
+    expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
+  })
   it.each([
     ['/expenses', 'Official expense records'],
     ['/income', 'Income Management'],
@@ -75,7 +93,7 @@ describe('actual workspace routes and first-use selection', () => {
     await db.expenses.add({ amount: 100, merchant: 'Existing personal expense' })
     await navigate('/business')
     await render()
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     await navigate(`${path}?from=business#ledger`)
     await settle(() => expect(container.textContent).toContain(pageText))
     expect(router.state.location).toMatchObject({ pathname: path, search: '?from=business', hash: '#ledger' })
@@ -88,11 +106,11 @@ describe('actual workspace routes and first-use selection', () => {
     setActiveWorkspace('business')
     await navigate('/business')
     await render()
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     await navigate('/business/audit?from=history#totals')
     await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
     await navigate(-1)
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     await navigate(1)
     await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
     expect(router.state.location).toMatchObject({ pathname: '/business/audit', search: '?from=history', hash: '#totals' })
@@ -107,8 +125,8 @@ describe('actual workspace routes and first-use selection', () => {
     expect(getActiveWorkspace()).toBe('business')
     expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
     await click('Back to Business')
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
-    await click('Daily Sales Audit')
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
+    await click('Daily Audit')
     await settle(() => expect(router.state.location.pathname).toBe('/business/audit'))
   })
   it('offers first-use choice, enters Business without cutoff guidance, and switches both ways', async () => {
@@ -116,7 +134,7 @@ describe('actual workspace routes and first-use selection', () => {
     await settle(() => expect(container.textContent).toContain('How will you use PesoPilot?'))
     expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
     await click('Business Owner')
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     expect(router.state.location.pathname).toBe('/business')
     expect(getActiveWorkspace()).toBe('business')
     expect(container.textContent).not.toContain('No Current Cutoff')
@@ -125,7 +143,7 @@ describe('actual workspace routes and first-use selection', () => {
     expect(getActiveWorkspace()).toBe('personal')
     expect(container.textContent).not.toContain('How will you use PesoPilot?')
     await click('Business Workspace')
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     expect(getActiveWorkspace()).toBe('business')
   })
 
@@ -150,7 +168,7 @@ describe('actual workspace routes and first-use selection', () => {
     setActiveWorkspace('business')
     await router.navigate('/')
     await render()
-    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await settle(() => expect(container.textContent).toContain('Record Sales'))
     expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
     await navigate('/dashboard')
     await settle(() => expect(container.textContent).toContain('Personal dashboard test content'))

@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { getManilaDate } from './dailyAuditService.js'
+import { catalogMetadataSchema } from '../constants/catalogMetadata.js'
 
-export const BUSINESS_BACKUP_VERSION = 1
+export const BUSINESS_BACKUP_VERSION = 2
 export const BUSINESS_BACKUP_MAX_BYTES = 10 * 1024 * 1024
 const text = z.string().min(1).max(240).refine((value) => value.trim().length > 0)
 const name = text.refine((value) => value.length <= 120)
@@ -39,13 +40,14 @@ const event = z.object({
 }).strict()
 const records = (schema) => z.array(schema).max(100000)
 const format = z.object({
-  app: z.literal('PesoPilot Business'), version: z.literal(BUSINESS_BACKUP_VERSION),
+  app: z.literal('PesoPilot Business'), version: z.union([z.literal(1), z.literal(BUSINESS_BACKUP_VERSION)]),
   databaseVersion: z.literal(2), exportedAt: time,
   stores: z.object({
     products: records(z.object({
       id: text, name, unitPriceCentavos: positive, stockQuantity: natural, createdAt: time,
       inventoryPoolId: text, inventoryPoolName: name.optional(), inventoryUnitsPerSale: z.literal(1),
       initialNameSnapshot: name, initialPriceCentavos: positive, legacyMetadata: z.boolean().optional(),
+      catalog: catalogMetadataSchema.optional(),
     }).strict()),
     inventoryPools: records(z.object({ id: text, name, stockQuantity: natural, createdAt: time }).strict()),
     sales: records(z.object({ id: text, requestKey: text, paymentMethod: payment,
@@ -112,10 +114,20 @@ export function validateBusinessBackup(input) {
   uniqueMap(inventoryMovements)
   uniqueMap(auditEvents)
   const usedPools = new Set()
+  const sampleKeys = new Set()
+  const sampleByPool = new Map()
   for (const product of products) {
     const pool = pools.get(product.inventoryPoolId)
     requireIntegrity(pool && product.stockQuantity === pool.stockQuantity)
     usedPools.add(pool.id)
+    requireIntegrity(backup.version !== 1 || product.catalog === undefined)
+    const sampleKey = product.catalog?.sampleKey
+    if (sampleKey) {
+      requireIntegrity(!sampleKeys.has(sampleKey) && product.id === sampleKey && product.inventoryPoolId === product.id)
+      sampleKeys.add(sampleKey)
+    }
+    if (sampleByPool.has(pool.id)) requireIntegrity(sampleByPool.get(pool.id) === Boolean(sampleKey))
+    sampleByPool.set(pool.id, Boolean(sampleKey))
   }
   requireIntegrity(usedPools.size === pools.size)
 
