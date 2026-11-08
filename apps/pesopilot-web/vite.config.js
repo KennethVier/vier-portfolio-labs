@@ -9,6 +9,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Retain Vite 5's browser targets rather than raising them on upgrade.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
     rollupOptions: {
       output: {
         manualChunks: {
@@ -22,6 +24,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Preserve the existing mock lifecycle across the Vitest 5 migration.
+    clearMocks: false,
     setupFiles: ['./src/test/setup.js'],
   },
 })

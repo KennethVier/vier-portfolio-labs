@@ -36,7 +36,7 @@ const optionalGoalId = z.preprocess((value) => {
 export const savingsSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than zero'),
   source: z.enum(SAVINGS_SOURCES, {
-    errorMap: () => ({ message: 'Type is required' }),
+    error: 'Type is required',
   }),
   date: z.string().trim().min(1, 'Date is required'),
   cutoffId: optionalCutoffId,

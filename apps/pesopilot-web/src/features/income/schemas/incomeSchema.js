@@ -24,7 +24,7 @@ const optionalCutoffId = z.preprocess((value) => {
 export const incomeSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than zero'),
   source: z.enum(INCOME_SOURCES, {
-    errorMap: () => ({ message: 'Source is required' }),
+    error: 'Source is required',
   }),
   date: z.string().trim().min(1, 'Date is required'),
   cutoffId: optionalCutoffId,

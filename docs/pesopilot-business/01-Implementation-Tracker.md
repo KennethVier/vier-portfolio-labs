@@ -14,6 +14,85 @@ Status: ISOLATED FEATURE BRANCH. Not part of v1.0 release approval.
 
 Implementation notes: B1/B2/B3 are staged on a dedicated branch. The Business route includes initial product entry, stock receiving, single-product completed-sale UI, business summary, and internal event preview. Code is provisional until repository test/QA gates pass. No claim of a production-ready private URL, payment processing, or client audit export.
 
+## Business Mode Batch 5 — Dependency security hardening
+
+Date: 2026-11-08, Asia/Manila. **Local dependency gates passed; draft review and existing pilot acceptance gates remain open.** This does not mark Business Mode or any milestone complete.
+
+Branch: `feature/pesopilot-business-dependency-hardening`, isolated worktree `.worktrees/pesopilot-business-dependency-hardening`, based on freshly fetched parent `feature/pesopilot-business-qa` at `91cb900a18a4a09bbdb693715405bdc961e0e606` (draft PR #7). Existing uncommitted Personal/Insights work in the original checkout is preserved. PRs #4–#7 remain unmerged. No Source of Truth, database schema, finance calculations, payment semantics or production release change.
+
+### Verified versions and advisory results
+
+Read the complete [Batch 4 security report](05-Dependency-Security-Review.md). Reinstalled its exact lockfile before modifications: **110 files / 1,163 tests passed**. Fresh npm advisory output reproduced **9 affected packages: 2 critical, 2 high, 5 moderate**. Counts are affected packages, including inherited findings, not independently exploitable issues.
+
+| Dependency | Before (installed) | After (installed) | Decision / advisory outcome |
+| --- | --- | --- | --- |
+| Vitest | 2.1.9 | 5.1.0 | Reviewed v3/v4/v5 migration guides; patched UI/API and mock infrastructure. Node 24 satisfies its engine and Vite peer requirements. |
+| tinypool | 1.1.1 | Removed | Vitest 5 no longer depends on it; both worker prototype-pollution/RCE findings leave the graph. No transitive override. |
+| Vite | 5.4.21 | 7.3.7 | Chose the patched Vite 7 line rather than Vite 8's additional Rolldown/Oxc migration. Audit reports no finding for the resolved version. |
+| esbuild | 0.21.5 | 0.28.2 | Resolved normally through Vite; development-server cross-origin finding removed. |
+| vite-node | 2.1.9 | Removed | Replaced upstream by Vitest's Vite module runner. |
+| @vitest/mocker | 2.1.9 | 5.1.0 | Version matched to Vitest; both traversal and manual mock-registration findings removed. |
+| @vitejs/plugin-react | 4.7.0 | 4.7.0 | Existing peer range explicitly includes Vite 7; no unnecessary plugin major migration. Latest registry release checked: 6.2.1 requires Vite 8. |
+| Zod | 3.25.76 | 4.6.7 | Patched collection-exhaustion advisory requires >=4.6.6; migrated actual imports to Zod 4, with no `zod/v3` compatibility escape. |
+| @hookform/resolvers | 5.4.0 | 5.4.0 | Installed resolver already imports `zod/v4/core` and handles Zod 4 errors. Its React Hook Form peer requirement is satisfied. Latest 7.0.3 checked; an unrelated resolver major is unnecessary. |
+| React Router DOM / React Router | 6.30.6 / 6.30.6 | 7.18.5 / 7.18.5 | Patched open-redirect and manual SSR hydration findings (fix >=7.18.0); retained supported DOM re-exports to avoid a broad import rewrite. |
+| Dexie | 4.4.3 | 4.4.3 | Persistence implementation and schemas unchanged; full transaction/migration/restore regressions pass. |
+
+Registry metadata checked for current stable releases, engines and peer compatibility (including Vite 8.3.6, Vitest 5.1.0, Zod 4.6.7 and Router DOM 7.18.5). Direct upgraded dependencies are exact-pinned and the lockfile is committed. No `npm audit fix`, force upgrades, overrides, exclusions or severity waivers were used. Final clean-install audit: **0 critical / 0 high / 0 moderate / 0 low / 0 info; exit 0**.
+
+### Incremental changes and regression evidence
+
+1. Development-only commit `5091457`: Vite/Vitest and their resolved build/test dependencies. All original 1,163 tests and local build passed before runtime changes. Explicit build targets retain Vite 5's `es2020`, Edge 88, Firefox 78, Chrome 87 and Safari 14 targets. `clearMocks: false` retains the prior mock lifecycle under Vitest 5; test isolation remains enabled. Declared Node `^24.0.0`, matching existing CI and Vercel settings.
+2. Zod commit `2a0b935`: replaced removed `errorMap`, `invalid_type_error` and `required_error` options with `error` in Income, Savings, Savings Goals and Salary Cutoff. Kept preprocessing, defaults, transforms, numeric constraints and backup bounds. Baseline passed after migration; then **1,177 tests** passed with added resolver/backup cases, and lint passed.
+3. Router commit `2f273ca`: upgraded both packages through the DOM dependency. Reviewed transition/lazy loading, splat matching, hydration, fetchers, form methods and action revalidation. App lazy components already live at module scope; no splat routes, fetchers, Router actions or SSR hydration require migration. **1,181 tests** passed with added route cases. Existing first-use choice, existing-user bypass, direct URLs, both workspace switches and history checks remain intact.
+4. App-only Vercel branch suppression and Business CI now include PRs targeting `feature/pesopilot-business-qa` and the high-severity audit gate. Existing action SHA pins and unrelated frontend CI are unchanged.
+
+**18 new behavior regressions:** 13 parameterized resolver cases cover custom field errors for blank/missing/unknown enums, invalid cutoff money and payday order, and parsed values across all six Personal form schemas (coercion, nulls, defaults, numeric IDs and custom cutoff transforms). One backup case rejects string/unsafe/fractional numbers and invalid/local-only datetimes without changing any Business store. Four actual-router cases cover Business-to-Personal lazy Expenses/Income/Savings transitions, preserved Personal records, onboarding bypass, deep-link search/hash and audit history back/forward without starting Personal cutoff flows. New tests initially needed test-selector corrections to match the actual Personal page titles; no application behavior was changed to satisfy them.
+
+The retained suite covers Business backup round trips for all six stores, original sales snapshots, legacy migration event payloads, invalid relationships/centavos, bounded imports, owner confirmation, stale-review detection and failed-write rollback. It also covers shared-pool stock contention, independent-connection idempotency, Cash/GCash/Coop Pay, Manila dates, historical opening balances and unchanged Personal stores. This is automated regression evidence, not real-browser acceptance.
+
+### Final local gates
+
+Run from this worktree's `apps/pesopilot-web` with `npm.cmd` on Windows (same npm scripts), Node **24.16.0**, npm **11.13.0**:
+
+| Required command | Actual final result |
+| --- | --- |
+| `npm ci` | PASS, exit 0 — 413 packages installed, 414 audited, zero vulnerabilities |
+| `npm run test` | PASS, exit 0 — 111 files / 1,181 tests, zero failures |
+| `npm run lint` | PASS, exit 0 — zero errors/warnings |
+| `npm run build` | PASS, exit 0 — 961 modules; local production bundle only |
+| `npm audit --audit-level=high` | PASS, exit 0 — zero vulnerabilities across all severities |
+
+Build emits two upstream Zod comments that Rollup interprets as misplaced purity annotations; Rollup removes those comments and completes the build. No warnings are suppressed. Initial sandbox attempts could not read esbuild's ancestor directory or reach the advisory endpoint; successful validation used approved execution outside that sandbox. The initial failure is not the reported baseline or final result.
+
+### Preview prevention verified before push
+
+Read-only connected Vercel inspection identified only the intended `peso-pilot` project, `prj_WQ0CZVLzyFRhCZ6ESe2CsNagTmxC`, on team `team_nYsAJXDT0WV1eRA1oZ8qSSFx`. Native browser inspection of that project's settings confirmed repository `KennethVier/vier-portfolio-labs`, root **`apps/pesopilot-web`**, Vite, Node **24.x**, and production branch **`master`**. No dashboard setting was changed.
+
+Added to that root's `vercel.json`:
+
+```json
+"git": {
+  "deploymentEnabled": {
+    "feature/pesopilot-business-*": false
+  }
+}
+```
+
+Vercel's [supported Git configuration](https://vercel.com/docs/project-configuration/git-configuration) documents minimatch patterns, unspecified branches defaulting to enabled, and true-rule precedence. There is no conflicting true rule. Validated every configured property (`git`, `ignoreCommand`, `rewrites`, `$schema`) against its definition in the fetched [official schema](https://openapi.vercel.sh/vercel.json) using existing Ajv. The complete upstream schema mixes draft-04 metadata with newer numeric exclusive-minimum syntax in unrelated function-trigger definitions, so property validation was isolated instead of claiming whole-schema meta-validation. Existing minimatch verified the new branch plus QA/foundation/workflows/daily-audit as **disabled**, and `master`, `pesopilot-dev`, `feature/unrelated` as **enabled**. The original ignored-build command and SPA rewrite are preserved; no root-wide disable, production workflow or unrelated app/project was changed. This is pre-push configuration verification, not a test deployment.
+
+Suppression applies to commits containing this configuration. Existing PR branches still need this control before their next app push; do not push those older branches assuming this branch has changed them. Existing READY Batch 4 preview is not removed by disabling future Git deployments. Manual CLI deploys/hooks are separate mechanisms and remain unauthorized.
+
+### Remaining risks and review status
+
+No unresolved dependency advisory remains in the final npm audit; no risk acceptance/waiver is requested. Scoped OWASP Top 10:2025 and applicable ASVS 5.0 review covered supply-chain resolution, strict validation/error propagation, backup bounds, transaction integrity and deployment configuration. No new HTML execution, secret access, financial logging, external backup transfer or persistence mutation path was added; this is not a compliance certification or guarantee against unknown vulnerabilities.
+
+Existing release gates remain: real-browser/mobile/keyboard and native recovery testing, offline cold reload, actual storage failure/multi-tab behavior, local-only unauthenticated access and plaintext backups, owner/client acceptance of provisional inventory/payment/audit semantics. These are not waived by passing automated gates. PRs #4–#7 remain unmerged; no deployment/promotion is authorized.
+
+Remote publication verified: [draft PR #8](https://github.com/KennethVier/vier-portfolio-labs/pull/8) targets `feature/pesopilot-business-qa`; implementation/configuration head `b919448d0c3c85ea664d9f297539c65918483f78`. [GitHub Actions run 42445051058](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/42445051058) **PASS** on Linux, Node **24.22.2**, npm **11.19.1**. Read job logs: `npm ci`, **111 files / 1,181 tests**, lint, build (**961 modules**) and `npm audit --audit-level=high` all passed; both install audit and final audit report **zero vulnerabilities**. Repeated read-only Vercel checks after push/PR creation and CI completion returned **zero deployments** for both the exact commit and the new branch. Preview suppression therefore also has post-push evidence; no test preview was created. The following evidence-only tracker commit does not change app/configuration behavior; its final CI result is reported with the PR handoff.
+
+Primary migration references: [Vite 6](https://v6.vite.dev/guide/migration), [Vite 7](https://v7.vite.dev/guide/migration), [Vitest 3](https://v3.vitest.dev/guide/migration), [Vitest 4](https://v4.vitest.dev/guide/migration), [Vitest 5](https://vitest.dev/guide/migration/), [Zod 4](https://zod.dev/v4/changelog), [Router v6-to-v7](https://github.com/remix-run/react-router/blob/react-router%407.18.5/docs/upgrading/v6.md). Advisory URLs and original reachability assessments remain in the unchanged [Batch 4 report](05-Dependency-Security-Review.md), superseded by the resolved versions and audit results above.
+
 ## Business Mode Batch 4 — Independent QA, reliability, security and backup
 
 Date: 2026-11-08, Asia/Manila. Implementation and local automated validation performed; **browser/security/client acceptance gates remain open**. This section does not mark Business Mode complete or production-ready. Earlier batch notes below describe their historical state; this section supersedes their backup/CI status.
