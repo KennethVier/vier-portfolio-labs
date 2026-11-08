@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
+import { setActiveWorkspace } from '@/features/business/services/workspacePreference.js'
 import { ensureApplicationDefaults } from '@/lib/db/seed.js'
 import {
   FIRST_USE_WELCOME_KEY,
@@ -64,6 +65,11 @@ export function AppLayout({ children }) {
       return undefined
     }
 
+    if (!isStorageFlagSet(FIRST_USE_WELCOME_KEY)) {
+      setIsWelcomeOpen(true)
+      return undefined
+    }
+
     let isMounted = true
 
     async function checkCutoffLifecycle() {
@@ -81,10 +87,6 @@ export function AppLayout({ children }) {
 
     checkCutoffLifecycle()
 
-    if (!isStorageFlagSet(FIRST_USE_WELCOME_KEY)) {
-      setIsWelcomeOpen(true)
-    }
-
     return () => {
       isMounted = false
     }
@@ -95,9 +97,10 @@ export function AppLayout({ children }) {
     setIsWelcomeOpen(false)
   }
 
-  function startWelcomeFlow() {
+  function startWelcomeFlow(workspace) {
+    setActiveWorkspace(workspace)
     dismissWelcome()
-    navigate('/salary-cutoff')
+    navigate(workspace === 'business' ? '/business' : '/salary-cutoff')
   }
 
   function dismissCutoffNotice() {
@@ -140,30 +143,43 @@ export function AppLayout({ children }) {
         {startupStatus === 'ready' ? children : null}
       </PageContainer>
       <Modal
-        description="PesoPilot is built around salary-funded spending cycles."
+        description="Choose a workspace. You can switch later without mixing records."
         footer={
-          <>
-            <Button variant="ghost" onClick={dismissWelcome}>
-              Skip
-            </Button>
-            <Button onClick={startWelcomeFlow}>
-              Get Started
-            </Button>
-          </>
+          <Button variant="ghost" onClick={dismissWelcome}>
+            Continue Personal without setup
+          </Button>
         }
         isOpen={isWelcomeOpen}
         onClose={dismissWelcome}
-        size="md"
-        title="Welcome to PesoPilot"
+        size="lg"
+        title="How will you use PesoPilot?"
       >
-        <ol className="space-y-2 rounded border border-outline-variant bg-surface-container-low p-3 text-body-sm text-on-surface-variant">
-          <li>1. Create a Salary Cutoff</li>
-          <li>2. Record your Income</li>
-          <li>3. Create a Savings Goal</li>
-          <li>4. Add Savings Contributions</li>
-          <li>5. Track Expenses</li>
-          <li>6. Review Reports</li>
-        </ol>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => startWelcomeFlow('personal')}
+            className="rounded border border-outline-variant p-4 text-left hover:border-primary hover:bg-surface-container-low"
+          >
+            <strong className="block font-heading text-lg">Personal Finance</strong>
+            <span className="mt-2 block text-sm text-content-muted">
+              Salary cutoffs, income, expenses, savings, and insights.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => startWelcomeFlow('business')}
+            className="rounded border border-outline-variant p-4 text-left hover:border-primary hover:bg-surface-container-low"
+          >
+            <strong className="block font-heading text-lg">Business Owner</strong>
+            <span className="mt-2 block text-sm text-content-muted">
+              Inventory, Cash/Coop sales, and local activity history. No salary cutoff.
+            </span>
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-content-muted">
+          Business records are stored on this device. This does not provide
+          a password-protected or shared online account yet.
+        </p>
       </Modal>
       <Modal
         description="PesoPilot could not find a salary cutoff covering today. Create the current cycle so new income, expenses, savings, dashboard, and cashflow values have the right period."
