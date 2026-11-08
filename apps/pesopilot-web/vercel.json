@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "feature/pesopilot-business-*": false
+      "feature/pesopilot-business-*": false,
+      "test/pesopilot-ipad-preview": true
     }
   },
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
