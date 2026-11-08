@@ -65,6 +65,41 @@ async function render() {
 }
 
 describe('actual workspace routes and first-use selection', () => {
+  it.each([
+    ['/expenses', 'Official expense records'],
+    ['/income', 'Income Management'],
+    ['/savings', 'Savings Strategy'],
+  ])('loads the lazy Personal %s route from Business after the Router 7 migration', async (path, pageText) => {
+    setActiveWorkspace('business')
+    // Existing Personal records must continue bypassing first-use selection.
+    await db.expenses.add({ amount: 100, merchant: 'Existing personal expense' })
+    await navigate('/business')
+    await render()
+    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await navigate(`${path}?from=business#ledger`)
+    await settle(() => expect(container.textContent).toContain(pageText))
+    expect(router.state.location).toMatchObject({ pathname: path, search: '?from=business', hash: '#ledger' })
+    expect(getActiveWorkspace()).toBe('personal')
+    expect(container.textContent).not.toContain('How will you use PesoPilot?')
+    expect((await db.expenses.toArray())[0].merchant).toBe('Existing personal expense')
+  })
+
+  it('retains audit deep-link query/hash and workspace isolation through back and forward navigation', async () => {
+    setActiveWorkspace('business')
+    await navigate('/business')
+    await render()
+    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await navigate('/business/audit?from=history#totals')
+    await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
+    await navigate(-1)
+    await settle(() => expect(container.textContent).toContain('Manual stock adjustment'))
+    await navigate(1)
+    await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
+    expect(router.state.location).toMatchObject({ pathname: '/business/audit', search: '?from=history', hash: '#totals' })
+    expect(getActiveWorkspace()).toBe('business')
+    expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
+  })
+
   it('opens the dedicated audit route without mounting Personal cutoff flows', async () => {
     await navigate('/business/audit')
     await render()
