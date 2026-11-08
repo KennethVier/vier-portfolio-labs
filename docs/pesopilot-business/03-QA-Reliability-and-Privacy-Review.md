@@ -6,7 +6,7 @@ Date: 2026-11-08, Asia/Manila. Proposed v1.1 only. **Not production-ready or app
 
 Reviewed the cumulative foundation, workflows and daily-audit implementation from PRs #4-#6, including routing, workspace preferences, products, adjustments, owner confirmation, shared inventory, three manual payment labels, idempotency, historical reports, v1/v2 migration, Personal isolation and Personal backup contracts. Read the Business proposal/tracker/audit architecture and approved v1.0 source, frontend architecture, security/privacy, testing and UI v2 authority before changes. The v1.0 Source of Truth, Personal schema and Personal business logic remain unchanged.
 
-Created `feature/pesopilot-business-qa` in `.worktrees/pesopilot-business-qa` from freshly fetched `origin/feature/pesopilot-business-daily-audit` (`1aa904f2d2a0b49f3e361818b0547e1abb31eb86`). PR #6 was verified open and targeting `feature/pesopilot-business-workflows`; #5 targets foundation, #4 targets `pesopilot-dev`. Original uncommitted Insights/Personal work was preserved. No changes to those PRs, no merges and no deployment.
+Created `feature/pesopilot-business-qa` in `.worktrees/pesopilot-business-qa` from freshly fetched `origin/feature/pesopilot-business-daily-audit` (`1aa904f2d2a0b49f3e361818b0547e1abb31eb86`). PR #6 was verified open and targeting `feature/pesopilot-business-workflows`; #5 targets foundation, #4 targets `pesopilot-dev`. Original uncommitted Insights/Personal work was preserved. No changes to those PRs or merges. No deployment command was run, but the existing Vercel Git integration automatically published a preview after the required QA push; see the deployment exception below.
 
 ## Findings and changes
 
@@ -32,7 +32,7 @@ Windows, Node `v24.16.0`, locked npm dependencies; commands run in `apps/pesopil
 | `npm run lint` | Pass: zero errors/warnings after correcting an unescaped JSX apostrophe. |
 | `npm run build` | Pass: 926 modules; local production output generated. |
 | `npm audit --audit-level=high` | Fail, exit 1: 9 affected packages (2 critical, 2 high, 5 moderate). |
-| Remote GitHub Actions | Recorded in the Batch 4 tracker after draft PR creation; local results above are not remote CI evidence. |
+| Remote GitHub Actions | Pass: [run 42443263903](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/42443263903) on draft PR #7, implementation commit `bdc71dd`. Linux / Node 24.22.2; npm ci, 110 files / 1,163 tests, lint and build all passed. Job duration 38 seconds. Logs inspected separately from local evidence. |
 
 Added tests cover all-store backup round trips, all payment labels, original snapshots, shared pools, preserved Personal tables, malformed/version-mismatched/extra/missing datasets, duplicate IDs/keys/lines/events, orphan links, fractional amounts, inconsistent totals, stock chains, reasons, event payloads, bounded files/collections, explicit owner confirmation, cancellation, rapid duplicate restore clicks, post-commit refresh errors, stale restore review, final-write failure rollback, independent-connection idempotency/contention, and failed migration rollback/retry. A valid migrated v1 Cash/Coop fixture retains legacy event payloads and accepts a later GCash sale. Existing migration reopening, audit sample/Manila date boundaries, workflow/UI and workspace regressions also pass.
 
@@ -70,6 +70,8 @@ For a cost-conscious Philippine owner, a **controlled single-device pilot** can 
 Genuinely private remote access requires a separately approved identity/session model and server-enforced access/authorization (or an authenticated access gateway protecting the complete app), threat model and recovery procedure. Protecting static access alone still does not synchronize or secure an already unlocked local database. Remote shared data would need an authorized storage/API design with per-owner authorization, protected backups and auditability. Those are future decisions; no auth, staff, remote database or sync was implemented.
 
 Before any deployment: address/accept dependency findings through review, use HTTPS and a stable controlled origin, review CSP and security headers without weakening application behavior, avoid exposing Vite/Vitest development servers or source secrets, test the production build and storage failure behavior, prove browser/offline/backup recovery, and agree who can access the device and backup files. Deployment configuration was not changed in this batch.
+
+Deployment exception: the required Git push triggered the repository's existing Vercel integration. Read-only inspection confirmed project `peso-pilot`, QA commit `bdc71dd`, Git source, preview deployment `dpl_56tqPEjEerhAmfzQsspoAFYXhroa`, state `READY`; logs show the actual QA build. No production promotion/deploy command or Vercel/Render configuration mutation occurred, but this automatic preview means the no-deployment instruction was not fully satisfied. Connected Vercel tools support cancellation only while a build is in progress; they do not expose deletion of the completed preview. Disable automatic previews for these branches and review/remove that generated preview separately. No customer browser records or backup files were uploaded by this work. This preview is not a release or validation gate.
 
 ## Release gates and client decisions
 
