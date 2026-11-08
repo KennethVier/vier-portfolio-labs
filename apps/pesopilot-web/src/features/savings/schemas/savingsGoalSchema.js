@@ -18,10 +18,10 @@ export const savingsGoalSchema = z.object({
   targetAmount: optionalAmount,
   targetDate: optionalString,
   priority: z.enum(SAVINGS_GOAL_PRIORITIES, {
-    errorMap: () => ({ message: 'Priority is required' }),
+    error: 'Priority is required',
   }),
   status: z.enum(SAVINGS_GOAL_STATUSES, {
-    errorMap: () => ({ message: 'Status is required' }),
+    error: 'Status is required',
   }),
   note: optionalString,
 })

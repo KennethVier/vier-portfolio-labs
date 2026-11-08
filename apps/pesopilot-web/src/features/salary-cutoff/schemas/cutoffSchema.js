@@ -23,8 +23,7 @@ const optionalPayday = z.preprocess((value) => {
 const money = (message) =>
   z.coerce
     .number({
-      invalid_type_error: message,
-      required_error: message,
+      error: message,
     })
     .min(0, message)
 
@@ -32,7 +31,7 @@ export const cutoffSchema = z
   .object({
     name: requiredString('Name is required'),
     type: z.enum(CUTOFF_TYPE_VALUES, {
-      errorMap: () => ({ message: 'Type is required' }),
+      error: 'Type is required',
     }),
     payday1: optionalPayday,
     payday2: optionalPayday,
@@ -41,7 +40,7 @@ export const cutoffSchema = z
     endDate: optionalDateString,
     expectedIncome: money('Expected income must be zero or greater'),
     status: z.enum(CUTOFF_STATUS_VALUES, {
-      errorMap: () => ({ message: 'Status is required' }),
+      error: 'Status is required',
     }),
   })
   .superRefine((cutoff, context) => {

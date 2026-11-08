@@ -77,8 +77,8 @@ function sameSnapshot(snapshot, saved) {
 }
 
 export function validateBusinessBackup(input) {
-  // Bound work before Zod 3 traverses collections or accumulates validation
-  // issues. In particular, do not rely on array.max() to stop parsing early.
+  // Retain independent work limits before schema parsing, including for
+  // nested/unknown fields. Do not rely solely on the schema's array limits.
   let nodes = 0
   function bound(value, depth = 0) {
     nodes += 1

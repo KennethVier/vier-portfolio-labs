@@ -54,6 +54,23 @@ describe('Business-only backup integrity and atomic replacement', () => {
     expect(await businessDb.products.count()).toBe(0)
   })
 
+  it('rejects unsafe numeric and invalid datetime records without coercion or writes after the Zod migration', async () => {
+    await fixture()
+    const before = await snapshot()
+    for (const corrupt of [
+      (b) => { b.stores.products[0].unitPriceCentavos = '19999' },
+      (b) => { b.stores.products[0].unitPriceCentavos = Number.MAX_SAFE_INTEGER + 1 },
+      (b) => { b.stores.products[0].stockQuantity = 1.5 },
+      (b) => { b.stores.sales[0].confirmedAt = '2026-02-30T00:00:00Z' },
+      (b) => { b.stores.sales[0].confirmedAt = '2026-11-08T00:00:00' },
+    ]) {
+      const backup = await readBackup()
+      corrupt(backup)
+      await expect(businessBackupService.prepareRestore(JSON.stringify(backup))).rejects.toThrow(/backup/i)
+      expect(await snapshot()).toEqual(before)
+    }
+  })
+
   it('bounds nested and oversized collections before schema parsing', async () => {
     const nested = { value: null }
     let child = nested
