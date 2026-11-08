@@ -6,13 +6,9 @@ import { ErrorState } from '@/components/ui/ErrorState.jsx'
 import { LoadingState } from '@/components/ui/LoadingState.jsx'
 import { Modal } from '@/components/ui/Modal.jsx'
 import { cutoffService } from '@/features/salary-cutoff/services/cutoffService.js'
-import { setActiveWorkspace } from '@/features/business/services/workspacePreference.js'
+import { workspaceService } from '@/features/business/services/workspaceService.js'
+import { useWorkspaceRoute } from '@/features/business/hooks/useWorkspaceRoute.js'
 import { ensureApplicationDefaults } from '@/lib/db/seed.js'
-import {
-  FIRST_USE_WELCOME_KEY,
-  isStorageFlagSet,
-  setStorageFlag,
-} from '@/components/guidance/guidanceStorage.js'
 
 import { Header } from './Header.jsx'
 import { HeaderProvider } from './HeaderContent.jsx'
@@ -29,6 +25,7 @@ export function AppLayout({ children }) {
   const [startupError, setStartupError] = useState(null)
   const [startupRetryKey, setStartupRetryKey] = useState(0)
   const [startupStatus, setStartupStatus] = useState('loading')
+  useWorkspaceRoute('personal', startupStatus === 'ready' && !isWelcomeOpen)
 
   useEffect(() => {
     let isMounted = true
@@ -38,9 +35,11 @@ export function AppLayout({ children }) {
       setStartupError(null)
 
       try {
+        const offerChoice = await workspaceService.shouldOfferChoice()
         await ensureApplicationDefaults()
 
         if (isMounted) {
+          setIsWelcomeOpen(offerChoice)
           setStartupStatus('ready')
         }
       } catch (defaultsError) {
@@ -65,8 +64,7 @@ export function AppLayout({ children }) {
       return undefined
     }
 
-    if (!isStorageFlagSet(FIRST_USE_WELCOME_KEY)) {
-      setIsWelcomeOpen(true)
+    if (isWelcomeOpen) {
       return undefined
     }
 
@@ -90,16 +88,16 @@ export function AppLayout({ children }) {
     return () => {
       isMounted = false
     }
-  }, [startupStatus])
+  }, [startupStatus, isWelcomeOpen])
 
   function dismissWelcome() {
-    setStorageFlag(FIRST_USE_WELCOME_KEY)
+    workspaceService.rememberRoute('personal')
     setIsWelcomeOpen(false)
   }
 
   function startWelcomeFlow(workspace) {
-    setActiveWorkspace(workspace)
     dismissWelcome()
+    workspaceService.rememberRoute(workspace)
     navigate(workspace === 'business' ? '/business' : '/salary-cutoff')
   }
 
