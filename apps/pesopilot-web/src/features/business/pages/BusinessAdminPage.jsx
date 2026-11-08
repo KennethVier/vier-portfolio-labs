@@ -23,7 +23,7 @@ export function BusinessAdminPage({ screen }) {
   const disabled = workspace.isLoading || Boolean(workspace.error)
   const actualProducts = workspace.products.filter((product) => !product.catalog?.sampleKey)
   return <BusinessShell>
-    <div><h1 className="font-heading text-3xl font-semibold">{headings[screen][0]}</h1><p className="mt-2 text-content-muted">{headings[screen][1]}</p></div>
+    <div className="business-page-heading"><h1 className="font-heading text-3xl font-semibold">{headings[screen][0]}</h1><p className="mt-2 text-content-muted">{headings[screen][1]}</p></div>
     <WorkspaceStatus workspace={workspace} />
     {screen === 'inventory' ? <>
       <p className="rounded-lg border border-outline-variant bg-surface-container-low p-4 text-sm text-content-muted">Sample products are labeled below; their stock is fictional. Each sample variant has independent stock. Actual products can share stock only when you explicitly select an existing group.</p>

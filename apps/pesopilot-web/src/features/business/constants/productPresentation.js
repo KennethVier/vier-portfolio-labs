@@ -7,13 +7,13 @@ export function productFamilyId(product) {
 }
 
 export const CATEGORY_SURFACES = {
-  Shawls: '#EBF3FF',
-  'Hallelujah Inhaler': '#E8F6EF',
-  'Hallelujah Rub': '#FFF0E7',
-  'Hallelujah Roll': '#F0EBFF',
-  'Reigna Aroma Rub': '#FCECF1',
-  'Reigna Aroma Roll': '#E5F7F3',
-  'Magic Pillows': '#FFF4E2',
+  Shawls: '#F3EBDD',
+  'Hallelujah Inhaler': '#EEF1E8',
+  'Hallelujah Rub': '#F7EDE2',
+  'Hallelujah Roll': '#EEEDF4',
+  'Reigna Aroma Rub': '#F4E9E7',
+  'Reigna Aroma Roll': '#EAF1EC',
+  'Magic Pillows': '#F6EDDA',
 }
 
 export const PRODUCT_PHOTO_MAX_INPUT = 2 * 1024 * 1024

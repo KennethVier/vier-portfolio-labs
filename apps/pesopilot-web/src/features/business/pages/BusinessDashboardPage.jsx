@@ -33,13 +33,13 @@ export function BusinessDashboardPage() {
   const disabled = isLoading || Boolean(error)
 
   return <BusinessShell>
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="business-page-heading flex flex-wrap items-center justify-between gap-4">
       <div><p className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">Point of sale</p><h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Record Sales</h1><p className="mt-2 text-base text-content-muted">Select a product to record a sale.</p></div>
       <div className="catalog-utilities flex flex-wrap items-center gap-3">
         {hasSample ? <div aria-label="Catalog source" className="flex rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
           {[false, true].map((value) => <Button key={String(value)} variant={sample === value ? 'primary' : 'ghost'} aria-pressed={sample === value} onClick={() => { setSampleChoice(value); setCategory('All Products'); setSearch('') }}>{value ? 'Sample Catalog' : 'Actual Inventory'}</Button>)}
         </div> : null}
-        <details className="sample-utilities"><summary>Sample utilities</summary><div className="pt-2"><p className="mb-2 text-xs text-content-muted">Development tools · fictional inventory only</p><SampleCatalogAction loadSampleCatalog={workspace.loadSampleCatalog} disabled={disabled} onLoaded={() => { setSampleChoice(true); setCategory('All Products'); setSearch('') }} /></div></details>
+        <details className="sample-utilities"><summary>Sample utilities</summary><div className="sample-utilities-panel pt-2"><p className="mb-2 text-xs text-content-muted">Development tools · fictional inventory only</p><SampleCatalogAction loadSampleCatalog={workspace.loadSampleCatalog} disabled={disabled} onLoaded={() => { setSampleChoice(true); setCategory('All Products'); setSearch('') }} /></div></details>
       </div>
     </div>
     {sample ? <div className="sample-notice rounded-lg border p-3 text-sm"><strong>Sample catalog · fictional stock.</strong> Test recordings appear as Sample in audit and history. These quantities are separate from actual inventory.</div> : null}

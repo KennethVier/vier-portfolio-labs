@@ -9,11 +9,11 @@ const links = [
 ]
 
 export function BusinessShell({ children }) {
-  return <div className="business-touch min-h-screen bg-surface font-body text-content">
+  return <div className="business-touch min-h-screen">
     <header className="border-b border-outline-variant bg-surface-container-lowest">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-4 sm:px-8">
-        <Link to="/business" className="flex min-h-11 items-center gap-3 rounded focus-visible:outline-primary">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-white"><BusinessIcon name="pos" /></span>
+        <Link to="/business" className="business-brand flex min-h-11 items-center gap-3 rounded focus-visible:outline-primary">
+          <span className="business-brand-mark flex h-11 w-11 items-center justify-center rounded-lg"><BusinessIcon name="pos" /></span>
           <span><span className="block font-heading text-xl font-semibold tracking-tight">PesoPilot <span className="text-primary">Business</span></span><span className="block text-xs text-content-muted">Your daily sales workspace</span></span>
         </Link>
         <nav aria-label="Business navigation" className="flex w-full gap-1 overflow-x-auto xl:w-auto">

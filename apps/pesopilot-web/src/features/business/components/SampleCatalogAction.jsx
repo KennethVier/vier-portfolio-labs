@@ -18,7 +18,7 @@ export function SampleCatalogAction({ loadSampleCatalog, disabled, onLoaded }) {
     }, 'Sample catalog ready. Existing records and fictional remaining stock were preserved.')) setOpen(false)
   }
 
-  return <div>
+  return <div className="sample-catalog-action">
     <Button variant="secondary" disabled={disabled || action.saving} onClick={() => { setConfirmed(false); setOpen(true) }}>Load Sample Catalog</Button>
     {action.notice ? <p role="status" className="mt-2 max-w-sm text-xs text-secondary">{action.notice}</p> : null}
     {open ? <BusinessDialog title="Load sample catalog?" canClose={!action.saving} onClose={() => setOpen(false)}>
