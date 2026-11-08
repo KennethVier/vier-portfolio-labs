@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 
-import { setActiveWorkspace } from '@/features/business/services/workspacePreference.js'
 
 const navItems = [
   { icon: 'dashboard', label: 'Dashboard', to: '/dashboard' },
@@ -50,7 +49,6 @@ function Navigation({ onNavigate }) {
           key={item.to}
           to={item.to}
           onClick={() => {
-            if (item.business) setActiveWorkspace('business')
             onNavigate?.()
           }}
           className={({ isActive }) =>

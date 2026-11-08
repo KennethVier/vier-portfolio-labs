@@ -30,10 +30,11 @@ function parsePriceCentavos(input) {
 export const businessService = {
   listProducts: () => businessRepository.listProducts(),
   listSales: () => businessRepository.listSales(),
+  listSalesHistory: () => businessRepository.listSalesHistory(),
   listAuditEvents: () => businessRepository.listAuditEvents(),
 
   async addProduct({ name, pricePesos, openingStock = 0 }) {
-    const cleanName = String(name ?? '').trim()
+    const cleanName = typeof name === 'string' ? name.trim() : ''
     if (!cleanName || cleanName.length > 120) {
       throw new Error('Product name must contain 1–120 characters')
     }
@@ -47,17 +48,33 @@ export const businessService = {
     return businessRepository.addProduct(product)
   },
 
-  receiveStock({ productId, quantity }) {
+  adjustStock({ productId, quantity, direction, reason }) {
     assertQuantity(quantity)
-    if (!productId) throw new Error('Product is required')
-    return businessRepository.receiveStock({
+    if (typeof productId !== 'string' || !productId.trim()) throw new Error('Product is required')
+    if (!['add', 'remove'].includes(direction)) throw new Error('Choose add or remove stock')
+    const cleanReason = typeof reason === 'string' ? reason.trim() : ''
+    if (!cleanReason || cleanReason.length > 240) {
+      throw new Error('Adjustment reason must contain 1–240 characters')
+    }
+    return businessRepository.adjustStock({
       productId,
-      quantity,
+      delta: direction === 'add' ? quantity : -quantity,
+      reason: cleanReason,
       occurredAt: new Date().toISOString(),
     })
   },
 
-  completeSale({ items, paymentMethod, requestKey }) {
+  previewSale(product, quantity) {
+    if (!product) throw new Error('Select a product')
+    assertQuantity(quantity)
+    if (quantity > product.stockQuantity) throw new Error('Insufficient stock')
+    const totalCentavos = product.unitPriceCentavos * quantity
+    if (!Number.isSafeInteger(totalCentavos)) throw new Error('Sale amount exceeds supported limit')
+    return { quantity, unitPriceCentavos: product.unitPriceCentavos, totalCentavos }
+  },
+
+  async completeSale({ items, paymentMethod, requestKey, ownerConfirmed }) {
+    if (ownerConfirmed !== true) throw new Error('Owner confirmation is required')
     if (!BUSINESS_PAYMENT_METHODS.includes(paymentMethod)) {
       throw new Error('Choose Cash or Coop')
     }
@@ -69,12 +86,16 @@ export const businessService = {
     }
 
     const seen = new Set()
-    const validatedItems = items.map(({ productId, quantity }) => {
+    const validatedItems = items.map(({ productId, quantity, expectedUnitPriceCentavos }) => {
       if (typeof productId !== 'string' || !productId.trim() || seen.has(productId)) {
         throw new Error('Each sale item must reference a different product')
       }
       seen.add(productId)
-      return { productId, quantity: assertQuantity(quantity) }
+      if (expectedUnitPriceCentavos !== undefined &&
+          (!Number.isSafeInteger(expectedUnitPriceCentavos) || expectedUnitPriceCentavos < 1)) {
+        throw new Error('Invalid reviewed price')
+      }
+      return { productId, quantity: assertQuantity(quantity), expectedUnitPriceCentavos }
     })
 
     return businessRepository.commitConfirmedSale({
@@ -85,6 +106,18 @@ export const businessService = {
         confirmedAt: new Date().toISOString(),
       },
       items: validatedItems,
+    }).catch((error) => {
+      // Dexie rejects only after aborting the transaction. Editing is safe in this case.
+      error.saleNotRecorded = true
+      throw error
     })
+  },
+
+  summarizeSales(sales) {
+    return sales.reduce((summary, sale) => ({
+      totalCentavos: summary.totalCentavos + sale.totalCentavos,
+      cashCentavos: summary.cashCentavos + (sale.paymentMethod === 'cash' ? sale.totalCentavos : 0),
+      coopCentavos: summary.coopCentavos + (sale.paymentMethod === 'coop' ? sale.totalCentavos : 0),
+    }), { totalCentavos: 0, cashCentavos: 0, coopCentavos: 0 })
   },
 }

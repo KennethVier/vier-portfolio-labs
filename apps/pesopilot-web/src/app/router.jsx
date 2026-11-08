@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, redirect } from 'react-router-dom'
 
 import { App } from './App.jsx'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage.jsx'
@@ -10,12 +10,6 @@ const BusinessDashboardPage = lazy(() =>
     default: module.BusinessDashboardPage,
   })),
 )
-
-function RootLanding() {
-  return getActiveWorkspace() === 'business'
-    ? <Navigate to="/business" replace />
-    : <DashboardPage />
-}
 
 const ExpensesPage = lazy(() =>
   import('@/features/expenses/pages/ExpensesPage.jsx').then((module) => ({
@@ -120,6 +114,10 @@ const devRoutes = import.meta.env.DEV
 
 export const router = createBrowserRouter([
   {
+    path: '/',
+    loader: () => redirect(getActiveWorkspace() === 'business' ? '/business' : '/dashboard'),
+  },
+  {
     path: '/business',
     element: wrapLazyRoute(<BusinessDashboardPage />, 'Loading business workspace'),
   },
@@ -127,7 +125,6 @@ export const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <RootLanding /> },
       { path: 'dashboard', element: <DashboardPage /> },
       {
         path: 'expenses',

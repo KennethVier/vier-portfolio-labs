@@ -9,6 +9,19 @@ export const businessRepository = {
     return businessDb.sales.orderBy('confirmedAt').reverse().toArray()
   },
 
+  listSalesHistory() {
+    return businessDb.transaction('r', businessDb.sales, businessDb.saleItems, async () => {
+      const sales = await this.listSales()
+      const items = await businessDb.saleItems.toArray()
+      const bySale = new Map()
+      for (const item of items) {
+        if (!bySale.has(item.saleId)) bySale.set(item.saleId, [])
+        bySale.get(item.saleId).push(item)
+      }
+      return sales.map((sale) => ({ ...sale, items: bySale.get(sale.id) ?? [] }))
+    })
+  },
+
   listAuditEvents() {
     return businessDb.auditEvents.orderBy('occurredAt').reverse().toArray()
   },
@@ -44,7 +57,7 @@ export const businessRepository = {
     return product
   },
 
-  async receiveStock({ productId, quantity, occurredAt }) {
+  async adjustStock({ productId, delta, reason, occurredAt }) {
     return businessDb.transaction(
       'rw',
       businessDb.products,
@@ -53,13 +66,15 @@ export const businessRepository = {
       async () => {
         const product = await businessDb.products.get(productId)
         if (!product) throw new Error('Product not found')
-        const afterQuantity = product.stockQuantity + quantity
+        const afterQuantity = product.stockQuantity + delta
         if (!Number.isSafeInteger(afterQuantity)) throw new Error('Stock limit exceeded')
+        if (afterQuantity < 0) throw new Error('Insufficient stock')
         const movement = {
           productId,
           saleId: null,
-          type: 'stock_received',
-          delta: quantity,
+          type: 'stock_adjustment',
+          delta,
+          reason,
           beforeQuantity: product.stockQuantity,
           afterQuantity,
           occurredAt,
@@ -68,7 +83,7 @@ export const businessRepository = {
         await businessDb.inventoryMovements.add(movement)
         await businessDb.auditEvents.add({
           saleId: null,
-          type: 'stock_received',
+          type: 'stock_adjustment',
           occurredAt,
           payload: movement,
         })
@@ -90,7 +105,16 @@ export const businessRepository = {
           .where('requestKey')
           .equals(sale.requestKey)
           .first()
-        if (previous) return { sale: previous, duplicate: true }
+        if (previous) {
+          const previousItems = await businessDb.saleItems.where('saleId').equals(previous.id).toArray()
+          const matches = previous.paymentMethod === sale.paymentMethod &&
+            previousItems.length === items.length && items.every((item) =>
+              previousItems.some((saved) => saved.productId === item.productId &&
+                saved.quantity === item.quantity && (item.expectedUnitPriceCentavos === undefined ||
+                  saved.unitPriceCentavos === item.expectedUnitPriceCentavos)))
+          if (!matches) throw new Error('This request key already belongs to a different sale')
+          return { sale: previous, duplicate: true }
+        }
 
         let totalCentavos = 0
         const lineItems = []
@@ -99,6 +123,10 @@ export const businessRepository = {
         for (const item of items) {
           const product = await businessDb.products.get(item.productId)
           if (!product) throw new Error('Product not found')
+          if (item.expectedUnitPriceCentavos !== undefined &&
+              item.expectedUnitPriceCentavos !== product.unitPriceCentavos) {
+            throw new Error('Product price changed. Review the sale again')
+          }
           if (product.stockQuantity < item.quantity) {
             throw new Error('Insufficient stock')
           }
