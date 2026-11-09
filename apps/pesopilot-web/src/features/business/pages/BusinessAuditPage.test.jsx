@@ -47,7 +47,7 @@ it('renders grouped read-only financial columns and a distinct GCash total from 
   expect(container.textContent).toContain('Roll-On (stock group)')
   expect(container.textContent).toContain('GCash sales')
   expect(container.textContent).toContain('Asia/Manila')
-  expect(container.textContent).toContain('Cash reconciliation is unresolved')
+  expect(container.textContent).not.toMatch(/Cash reconciliation is unresolved|7,718|7,741|sample/i)
   expect(container.querySelector('[role="region"]').tabIndex).toBe(0)
 })
 

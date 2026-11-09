@@ -32,7 +32,7 @@ export function DailyAuditReport({ report }) {
       {summary.totalSold === 0 ? <p role="status">No confirmed sales for this date. Recorded inventory is shown below.</p> : null}
       <Card className="p-5">
         <h2 className="mb-2 font-heading text-lg font-semibold">Product audit</h2>
-        <p className="mb-3 text-sm text-content-muted">Stock appears once per group. Variant sales each consume one unit from that group (provisional). Scroll horizontally on smaller screens.</p>
+        <p className="mb-3 text-sm text-content-muted">Stock appears once per group. Variant sales each consume one unit from that group. Scroll horizontally on smaller screens.</p>
         <div className="audit-table-scroll overflow-x-auto rounded border border-outline-variant" role="region" aria-label="Daily product audit table" tabIndex={0}>
           <table className="w-full whitespace-nowrap text-left text-sm">
             <caption className="sr-only">Daily Sales Audit for {report.date}, Asia/Manila. All amounts are PHP. Group stock is counted once.</caption>

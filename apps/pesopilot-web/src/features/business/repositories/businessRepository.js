@@ -46,25 +46,6 @@ export function createBusinessRepository(businessDb) {
     return businessDb.auditEvents.orderBy('occurredAt').reverse().toArray()
   },
 
-  addSampleCatalog(products) {
-    return businessDb.transaction('rw', businessDb.products, businessDb.inventoryPools,
-      businessDb.inventoryMovements, businessDb.auditEvents, async () => {
-        let inserted = 0
-        for (const product of products) {
-          const existing = await businessDb.products.get(product.id)
-          if (existing) {
-            if (existing.catalog?.sampleKey !== product.catalog.sampleKey) {
-              throw new Error('Sample identifier conflicts with an existing product. Nothing was inserted.')
-            }
-            continue
-          }
-          await this.addProduct(product)
-          inserted += 1
-        }
-        return inserted
-      })
-  },
-
   async addProduct(product) {
     await businessDb.transaction(
       'rw',

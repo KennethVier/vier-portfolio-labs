@@ -217,6 +217,21 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
 export const dailyAuditService = {
   async getReport(date) {
     dateRange(date)
-    return buildDailyAudit(date, await businessRepository.readDailyAuditSource())
+    const source = await businessRepository.readDailyAuditSource()
+    const archived = new Set(source.products.filter((product) => product.catalog?.sampleKey).map((product) => product.id))
+    if (!archived.size) return buildDailyAudit(date, source)
+    const archivedSales = new Set(source.items.filter((item) => archived.has(item.productId)).map((item) => item.saleId))
+    // A mixed transaction cannot be split without changing its historical meaning.
+    if (source.items.some((item) => archivedSales.has(item.saleId) && !archived.has(item.productId))) {
+      return { legacy: true, mixedSale: true }
+    }
+    const report = buildDailyAudit(date, {
+      products: source.products.filter((row) => !archived.has(row.id)),
+      pools: source.pools.filter((row) => !archived.has(row.id)),
+      movements: source.movements.filter((row) => !archived.has(row.productId)),
+      sales: source.sales.filter((row) => !archivedSales.has(row.id)),
+      items: source.items.filter((row) => !archivedSales.has(row.saleId)),
+    })
+    return { ...report, legacy: true }
   },
 }
