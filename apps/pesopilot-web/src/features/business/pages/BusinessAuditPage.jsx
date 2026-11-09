@@ -16,9 +16,9 @@ export function BusinessAuditPage() {
         <p className="mt-2 text-content-muted">Owner-confirmed sales and recorded inventory - Asia/Manila</p></div>
       <Link to="/business" className="inline-flex min-h-11 items-center px-3 text-primary underline">Back to Business</Link>
     </div>
-      <div className="business-audit-controls flex flex-wrap items-end gap-3">
-        <Input label="Audit date (Philippines)" type="date" required value={audit.date} onChange={(event) => audit.setDate(event.target.value)} />
-        <Button variant="secondary" disabled={audit.loading} onClick={audit.refresh}>Refresh audit</Button>
+      <div className="business-audit-controls">
+        <Input id="business-audit-date" label="Audit date (Philippines)" type="date" required value={audit.date} onChange={(event) => audit.setDate(event.target.value)} />
+        <Button variant="primary" disabled={audit.loading} onClick={audit.refresh}>Refresh audit</Button>
       </div>
       {audit.loading ? <p role="status">Generating daily audit…</p> : null}
       {audit.error ? <div role="alert" className="business-audit-error space-y-3 text-error"><p>{audit.error}</p><Button variant="secondary" onClick={audit.refresh}>Retry audit</Button></div> : null}
