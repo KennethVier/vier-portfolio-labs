@@ -7,7 +7,7 @@ import { BusinessAdminPage } from '../pages/BusinessAdminPage.jsx'
 import { BusinessDashboardPage } from '../pages/BusinessDashboardPage.jsx'
 import { businessDb } from '../repositories/businessDb.js'
 import { businessService } from '../services/businessService.js'
-import { posCatalogService } from '../services/posCatalogService.js'
+import { populateCatalog } from '../services/catalogTestFixture.js'
 import { dailyAuditService, getManilaDate } from '../services/dailyAuditService.js'
 import { productFamilyId } from '../constants/productPresentation.js'
 import { fixturePhoto } from '../services/productPhotoFixture.js'
@@ -78,12 +78,12 @@ afterEach(async () => {
 })
 
 describe('real Business UI and IndexedDB workflow', () => {
-  it('shows a family photo on the POS and sale modal, keeps sample placeholders, and labels partial availability', async () => {
+  it('shows a family photo on the POS and sale modal, isolates archived photos, and labels partial availability', async () => {
     const catalog = { family: 'Hallelujah Rub', category: 'Hallelujah Rub', type: 'Solo' }
     const solo = await businessService.addProduct({ name: 'Actual Solo', catalog, pricePesos: '199', openingStock: 1 })
     await businessService.addProduct({ name: 'Actual Set', catalog: { ...catalog, type: 'Set' }, pricePesos: '150', openingStock: 0 })
     await businessDb.productPhotos.put(fixturePhoto(productFamilyId(solo)))
-    await posCatalogService.loadSampleCatalog(true)
+    await populateCatalog(true)
     await render()
     const card = container.querySelector('[data-product-card]')
     expect(card.querySelector('img').alt).toBe('Hallelujah Rub product photo')
@@ -91,35 +91,23 @@ describe('real Business UI and IndexedDB workflow', () => {
     await choose('Hallelujah Rub')
     expect(container.querySelector('[role="dialog"] img')).not.toBeNull()
     await click('Close')
-    await click('Sample Catalog')
-    expect(container.querySelectorAll('[data-product-card] img')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-product-card]')).toHaveLength(1)
     await go('Inventory')
     expect(container.querySelector('.photo-editor img')).not.toBeNull()
   })
 
-  it('requires sample confirmation and shows the catalog immediately with no automatic inserts', async () => {
+  it('opens an empty catalog without testing controls or seeded products', async () => {
     await render()
+    expect(container.textContent).toContain('Add your first product in Inventory to start recording sales.')
+    expect(container.textContent).not.toMatch(/sample|fictional|prototype/i)
     expect(await businessDb.products.count()).toBe(0)
-    expect(container.querySelector('.sample-utilities').open).toBe(false)
-    await act(async () => container.querySelector('.sample-utilities summary').click())
-    await click('Load Sample Catalog')
-    const confirm = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Confirm Load Sample Catalog')
-    expect(confirm.disabled).toBe(true)
-    await act(async () => container.querySelector('input[type="checkbox"]').click())
-    await click('Confirm Load Sample Catalog', true)
-    await waitFor(() => expect(container.querySelectorAll('[data-product-card]')).toHaveLength(9))
-    expect(await businessDb.products.count()).toBe(52)
-    expect(container.textContent).toContain('fictional stock')
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    await go('Inventory')
+    expect(container.textContent).not.toMatch(/sample|fictional|prototype/i)
   })
 
-  it('switches categories, searches scents and sizes, clears filters, and separates actual inventory', async () => {
-    await posCatalogService.loadSampleCatalog(true)
-    await businessService.addProduct({ name: 'Actual Shawl', pricePesos: '99', openingStock: 1 })
+  it('switches categories and searches real scents and sizes', async () => {
+    await populateCatalog()
     await render()
-    expect(container.querySelectorAll('[data-product-card]')).toHaveLength(1)
-    await click('Sample Catalog')
-    expect(container.querySelectorAll('[data-product-card]')).toHaveLength(9)
     await click('Shawls')
     expect(container.querySelectorAll('[data-product-card]')).toHaveLength(3)
     await click('All Products')
@@ -132,12 +120,10 @@ describe('real Business UI and IndexedDB workflow', () => {
     expect(container.textContent).toContain('No matching products')
     await click('Clear filters')
     expect(container.querySelectorAll('[data-product-card]')).toHaveLength(9)
-    await click('Actual Inventory')
-    expect(container.querySelectorAll('[data-product-card]')).toHaveLength(1)
   })
 
   it('selects scent and Set, validates quantity, records one confirmed variant and updates audit/history', async () => {
-    await posCatalogService.loadSampleCatalog(true)
+    await populateCatalog()
     await render()
     await choose('Hallelujah Rub')
     expect(container.querySelector('[role="dialog"]').textContent).toContain('199.00')
@@ -158,7 +144,7 @@ describe('real Business UI and IndexedDB workflow', () => {
     const [sale] = await businessService.listSalesHistory()
     expect(sale).toMatchObject({ paymentMethod: 'gcash', totalCentavos: 30000 })
     expect(sale.items).toHaveLength(1)
-    expect(sale.items[0].productNameSnapshot).toContain('Sample')
+    expect(sale.items[0].productNameSnapshot).toContain('Lavender')
     expect((await businessDb.products.get(sale.items[0].productId)).stockQuantity).toBe(18)
     const rubs = (await businessService.listProducts()).filter((product) => product.catalog?.family === 'Hallelujah Rub')
     expect(rubs.filter((product) => product.stockQuantity === 20)).toHaveLength(9)
@@ -169,7 +155,7 @@ describe('real Business UI and IndexedDB workflow', () => {
   })
 
   it.each(['0', '-1', '1.5', '21', '', '9007199254740992'])('disables impossible quantity %s', async (quantity) => {
-    await posCatalogService.loadSampleCatalog(true)
+    await populateCatalog()
     await render()
     await choose('Shawl A')
     await change('Sale quantity', quantity)
@@ -178,7 +164,7 @@ describe('real Business UI and IndexedDB workflow', () => {
   })
 
   it('supports pillow sizes, quantity buttons, Cash default, close, focus return and Escape', async () => {
-    await posCatalogService.loadSampleCatalog(true)
+    await populateCatalog()
     await render()
     const card = container.querySelector('[aria-label="Record sale: Magic Pillows"]')
     card.focus()

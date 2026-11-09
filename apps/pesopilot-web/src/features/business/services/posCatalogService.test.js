@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { posCatalogService, createSampleCatalog } from './posCatalogService.js'
+import { posCatalogService } from './posCatalogService.js'
+import { createSampleCatalog, populateCatalog } from './catalogTestFixture.js'
 import { businessDb } from '../repositories/businessDb.js'
 import { businessService } from './businessService.js'
 import { businessBackupService } from './businessBackupService.js'
@@ -33,76 +34,33 @@ it('defines the exact seven categories, names, prices and independent options', 
   ])
 })
 
-it('requires explicit confirmation and never seeds through list or catalog reads', async () => {
+it('reads empty and mixed catalogs without creating or changing data', async () => {
   expect(posCatalogService.families(await businessService.listProducts())).toEqual([])
-  await expect(posCatalogService.loadSampleCatalog(false)).rejects.toThrow('Confirm')
   expect(await businessDb.products.count()).toBe(0)
-})
-
-it('refuses sample loading outside development even if called directly', async () => {
-  vi.stubEnv('DEV', false)
-  await expect(posCatalogService.loadSampleCatalog(true)).rejects.toThrow('only in development')
-  expect(await businessDb.products.count()).toBe(0)
-})
-
-it('does not overwrite a conflicting sample identifier and rolls back earlier inserts', async () => {
-  const actual = await businessService.addProduct({ name: 'Existing actual', pricePesos: '1', openingStock: 3 })
-  // A restored record may occupy the deterministic namespace without being a sample.
-  const conflict = createSampleCatalog().at(-1).catalog.sampleKey
-  await businessDb.products.add({ ...actual, id: conflict })
-  const before = await businessBackupRepository.read()
-  await expect(posCatalogService.loadSampleCatalog(true)).rejects.toThrow('conflicts')
-  expect(await businessBackupRepository.read()).toEqual(before)
-})
-
-it('seeds atomically and idempotently even for concurrent requests, preserving actual and sold sample stock', async () => {
-  const before = await Promise.all(db.tables.map((table) => table.toArray()))
-  const actual = await businessService.addProduct({ name: 'Shawl A', pricePesos: '99', openingStock: 7 })
-  expect(await Promise.all([posCatalogService.loadSampleCatalog(true), posCatalogService.loadSampleCatalog(true)])).toEqual([52, 0])
-  const samples = (await businessService.listProducts()).filter((product) => product.catalog?.sampleKey)
-  expect(new Set(samples.map((product) => product.inventoryPoolId)).size).toBe(52)
-  const set = samples.find((product) => product.catalog.family === 'Hallelujah Rub' && product.catalog.type === 'Set')
-  await businessService.completeSale({ ownerConfirmed: true, paymentMethod: 'coop', requestKey: 'sample', items: [{ productId: set.id, quantity: 2 }] })
-  expect(await posCatalogService.loadSampleCatalog(true)).toBe(0)
-  expect((await businessDb.products.get(set.id)).stockQuantity).toBe(18)
-  expect((await businessDb.products.get(actual.id)).stockQuantity).toBe(7)
-  expect((await businessService.listSalesHistory())[0].items[0].productNameSnapshot).toMatch(/^Sample/)
-  const report = await dailyAuditService.getReport(getManilaDate())
-  expect(report.summary).toMatchObject({ totalCentavos: 30000, totalSold: 2, remainingQuantity: 1045 })
-  expect(report.groups.find((group) => group.id === set.inventoryPoolId).remainingQuantity).toBe(18)
-  expect(await Promise.all(db.tables.map((table) => table.toArray()))).toEqual(before)
-})
-
-it('rolls the entire sample insertion back on a late write failure', async () => {
-  const fail = () => { throw new Error('Storage failure') }
-  businessDb.auditEvents.hook('creating', fail)
-  try { await expect(posCatalogService.loadSampleCatalog(true)).rejects.toThrow('Storage failure') }
-  finally { businessDb.auditEvents.hook('creating').unsubscribe(fail) }
-  expect(await Promise.all(businessDb.tables.map((table) => table.count()))).toEqual([0, 0, 0, 0, 0, 0, 0])
-})
-
-it('filters categories and search while preserving complete variant choices and separating actual stock', async () => {
-  await posCatalogService.loadSampleCatalog(true)
-  const actual = await businessService.addProduct({ name: 'Hallelujah Rub', pricePesos: '10', openingStock: 1 })
+  const personal = await Promise.all(db.tables.map((table) => table.toArray()))
+  await populateCatalog(true)
+  const actual = await businessService.addProduct({ name: 'Shawl A', pricePesos: '99', openingStock: 2 })
   const products = await businessService.listProducts()
-  expect(posCatalogService.families(products).map((family) => family.products[0].id)).toEqual([actual.id])
-  const families = posCatalogService.families(products, { sample: true, category: 'Hallelujah Rub', search: ' LAVENDER ' })
-  expect(families).toHaveLength(1)
-  expect(families[0].products).toHaveLength(10)
-  expect(posCatalogService.families(products, { sample: true, search: '20x30' })[0].name).toBe('Magic Pillows')
-  expect(posCatalogService.families(products, { sample: true, search: 'unknown' })).toEqual([])
+  const archived = products.find((row) => row.catalog?.sampleKey)
+  await businessService.completeSale({ ownerConfirmed: true, paymentMethod: 'cash', requestKey: 'historic', items: [{ productId: archived.id, quantity: 1 }] })
+  await businessService.completeSale({ ownerConfirmed: true, paymentMethod: 'coop', requestKey: 'real', items: [{ productId: actual.id, quantity: 1 }] })
+  const before = await businessBackupRepository.read()
+  expect(posCatalogService.families(products).flatMap((family) => family.products)).toEqual([products.find((row) => row.id === actual.id)])
+  expect((await dailyAuditService.getReport(getManilaDate())).summary).toMatchObject({ totalCentavos: 9900, totalSold: 1, remainingQuantity: 1 })
+  expect(await businessBackupRepository.read()).toEqual(before)
+  expect(await Promise.all(db.tables.map((table) => table.toArray()))).toEqual(personal)
 })
 
 it('refuses actual products sharing sample stock and refuses forged sample metadata', async () => {
-  await posCatalogService.loadSampleCatalog(true)
+  await populateCatalog(true)
   const sample = (await businessService.listProducts())[0]
   await expect(businessService.addProduct({ name: 'Actual', pricePesos: '1', inventoryPoolId: sample.id })).rejects.toThrow('remain separate')
-  await expect(businessService.addProduct({ name: 'Forged', pricePesos: '1', catalog: sample.catalog })).rejects.toThrow('Load Sample Catalog')
+  await expect(businessService.addProduct({ name: 'Forged', pricePesos: '1', catalog: sample.catalog })).rejects.toThrow('Archived catalog')
   expect(await businessDb.products.count()).toBe(52)
 })
 
 it('round trips sample identity, independent stock, sales and audit through format 3', async () => {
-  await posCatalogService.loadSampleCatalog(true)
+  await populateCatalog(true)
   const product = (await businessService.listProducts())[0]
   await businessService.completeSale({ ownerConfirmed: true, requestKey: 'round-trip', paymentMethod: 'gcash', items: [{ productId: product.id, quantity: 3 }] })
   const before = await businessBackupRepository.read()
@@ -113,7 +71,6 @@ it('round trips sample identity, independent stock, sales and audit through form
   await businessBackupService.restore(await businessBackupService.prepareRestore(text), true)
   expect(await businessBackupRepository.read()).toEqual(before)
   expect(await dailyAuditService.getReport(getManilaDate())).toEqual(audit)
-  expect(await posCatalogService.loadSampleCatalog(true)).toBe(0)
 })
 
 it('restores legacy format 1 without invented variant metadata, then exports format 3', async () => {
@@ -134,7 +91,7 @@ it.each([
   ['changed sample identity', (backup) => { backup.stores.products[0].catalog.sampleKey += '-forged' }],
   ['metadata in legacy format', (backup) => { backup.version = 1 }],
 ])('rejects %s in backups before any writes', async (_, corrupt) => {
-  await posCatalogService.loadSampleCatalog(true)
+  await populateCatalog(true)
   const before = await businessBackupRepository.read()
   const backup = JSON.parse(await businessBackupService.exportText())
   corrupt(backup)

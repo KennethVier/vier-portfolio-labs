@@ -47,7 +47,7 @@ export const businessService = {
     if (!poolName || poolName.length > 120) throw new Error('Stock group name must contain 1–120 characters')
     const id = newId()
     const metadata = catalog === undefined ? undefined : catalogMetadataSchema.parse(catalog)
-    if (metadata?.sampleKey) throw new Error('Use Load Sample Catalog to create sample products')
+    if (metadata?.sampleKey) throw new Error('Archived catalog identifiers cannot be assigned to new products')
     const unitPriceCentavos = parsePriceCentavos(pricePesos)
     const product = {
       id,
