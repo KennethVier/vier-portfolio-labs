@@ -10,5 +10,5 @@ export const catalogMetadataSchema = z.object({
   sampleKey: z.string().regex(/^pos-demo-v1-[a-z0-9-]+$/).max(120).optional(),
 }).strict()
 
-export const SAMPLE_SCENTS = ['Eucalyptus', 'Lemon Grass', 'Turmeric', 'Lavender', 'Negative Ion']
+export const PRODUCT_SCENTS = ['Eucalyptus', 'Lemon Grass', 'Turmeric', 'Lavender', 'Negative Ion']
 export const CATALOG_CATEGORIES = ['Shawls', 'Hallelujah Inhaler', 'Hallelujah Rub', 'Hallelujah Roll', 'Reigna Aroma Rub', 'Reigna Aroma Roll', 'Magic Pillows']

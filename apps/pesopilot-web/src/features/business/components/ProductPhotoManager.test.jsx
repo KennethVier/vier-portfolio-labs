@@ -81,9 +81,8 @@ it('reports invalid type and size without changing or uploading the existing pho
   expect(container.querySelector('img').getAttribute('src')).toBe(fixturePhoto(familyId).dataUrl)
 })
 
-it('switches to sample photo management without showing actual photos', async () => {
+it('shows the product photo without a catalog switch', async () => {
   await render([fixturePhoto(familyId)])
-  await act(async () => [...container.querySelectorAll('button')].find((button) => button.textContent === 'Sample photos').click())
-  expect(container.textContent).toContain('No sample products')
-  expect(container.querySelector('img')).toBeNull()
+  expect(container.textContent).not.toMatch(/sample photos|actual photos/i)
+  expect(container.querySelector('img')).not.toBeNull()
 })

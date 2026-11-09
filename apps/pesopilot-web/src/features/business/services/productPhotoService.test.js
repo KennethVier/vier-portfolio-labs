@@ -6,7 +6,7 @@ import { productPhotoRepository } from '../repositories/productPhotoRepository.j
 import { businessBackupRepository } from '../repositories/businessBackupRepository.js'
 import { businessService } from './businessService.js'
 import { businessBackupService } from './businessBackupService.js'
-import { posCatalogService } from './posCatalogService.js'
+import { populateCatalog } from './catalogTestFixture.js'
 import { productFamilyId, PRODUCT_PHOTO_MAX_INPUT, PRODUCT_PHOTO_MAX_BYTES } from '../constants/productPresentation.js'
 import { processProductPhoto, productPhotoService, validatePhotoFile } from './productPhotoService.js'
 import { fixturePhoto, jpegDataUrl } from './productPhotoFixture.js'
@@ -108,7 +108,7 @@ it('shares one photo across explicit family variants and isolates identical actu
   const catalog = { category: 'Hallelujah Rub', family: 'Hallelujah Rub', scent: 'Lavender', type: 'Solo' }
   const solo = await product('Actual Solo', catalog)
   const set = await product('Actual Set', { ...catalog, type: 'Set' })
-  await posCatalogService.loadSampleCatalog(true)
+  await populateCatalog(true)
   const products = await businessService.listProducts()
   const sample = products.find((row) => row.catalog?.sampleKey && row.catalog.family === catalog.family)
   expect(productFamilyId(solo)).toBe(productFamilyId(set))

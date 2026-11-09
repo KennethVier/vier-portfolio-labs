@@ -1,7 +1,7 @@
-import { CATALOG_CATEGORIES, SAMPLE_SCENTS } from './catalogMetadata.js'
+import { CATALOG_CATEGORIES } from './catalogMetadata.js'
 
 export const PRODUCT_CATEGORIES = [...CATALOG_CATEGORIES, 'Other product']
-export const PRODUCT_SCENTS = SAMPLE_SCENTS
+export { PRODUCT_SCENTS } from './catalogMetadata.js'
 export const SHAWL_OPTIONS = [
   { name: 'Shawl A', priceCentavos: 9900 },
   { name: 'Shawl B', priceCentavos: 19900 },

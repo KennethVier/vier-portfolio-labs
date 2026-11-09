@@ -5,7 +5,7 @@ import { BusinessDialog } from './BusinessDialog.jsx'
 import { useSaleWorkflow } from '../hooks/useSaleWorkflow.js'
 import { peso, selectClass } from './businessPresentation.js'
 import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
-import { SAMPLE_SCENTS } from '../constants/catalogMetadata.js'
+import { PRODUCT_SCENTS } from '../constants/catalogMetadata.js'
 
 export function RecordSaleModal({ family, photo, products, completeSale, disabled, onClose, onRecorded }) {
   const variants = products.filter((product) => family.products.some((item) => item.id === product.id))
@@ -25,7 +25,6 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
     {photo ? <div className="sale-product-visual"><ProductVisual family={family} photo={photo} /><div><p className="business-product-name">{family.name}</p><p className="text-sm text-content-muted">{family.category}</p></div></div> : null}
     {sale.review ? <section aria-label="Review sale" className="space-y-5">
       <p className="text-sm text-content-muted">Review this recording before deducting stock.</p>
-      {family.sample ? <p className="rounded-lg bg-tertiary-fixed p-3 text-sm text-on-tertiary-fixed">Sample sale · fictional stock and demonstration history.</p> : null}
       <div className="sale-summary rounded-lg p-4">
         <p className="business-product-name text-xl">{sale.review.productName}</p>
         {sale.review.variantLabel ? <p className="mt-1 text-content-muted">{sale.review.variantLabel}</p> : null}
@@ -41,7 +40,7 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
     </section> : <form onSubmit={sale.reviewSale}>
       <fieldset disabled={disabled || sale.saving} className="space-y-5">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm text-content-muted">{family.category}{family.sample ? ' · Sample / fictional stock' : ''}</p>
+          <p className="text-sm text-content-muted">{family.category}</p>
           <p className="business-amount shrink-0 text-xl text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
         </div>
         {ambiguous ? <label className="block text-sm font-semibold">Product variant
@@ -51,7 +50,7 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
         </label> : dimensions.map(([dimension, label]) => {
           const options = [...new Set(variants.map((product) => product.catalog?.[dimension]).filter(Boolean))]
           if (dimension === 'type') options.sort((a, b) => (a === 'Solo' ? 0 : 1) - (b === 'Solo' ? 0 : 1))
-          if (dimension === 'scent') options.sort((a, b) => SAMPLE_SCENTS.indexOf(a) - SAMPLE_SCENTS.indexOf(b))
+          if (dimension === 'scent') options.sort((a, b) => PRODUCT_SCENTS.indexOf(a) - PRODUCT_SCENTS.indexOf(b))
           return options.length ? <fieldset key={dimension}>
             <legend className="mb-2 text-sm font-semibold">{label}</legend>
             <div className="flex flex-wrap gap-2">{options.map((value) => <Button key={value} variant={sale.product?.catalog?.[dimension] === value ? 'primary' : 'secondary'} aria-pressed={sale.product?.catalog?.[dimension] === value} onClick={() => selectVariant(dimension, value)}>{value}</Button>)}</div>
@@ -59,7 +58,7 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
         })}
         <div className="rounded-lg bg-surface-container-low p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label htmlFor="sale-quantity" className="text-sm font-semibold">Sale quantity<span className="mt-1 block font-normal text-content-muted">{sale.product?.stockQuantity ?? 0} available{family.sample ? ' (fictional)' : ''}</span></label>
+            <label htmlFor="sale-quantity" className="text-sm font-semibold">Sale quantity<span className="mt-1 block font-normal text-content-muted">{sale.product?.stockQuantity ?? 0} available</span></label>
             <div className="flex items-center gap-2">
               <Button variant="secondary" aria-label="Decrease quantity" disabled={Number(sale.quantity) <= 1} onClick={() => sale.setQuantity(String(Number(sale.quantity) - 1))}>−</Button>
               <Input id="sale-quantity" aria-label="Sale quantity" required type="number" inputMode="numeric" min="1" step="1" max={sale.product?.stockQuantity} value={sale.quantity} className="w-20 text-center font-mono" onChange={(event) => sale.setQuantity(event.target.value)} />

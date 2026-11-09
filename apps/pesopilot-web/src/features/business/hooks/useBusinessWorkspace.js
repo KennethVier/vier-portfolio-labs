@@ -1,7 +1,6 @@
 import { productPhotoService } from '../services/productPhotoService.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { businessService } from '../services/businessService.js'
-import { posCatalogService } from '../services/posCatalogService.js'
 
 export function useBusinessWorkspace() {
   const [products, setProducts] = useState([])
@@ -58,14 +57,17 @@ export function useBusinessWorkspace() {
     }
   }, [refresh])
 
+  const archived = new Set(products.filter((product) => product.catalog?.sampleKey).map((product) => product.id))
+  const archivedSales = new Set(sales.filter((sale) => sale.items.some((item) => archived.has(item.productId))).map((sale) => sale.id))
+  const actualSales = sales.filter((sale) => !archivedSales.has(sale.id))
   return {
-    products, photos, sales, events, isLoading, error, refresh,
-    summary: businessService.summarizeSales(sales),
+    legacy: archived.size > 0,
+    products: products.filter((product) => !archived.has(product.id)), photos, sales: actualSales, events: events.filter((event) => !archivedSales.has(event.saleId) && !archived.has(event.payload.productId)), isLoading, error, refresh,
+    summary: businessService.summarizeSales(actualSales),
     uploadPhoto: (file, familyId) => mutate(() => productPhotoService.upload(file, familyId)),
     removePhoto: (familyId) => mutate(() => productPhotoService.remove(familyId)),
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
-    loadSampleCatalog: (confirmed) => mutate(() => posCatalogService.loadSampleCatalog(confirmed)),
   }
 }
