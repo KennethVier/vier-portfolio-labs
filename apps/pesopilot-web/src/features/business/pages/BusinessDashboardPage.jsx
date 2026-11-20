@@ -59,18 +59,22 @@ export function BusinessDashboardPage() {
             const prices = family.products.map((product) => product.unitPriceCentavos)
             const min = Math.min(...prices)
             const max = Math.max(...prices)
-            const scents = new Set(family.products.map((product) => product.catalog?.scent).filter(Boolean)).size
             const physicalVariants = family.products.filter(product => product.catalog?.type !== 'Set')
-            const stockedVariants = physicalVariants.filter(product => product.stockQuantity > 0).length
-            const inStock = stockedVariants > 0
+            const stocked = physicalVariants.filter(product => product.stockQuantity > 0)
+            const inStock = stocked.length > 0
+            const scents = new Set(physicalVariants.map(product => product.catalog?.scent).filter(Boolean)).size
+            const stockedScents = new Set(stocked.map(product => product.catalog?.scent).filter(Boolean)).size
+            const availability = scents ? `${stockedScents} of ${scents} scents in stock` :
+              physicalVariants.length === 1 ? `${physicalVariants[0].stockQuantity} available` :
+                `${stocked.length} of ${physicalVariants.length} options in stock`
             return <button key={family.id} data-product-card aria-label={`Record sale: ${family.name}`}  onClick={() => { setSelected(family); setNotice('') }} className="product-card group">
               <ProductVisual family={family} photo={workspace.photos.find((photo) => photo.familyId === family.id)} />
               <div className="product-card-body">
-              <span className={`stock-label ${inStock ? '' : 'stock-label-empty'}`}>{inStock ? family.products.length === 1 ? `${family.products[0].stockQuantity} available` : `${stockedVariants} of ${physicalVariants.length} variants in stock` : 'Out of stock'}</span>
+              <span className={`stock-label ${inStock ? '' : 'stock-label-empty'}`}>{inStock ? availability : 'Out of stock'}</span>
               <span className="text-xs text-content-muted">{family.category}</span>
               <span className="business-product-name product-card-title mt-1 font-heading text-xl">{family.name}</span>
               <span className="business-amount mt-2 text-lg text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
-              <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents · ${family.products.length} variants` : family.products.length > 1 ? `${family.products.length} options` : 'Single product'}</span>
+              <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents` : family.products.length > 1 ? `${family.products.length} options` : 'Single product'}</span>
               <span className="mt-auto flex w-full items-center justify-between border-t border-outline-variant pt-4 text-sm font-semibold text-primary"><span className="pt-3">{inStock ? 'Tap to record sale' : 'Add stock first'}</span><span aria-hidden="true" className="pt-3">↗</span></span>
               </div>
             </button>

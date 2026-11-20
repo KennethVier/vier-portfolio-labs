@@ -80,7 +80,7 @@ afterEach(async () => {
 
 describe('real Business UI and IndexedDB workflow', () => {
   it('shows a family photo on the POS and sale modal, isolates archived photos, and labels partial availability', async () => {
-    const catalog = { family: 'Hallelujah Rub', category: 'Hallelujah Rub', type: 'Solo' }
+    const catalog = { family: 'Hallelujah Rub', category: 'Hallelujah Rub', type: 'Solo', scent: 'Lavender' }
     const solo = await businessService.addProduct({ name: 'Actual Solo', catalog, pricePesos: '199', openingStock: 1 })
     await businessService.addProduct({ name: 'Actual Set', catalog: { ...catalog, type: 'Set' }, pricePesos: '150', openingStock: 0 })
     await businessDb.productPhotos.put(fixturePhoto(productFamilyId(solo)))
@@ -88,7 +88,7 @@ describe('real Business UI and IndexedDB workflow', () => {
     await render()
     const card = container.querySelector('[data-product-card]')
     expect(card.querySelector('img').alt).toBe('Hallelujah Rub product photo')
-    expect(card.textContent).toContain('1 of 6 variants in stock')
+    expect(card.textContent).toContain('1 of 5 scents in stock')
     await choose('Hallelujah Rub')
     expect(container.querySelector('[role="dialog"] img')).not.toBeNull()
     await click('Close')
