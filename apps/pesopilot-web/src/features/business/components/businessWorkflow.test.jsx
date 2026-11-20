@@ -1,3 +1,4 @@
+import { businessBackupService } from '../services/businessBackupService.js'
 // @vitest-environment happy-dom
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -129,6 +130,9 @@ describe('real Business UI and IndexedDB workflow', () => {
 
   it('records a discounted five-piece set with a scent substitution', async () => {
     await populateCatalog()
+    const products = await businessService.listProducts()
+    const solo = products.filter(item => item.catalog?.family === 'Hallelujah Rub' && item.catalog.type === 'Solo')
+    for (const item of solo) await businessService.setUnitCost(item.id, '100')
     await render()
     await choose('Hallelujah Rub')
     await click('Set')
@@ -145,10 +149,25 @@ describe('real Business UI and IndexedDB workflow', () => {
     expect(sale).toMatchObject({ paymentMethod: 'gcash', totalCentavos: 60000 })
     expect(sale.items).toHaveLength(4)
     const eucalyptus = sale.items.find(item => item.productNameSnapshot.includes('Eucalyptus'))
-    expect(eucalyptus).toMatchObject({ quantity: 2, unitPriceCentavos: 12000 })
+    expect(eucalyptus).toMatchObject({ quantity: 2, unitPriceCentavos: 12000, unitCostCentavos: 10000 })
     expect((await businessDb.products.get(eucalyptus.productId)).stockQuantity).toBe(18)
     expect((await dailyAuditService.getReport(getManilaDate())).summary).toMatchObject({ totalSold: 5, totalCentavos: 60000 })
+    await businessService.setUnitCost(eucalyptus.productId, '110')
+    const report = await dailyAuditService.getReport(getManilaDate())
+    expect(report.profit).toEqual({ grossProfit: 10000, costOfGoods: 50000, uncostedUnits: 0 })
+    const backup = await businessBackupService.exportText()
+    expect(JSON.parse(backup).stores.saleItems.find(item => item.productId === eucalyptus.productId).unitCostCentavos).toBe(10000)
     await go('Sales Analytics')
+    for (const [period, label] of [['Week', 'Week (Mon–Sun)'], ['Month', 'Month'], ['Year', 'Year']]) {
+      await change('Sales period', period)
+      expect(field(label).tagName).toBe('SELECT')
+      expect(container.textContent).toContain('600.00')
+    }
+    await change('Sales period', 'Week')
+    const otherWeek = [...field('Week (Mon–Sun)').options].find(option => option.value !== field('Week (Mon–Sun)').value)
+    await change('Week (Mon–Sun)', otherWeek.value)
+    expect(container.textContent).toContain('No completed sales for this period.')
+    await change('Sales period', 'All time')
     expect(container.textContent).toContain('600.00')
   })
 

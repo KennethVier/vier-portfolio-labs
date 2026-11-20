@@ -102,6 +102,11 @@ export function createBusinessRepository(businessDb) {
     return product
   },
 
+  async setUnitCost(productId, unitCostCentavos) {
+    const count = await businessDb.products.update(productId, { unitCostCentavos })
+    if (count !== 1) throw new Error('Product not found')
+  },
+
   receiveStock(entries) {
     return businessDb.transaction('rw', businessDb.products, businessDb.inventoryPools,
       businessDb.inventoryMovements, businessDb.auditEvents, async () => {
@@ -217,6 +222,9 @@ export function createBusinessRepository(businessDb) {
 
           const afterQuantity = beforeQuantity - item.quantity
           remainingByPool.set(pool.id, afterQuantity)
+          if (product.unitCostCentavos !== undefined && !Number.isSafeInteger(product.unitCostCentavos * item.quantity)) {
+            throw new Error('Sale cost exceeds supported limit')
+          }
           lineItems.push({
             saleId: sale.id,
             productId: product.id,
@@ -227,6 +235,7 @@ export function createBusinessRepository(businessDb) {
             quantity: item.quantity,
             unitPriceCentavos,
             lineTotalCentavos,
+            ...(product.unitCostCentavos === undefined ? {} : { unitCostCentavos: product.unitCostCentavos }),
           })
           movements.push({
             productId: product.id,

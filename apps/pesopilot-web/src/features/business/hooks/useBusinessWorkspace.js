@@ -69,6 +69,7 @@ export function useBusinessWorkspace() {
     removePhoto: (familyId) => mutate(() => productPhotoService.remove(familyId)),
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
     receiveStock: (entries) => mutate(() => receiveDailyStock(entries)),
+    setUnitCost: (id, cost) => mutate(() => businessService.setUnitCost(id, cost)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
   }

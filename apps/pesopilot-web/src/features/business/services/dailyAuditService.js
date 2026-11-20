@@ -1,3 +1,4 @@
+import { summarizeProfit } from './salesProfit.js'
 import { BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { businessRepository } from '../repositories/businessRepository.js'
 
@@ -211,7 +212,7 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
     }
     group.rows.sort((left, right) => left.name.localeCompare(right.name) || (left.priceCentavos ?? 0) - (right.priceCentavos ?? 0))
   }
-  return { date, summary, groups: [...groups.values()].sort((left, right) => left.name.localeCompare(right.name)) }
+  return { date, summary, profit: summarizeProfit(items.filter(item => daySales.has(item.saleId))), transactionCount: daySales.size, groups: [...groups.values()].sort((left, right) => left.name.localeCompare(right.name)) }
 }
 
 export const dailyAuditService = {

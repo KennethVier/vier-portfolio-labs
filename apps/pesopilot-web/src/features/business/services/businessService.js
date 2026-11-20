@@ -65,6 +65,12 @@ export const businessService = {
     return businessRepository.addProduct(product)
   },
 
+  setUnitCost(productId, value) {
+    const cost = String(value).trim()
+    const unitCostCentavos = cost === '' ? undefined : /^0(?:\.0{1,2})?$/.test(cost) ? 0 : parsePriceCentavos(cost)
+    return businessRepository.setUnitCost(productId, unitCostCentavos)
+  },
+
   adjustStock({ productId, quantity, direction, reason }) {
     assertQuantity(quantity)
     if (typeof productId !== 'string' || !productId.trim()) throw new Error('Product is required')

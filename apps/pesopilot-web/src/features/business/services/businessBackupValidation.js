@@ -17,6 +17,7 @@ const payment = z.enum(['cash', 'gcash', 'coop'])
 const poolFields = { inventoryPoolId: text, poolNameSnapshot: name }
 const itemFields = {
   saleId: text, productId: text, productNameSnapshot: name,
+  unitCostCentavos: natural.optional(),
   quantity: positive, unitPriceCentavos: positive, lineTotalCentavos: positive,
 }
 const movementFields = {
@@ -47,7 +48,7 @@ const format = z.object({
   databaseVersion: z.union([z.literal(2), z.literal(3)]), exportedAt: time,
   stores: z.object({
     products: records(z.object({
-      id: text, name, unitPriceCentavos: positive, stockQuantity: natural, createdAt: time,
+      id: text, name, unitCostCentavos: natural.optional(), unitPriceCentavos: positive, stockQuantity: natural, createdAt: time,
       inventoryPoolId: text, inventoryPoolName: name.optional(), inventoryUnitsPerSale: z.literal(1),
       initialNameSnapshot: name, initialPriceCentavos: positive, legacyMetadata: z.boolean().optional(),
       catalog: catalogMetadataSchema.optional(),

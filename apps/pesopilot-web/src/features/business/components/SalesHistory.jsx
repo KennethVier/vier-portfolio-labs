@@ -1,3 +1,4 @@
+import { summarizeProfit } from '../services/salesProfit.js'
 import { downloadCsv } from './downloadCsv.js'
 import { useState } from 'react'
 import { getManilaDate } from '../services/dailyAuditService.js'
@@ -16,11 +17,30 @@ function periodKey(date, period) {
   return date
 }
 
+function shiftDay(day, days) {
+  const date = new Date(day + 'T00:00:00Z')
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+const months = Array.from({ length: 12 }, (_, index) =>
+  new Intl.DateTimeFormat('en-PH', { month: 'long', timeZone: 'UTC' }).format(Date.UTC(2020, index, 1)))
+
 export function SalesHistory({ sales: history }) {
   const [period, setPeriod] = useState('All time')
-  const [date, setDate] = useState(() => getManilaDate())
+  const today = getManilaDate()
+  const [date, setDate] = useState(today)
+  const [week, setWeek] = useState(() => periodKey(today, 'Week'))
+  const [month, setMonth] = useState(today.slice(0, 7))
+  const [year, setYear] = useState(today.slice(0, 4))
+  const datesOfSales = history.map(sale => getManilaDate(new Date(sale.confirmedAt)))
+  const years = [...new Set([today.slice(0, 4), ...datesOfSales.map(day => day.slice(0, 4))])].sort().reverse()
+  const weekOptions = new Set([periodKey(today, 'Week'), week, ...datesOfSales.map(day => periodKey(day, 'Week'))])
+  for (let offset = -4; offset <= 4; offset += 1) weekOptions.add(shiftDay(week, offset * 7))
+  const selected = { Day: date, Week: week, Month: month, Year: year }[period]
   const sales = period === 'All time' ? history : history.filter(sale =>
-    periodKey(getManilaDate(new Date(sale.confirmedAt)), period) === periodKey(date, period))
+    periodKey(getManilaDate(new Date(sale.confirmedAt)), period) === selected)
+  const profit = summarizeProfit(sales.flatMap(sale => sale.items))
   const units = sales.reduce((sum, sale) => sum + sale.items.reduce((count, item) => count + item.quantity, 0), 0)
   const byProduct = new Map()
   const byDate = new Map()
@@ -37,10 +57,24 @@ export function SalesHistory({ sales: history }) {
         <label>Sales period<select className="block rounded border p-2" value={period} onChange={event => setPeriod(event.target.value)}>
           {['Day', 'Week', 'Month', 'Year', 'All time'].map(value => <option key={value}>{value}</option>)}
         </select></label>
-        {period !== 'All time' && <label>Date in period<input className="block rounded border p-2" type="date" value={date} onChange={event => { if (event.target.value) setDate(event.target.value) }} /></label>}
+        {period === 'Day' && <label>Date<input className="block rounded border p-2" type="date" value={date} onChange={event => setDate(event.target.value)} /></label>}
+        {period === 'Week' && <label>Week (Mon–Sun)<select className="block rounded border p-2" value={week} onChange={event => setWeek(event.target.value)}>
+          {[...weekOptions].sort().reverse().map(day => <option key={day} value={day}>{day} to {shiftDay(day, 6)}</option>)}
+        </select></label>}
+        {period === 'Month' && <label>Month<select className="block rounded border p-2" value={month} onChange={event => setMonth(event.target.value)}>
+          {years.flatMap(optionYear => months.map((name, index) => {
+            const value = optionYear + '-' + String(index + 1).padStart(2, '0')
+            return <option key={value} value={value}>{name} {optionYear}</option>
+          }))}
+        </select></label>}
+        {period === 'Year' && <label>Year<select className="block rounded border p-2" value={year} onChange={event => setYear(event.target.value)}>
+          {years.map(optionYear => <option key={optionYear}>{optionYear}</option>)}
+        </select></label>}
         <p aria-live="polite"><strong>{peso(sales.reduce((sum, sale) => sum + sale.totalCentavos, 0))}</strong> · {units} units · {sales.length} transactions</p>
       </div>
       {sales.length > 0 && <>
+        <p className="mb-4 text-sm">{profit.uncostedUnits ? 'Gross profit for units with recorded costs' : 'Gross profit'} · <strong>{peso(profit.grossProfit)}</strong>
+          {profit.uncostedUnits > 0 && <span> · {profit.uncostedUnits} units missing costs</span>}</p>
         <div className="grid gap-5 md:grid-cols-2">
           {[['Revenue by day', dates, peso], ['Most units sold', best, value => String(value)]].map(([title, entries, format]) => {
             const max = entries.reduce((highest, [, value]) => Math.max(highest, value), 1)
@@ -54,9 +88,11 @@ export function SalesHistory({ sales: history }) {
           })}
         </div>
         <button className="my-4 text-primary underline" onClick={() => downloadCsv('sales-' + period.toLowerCase().replace(' ', '-'), [
-          ['Sale ID', 'Confirmed at', 'Product', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Payment'],
+          ['Sale ID', 'Confirmed at', 'Product', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Purchase cost per piece (PHP)', 'Gross profit (PHP)', 'Payment'],
           ...sales.flatMap(sale => sale.items.map(item => [sale.id, sale.confirmedAt, item.productNameSnapshot,
-            item.quantity, item.unitPriceCentavos / 100, item.lineTotalCentavos / 100, BUSINESS_PAYMENT_LABELS[sale.paymentMethod]])),
+            item.quantity, item.unitPriceCentavos / 100, item.lineTotalCentavos / 100,
+            item.unitCostCentavos === undefined ? '' : item.unitCostCentavos / 100,
+            item.unitCostCentavos === undefined ? '' : (item.lineTotalCentavos - item.quantity * item.unitCostCentavos) / 100, BUSINESS_PAYMENT_LABELS[sale.paymentMethod]])),
         ])}>Export sales CSV</button>
       </>}
       {sales.length === 0 ? <p className="text-sm text-content-muted">{history.length ? 'No completed sales for this period.' : 'No completed sales yet. Review and confirm a sale to record it here.'}</p> : (

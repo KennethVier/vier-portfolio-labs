@@ -26,7 +26,7 @@ export function BusinessAdminPage({ screen }) {
     <div className="business-page-heading"><h1 className="font-heading text-3xl font-semibold">{headings[screen][0]}</h1><p className="mt-2 text-content-muted">{headings[screen][1]}</p></div>
     <WorkspaceStatus workspace={workspace} />
     {screen === 'inventory' ? <>
-      <InventoryPanel products={workspace.products} adjustStock={workspace.adjustStock} disabled={disabled}>
+      <InventoryPanel products={workspace.products} adjustStock={workspace.adjustStock} setUnitCost={workspace.setUnitCost} disabled={disabled}>
         <DailyStock products={workspace.products} receiveStock={workspace.receiveStock} disabled={disabled} />
       </InventoryPanel>
       <ProductForm products={workspace.products} addProduct={workspace.addProduct} disabled={disabled} />
