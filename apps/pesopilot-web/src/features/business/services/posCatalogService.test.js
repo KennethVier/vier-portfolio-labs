@@ -1,3 +1,4 @@
+import { receiveDailyStock, stockPresets } from './stockPresets.js'
 import { businessRepository } from "../repositories/businessRepository.js"
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { posCatalogService } from './posCatalogService.js'
@@ -108,4 +109,16 @@ it('receives stock together and rolls back every movement on an invalid batch', 
   expect(await businessBackupRepository.read()).toEqual(before)
   await businessRepository.receiveStock([receipt])
   expect((await dailyAuditService.getReport(getManilaDate())).summary.remainingQuantity).toBe(7)
+})
+
+it('lists the catalog without writes and creates each received preset once', async () => {
+  expect(stockPresets).toHaveLength(52)
+  expect(await businessDb.products.count()).toBe(0)
+  const receipt = [{ presetName: 'Shawl A', quantity: 2 }]
+  await expect(receiveDailyStock([...receipt, { presetName: 'unknown', quantity: 1 }])).rejects.toThrow()
+  expect(await businessDb.products.count()).toBe(0)
+  await Promise.all([receiveDailyStock(receipt), receiveDailyStock(receipt)])
+  const products = await businessService.listProducts()
+  expect(products).toHaveLength(1)
+  expect(products[0]).toMatchObject({ name: 'Shawl A', stockQuantity: 4, unitPriceCentavos: 9900 })
 })

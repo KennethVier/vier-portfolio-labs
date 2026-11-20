@@ -1,3 +1,4 @@
+import { MorningStockCheck } from './MorningStockCheck.jsx'
 import { NavLink, Link } from 'react-router-dom'
 import { BusinessIcon } from './BusinessIcon.jsx'
 import '../business.css'
@@ -10,6 +11,7 @@ const links = [
 
 export function BusinessShell({ children }) {
   return <div className="business-touch min-h-screen">
+    <MorningStockCheck />
     <header className="border-b border-outline-variant bg-surface-container-lowest">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-4 sm:px-8">
         <Link to="/business" className="business-brand flex min-h-11 items-center gap-3 rounded focus-visible:outline-primary">
