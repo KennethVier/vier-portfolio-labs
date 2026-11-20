@@ -111,6 +111,24 @@ describe('real Business UI and IndexedDB workflow', () => {
     expect(container.textContent).not.toMatch(/sample|fictional|prototype/i)
   })
 
+  it('receives the same quantity for selected scents and keeps set deductions per scent', async () => {
+    await render()
+    await choose('Reigna Aroma Roll')
+    await click('Select all scents')
+    await change('Units received per scent', '4')
+    await click('Save stock')
+    await waitFor(() => expect(container.textContent).toContain('Stock added.'))
+    const products = await businessService.listProducts()
+    expect(products).toHaveLength(5)
+    expect(products.every(item => item.stockQuantity === 4 && item.catalog.type === 'Solo')).toBe(true)
+    expect(await businessDb.sales.count()).toBe(0)
+    await choose('Reigna Aroma Roll')
+    await click('Set')
+    await click('Record Sale')
+    await click('Owner: Confirm Completed Sale', true)
+    expect((await businessService.listProducts()).map(item => item.stockQuantity)).toEqual([3, 3, 3, 3, 3])
+  })
+
   it('switches categories and searches real scents and sizes', async () => {
     await populateCatalog()
     await render()

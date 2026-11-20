@@ -14,12 +14,29 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
   const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.catalog?.type !== 'Set') ?? variants[0]
   const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded)
   const [received, setReceived] = useState('')
+  const [restocking, setRestocking] = useState(false)
+  const [stockSelection, setStockSelection] = useState(null)
   const receipt = useBusinessAction()
+  const needsStock = !sale.isSet && sale.product?.stockQuantity === 0
+  const addingStock = restocking || needsStock
+  const scentVariants = variants.filter(product => product.catalog?.scent && product.catalog.type !== 'Set')
+  const defaultStockIds = sale.isSet ? scentVariants.map(product => product.id) : [sale.product?.id]
+  const selectedStockIds = stockSelection ?? defaultStockIds
+  const stockTargets = (scentVariants.length ? scentVariants : [sale.product]).filter(product =>
+    product && selectedStockIds.includes(product.id))
+  const stockGroups = [...new Map(stockTargets.map(product => [product.inventoryPoolId ?? product.id, product])).values()]
+  const quantityReceived = Number(received)
+  const canSaveStock = stockGroups.length > 0 && Number.isSafeInteger(quantityReceived) && quantityReceived > 0
+
   async function saveStock(event) {
     event.preventDefault()
-    if (await receipt.run(() => receiveStock([{ productId: sale.product.id, presetName: sale.product.presetName, quantity: Number(received) }]))) onReceived()
+    if (!canSaveStock || disabled) return
+    const entries = stockGroups.map(product => ({
+      productId: product.id, presetName: product.presetName, quantity: quantityReceived,
+    }))
+    if (await receipt.run(() => receiveStock(entries))) onReceived()
   }
-  const needsStock = !sale.isSet && sale.product?.stockQuantity === 0
+
   const dimensions = [['scent', 'Scent'], ['type', 'Solo / Set'], ['size', 'Size']]
   const ambiguous = new Set(variants.map((product) => JSON.stringify(dimensions.map(([key]) => product.catalog?.[key] ?? null)))).size !== variants.length ||
     dimensions.some(([key]) => variants.some((product) => product.catalog?.[key]) && variants.some((product) => !product.catalog?.[key]))
@@ -30,9 +47,10 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
     sale.setProductId((exact ?? choices[0]).id)
     sale.setAgreedPrice('')
     sale.setMix(null)
+    setStockSelection(null)
   }
 
-  return <BusinessDialog title={sale.review ? 'Confirm completed sale' : <span className="business-product-name">{family.name}</span>} canClose={sale.canEdit} onClose={onClose}>
+  return <BusinessDialog title={sale.review ? 'Confirm completed sale' : <span className="business-product-name">{family.name}</span>} canClose={sale.canEdit && !receipt.saving} onClose={onClose}>
     {photo ? <div className="sale-product-visual"><ProductVisual family={family} photo={photo} /><div><p className="business-product-name">{family.name}</p><p className="text-sm text-content-muted">{family.category}</p></div></div> : null}
     {sale.review ? <section aria-label="Review sale" className="space-y-5">
       <p className="text-sm text-content-muted">Review this recording before deducting stock.</p>
@@ -48,14 +66,14 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
         <Button className="min-h-12 flex-1" disabled={sale.saving || (disabled && sale.canEdit)} onClick={sale.confirmSale}>{sale.saving ? 'Recording…' : sale.error ? 'Retry Confirmed Sale' : 'Owner: Confirm Completed Sale'}</Button>
         <Button variant="secondary" disabled={!sale.canEdit} onClick={sale.editSale}>Back to Edit</Button>
       </div>
-    </section> : <form onSubmit={needsStock ? saveStock : sale.reviewSale}>
+    </section> : <form onSubmit={addingStock ? saveStock : sale.reviewSale}>
       <fieldset disabled={disabled || sale.saving || receipt.saving} className="space-y-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-content-muted">{family.category}</p>
           <p className="business-amount shrink-0 text-xl text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
         </div>
         {ambiguous || family.category === 'Shawls' ? <label className="block text-sm font-semibold">Product variant
-          <select className={selectClass} value={sale.productId} onChange={(event) => sale.setProductId(event.target.value)}>
+          <select className={selectClass} value={sale.productId} onChange={(event) => { sale.setProductId(event.target.value); setStockSelection(null) }}>
             {variants.map((product) => <option key={product.id} value={product.id}>{product.name} · {peso(product.unitPriceCentavos)} · {product.stockQuantity} available</option>)}
           </select>
         </label> : dimensions.map(([dimension, label]) => {
@@ -67,13 +85,29 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
             <div className="flex flex-wrap gap-2">{options.map((value) => <Button key={value} variant={sale.product?.catalog?.[dimension] === value ? 'primary' : 'secondary'} aria-pressed={sale.product?.catalog?.[dimension] === value} onClick={() => selectVariant(dimension, value)}>{value}</Button>)}</div>
           </fieldset> : null
         })}
-        {needsStock ? <section className="space-y-3 rounded-lg bg-surface-container-low p-4">
-          <h3 className="font-semibold">Add stock first</h3>
-          <p>{sale.product.name} is out of stock. Enter the units received before recording a sale.</p>
-          <Input label="Units received" type="number" required min="1" step="1" inputMode="numeric" value={received} onChange={event => setReceived(event.target.value)} />
-          <Button type="submit" disabled={!Number.isSafeInteger(Number(received)) || Number(received) < 1}>Save stock</Button>
+        {addingStock ? <section aria-label="Receive stock" className="space-y-3 rounded-lg bg-surface-container-low p-4">
+          <h3 className="font-semibold">{needsStock ? 'Add stock first' : 'Receive stock'}</h3>
+          {scentVariants.length > 0 ? <fieldset>
+            <legend className="mb-2 font-semibold">Scents to restock</legend>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => setStockSelection(scentVariants.map(product => product.id))}>Select all scents</Button>
+              {scentVariants.map(product => <label key={product.id} className="flex items-center gap-2 rounded border border-outline-variant px-3 py-2">
+                <input type="checkbox" checked={selectedStockIds.includes(product.id)} onChange={event => {
+                  setStockSelection(event.target.checked ? [...selectedStockIds, product.id] :
+                    selectedStockIds.filter(id => id !== product.id))
+                }} />
+                {product.catalog.scent}
+              </label>)}
+            </div>
+          </fieldset> : <p>{sale.product.name}</p>}
+          <Input label={scentVariants.length ? 'Units received per scent' : 'Units received'} type="number" required min="1" step="1" inputMode="numeric" value={received} onChange={event => setReceived(event.target.value)} />
+          {selectedStockIds.length > stockGroups.length && <p className="text-sm">Scents that share stock receive the quantity once.</p>}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={!canSaveStock}>{receipt.saving ? 'Saving…' : 'Save stock'}</Button>
+            {!needsStock && <Button variant="secondary" onClick={() => setRestocking(false)}>Back to sale</Button>}
+          </div>
           {receipt.error && <p role="alert">{receipt.error}</p>}
-        </section> : <><div className="rounded-lg bg-surface-container-low p-4">
+        </section> : <><Button variant="secondary" onClick={() => { setRestocking(true); setStockSelection(null) }}>Receive stock</Button><div className="rounded-lg bg-surface-container-low p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label htmlFor="sale-quantity" className="text-sm font-semibold">{sale.isSet ? 'Number of sets' : 'Sale quantity'}<span className="mt-1 block font-normal text-content-muted">{sale.isSet ? '5 pieces per set' : (sale.product?.stockQuantity ?? 0) + ' available'}</span></label>
             <div className="flex items-center gap-2">
