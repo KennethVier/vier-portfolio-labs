@@ -1,3 +1,4 @@
+import { productScentName } from '../services/salePresentation.js'
 import { Card } from '@/components/ui/Card.jsx'
 import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { peso } from './businessPresentation.js'
@@ -6,10 +7,15 @@ import { downloadCsv } from './downloadCsv.js'
 export function DailyAuditReport({ report }) {
   const { summary, groups, profit, transactionCount } = report
   const methods = BUSINESS_PAYMENT_METHODS.filter(method => method !== 'coop' || summary.payments[method].quantity)
-  const columns = ['Product', 'Available', 'Sold', 'Remaining', ...methods.map(method => BUSINESS_PAYMENT_LABELS[method]), 'Sales']
+  const columns = ['Product', 'Available', 'Sold', 'Sold as', 'Remaining', ...methods.map(method => BUSINESS_PAYMENT_LABELS[method]), 'Sales']
   const rows = groups.map(group => [
-    group.rows.length === 1 ? group.rows[0].name : group.name,
-    group.availableQuantity, group.totalSold, group.remainingQuantity,
+    productScentName(group.rows.length === 1 ? group.rows[0].name : group.name),
+    group.availableQuantity, group.totalSold,
+    group.totalSold ? [...group.rows.reduce((counts, row) => {
+      if (row.totalSold && row.format) counts.set(row.format, (counts.get(row.format) ?? 0) + row.totalSold)
+      return counts
+    }, new Map())].map(([format, units]) => format + ' · ' + units).join(', ') || '—' : '—',
+    group.remainingQuantity,
     ...methods.map(method => peso(group.payments[method].centavos)),
     peso(methods.reduce((sum, method) => sum + group.payments[method].centavos, 0)),
   ])

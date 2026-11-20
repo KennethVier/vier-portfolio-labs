@@ -40,7 +40,7 @@ it('renders grouped read-only financial columns and a distinct GCash total from 
   await businessService.completeSale({ requestKey: 'ui-audit', ownerConfirmed: true, paymentMethod: 'gcash', items: [{ productId: variant.id, quantity: 2 }] })
   await render()
   await settle(() => expect(container.querySelector('table')).not.toBeNull())
-  expect(container.querySelectorAll('thead th')).toHaveLength(7)
+  expect(container.querySelectorAll('thead th')).toHaveLength(8)
   expect(container.querySelectorAll('tbody')).toHaveLength(1)
   expect(container.querySelector('tbody').textContent).toContain('300.00')
   expect(container.querySelector('table input')).toBeNull()

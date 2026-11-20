@@ -17,6 +17,7 @@ const payment = z.enum(['cash', 'gcash', 'coop'])
 const poolFields = { inventoryPoolId: text, poolNameSnapshot: name }
 const itemFields = {
   saleId: text, productId: text, productNameSnapshot: name,
+  saleFormat: z.enum(['solo', 'set']).optional(),
   unitCostCentavos: natural.optional(),
   quantity: positive, unitPriceCentavos: positive, lineTotalCentavos: positive,
 }

@@ -1,3 +1,4 @@
+import { inferredSet, productScentName, soldAs } from '../services/salePresentation.js'
 import { summarizeProfit } from '../services/salesProfit.js'
 import { downloadCsv } from './downloadCsv.js'
 import { useState } from 'react'
@@ -47,8 +48,12 @@ export function SalesHistory({ sales: history }) {
   for (const sale of sales) {
     const day = getManilaDate(new Date(sale.confirmedAt))
     byDate.set(day, (byDate.get(day) ?? 0) + sale.totalCentavos)
-    for (const item of sale.items) byProduct.set(item.productNameSnapshot, (byProduct.get(item.productNameSnapshot) ?? 0) + item.quantity)
+    for (const item of sale.items) {
+      const name = productScentName(item.productNameSnapshot)
+      byProduct.set(name, (byProduct.get(name) ?? 0) + item.quantity)
+    }
   }
+  const inferredSets = new Set(sales.filter(sale => inferredSet(sale.items)).map(sale => sale.id))
   const dates = [...byDate].sort(([a], [b]) => a.localeCompare(b))
   const best = [...byProduct].sort((a, b) => b[1] - a[1]).slice(0, 8)
   return (
@@ -88,8 +93,8 @@ export function SalesHistory({ sales: history }) {
           })}
         </div>
         <button className="my-4 text-primary underline" onClick={() => downloadCsv('sales-' + period.toLowerCase().replace(' ', '-'), [
-          ['Sale ID', 'Confirmed at', 'Product', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Purchase cost per piece (PHP)', 'Gross profit (PHP)', 'Payment'],
-          ...sales.flatMap(sale => sale.items.map(item => [sale.id, sale.confirmedAt, item.productNameSnapshot,
+          ['Sale ID', 'Confirmed at', 'Product', 'Sold as', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Purchase cost per piece (PHP)', 'Gross profit (PHP)', 'Payment'],
+          ...sales.flatMap(sale => sale.items.map(item => [sale.id, sale.confirmedAt, productScentName(item.productNameSnapshot), soldAs(item, inferredSets.has(sale.id)),
             item.quantity, item.unitPriceCentavos / 100, item.lineTotalCentavos / 100,
             item.unitCostCentavos === undefined ? '' : item.unitCostCentavos / 100,
             item.unitCostCentavos === undefined ? '' : (item.lineTotalCentavos - item.quantity * item.unitCostCentavos) / 100, BUSINESS_PAYMENT_LABELS[sale.paymentMethod]])),
@@ -105,7 +110,7 @@ export function SalesHistory({ sales: history }) {
             <tbody>{sales.map((sale) => (
               <tr key={sale.id} className="border-b border-outline-variant align-top">
                 <td className="p-2"><time dateTime={sale.confirmedAt}>{dateTime(sale.confirmedAt)}</time></td>
-                <td className="business-product-name p-2">{sale.items.map((item) => <p key={item.id}>{item.productNameSnapshot}</p>)}</td>
+                <td className="business-product-name p-2">{sale.items.map((item) => <p key={item.id}>{productScentName(item.productNameSnapshot)}{soldAs(item, inferredSets.has(sale.id)) && <span className="ml-2 text-xs text-content-muted">{soldAs(item, inferredSets.has(sale.id))}</span>}</p>)}</td>
                 <td className="p-2 font-mono">{sale.items.map((item) => <p key={item.id}>{item.quantity}</p>)}</td>
                 <td className="business-amount p-2">{sale.items.map((item) => <p key={item.id}>{peso(item.unitPriceCentavos)}</p>)}</td>
                 <td className="business-amount p-2">{peso(sale.totalCentavos)}</td>

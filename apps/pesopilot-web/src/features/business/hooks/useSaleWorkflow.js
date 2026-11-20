@@ -33,11 +33,11 @@ export function useSaleWorkflow(products, completeSale, initialProductId = '', o
         const available = remaining.get(item.inventoryPoolId) ?? item.stockQuantity
         if (units > available) throw new Error('Add stock or choose a different mix.')
         remaining.set(item.inventoryPoolId, available - units)
-        return [{ productId: item.id, quantity: units, expectedUnitPriceCentavos: item.unitPriceCentavos, acceptedUnitPriceCentavos: unitPriceCentavos }]
+        return [{ productId: item.id, quantity: units, expectedUnitPriceCentavos: item.unitPriceCentavos, acceptedUnitPriceCentavos: unitPriceCentavos, saleFormat: isSet ? 'set' : 'solo' }]
       })
     } else {
       businessService.previewSale(product, count)
-      items = [{ productId, quantity: count, expectedUnitPriceCentavos: product.unitPriceCentavos, acceptedUnitPriceCentavos: unitPriceCentavos }]
+      items = [{ productId, quantity: count, expectedUnitPriceCentavos: product.unitPriceCentavos, acceptedUnitPriceCentavos: unitPriceCentavos, saleFormat: isSet ? 'set' : 'solo' }]
     }
     const units = isSet ? pieceQuantity : count
     const totalCentavos = units * unitPriceCentavos

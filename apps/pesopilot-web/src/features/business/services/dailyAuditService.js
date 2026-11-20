@@ -1,3 +1,4 @@
+import { inferredSet, soldAs } from './salePresentation.js'
 import { summarizeProfit } from './salesProfit.js'
 import { BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { businessRepository } from '../repositories/businessRepository.js'
@@ -147,6 +148,13 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
   const rowMap = new Map()
   const saleTotals = new Map()
   const soldProducts = new Set()
+  const itemsBySale = new Map()
+  for (const item of items) {
+    if (!daySales.has(item.saleId)) continue
+    if (!itemsBySale.has(item.saleId)) itemsBySale.set(item.saleId, [])
+    itemsBySale.get(item.saleId).push(item)
+  }
+  const inferredSets = new Set([...itemsBySale].filter(([, lines]) => inferredSet(lines)).map(([id]) => id))
   for (const item of items) {
     const sale = daySales.get(item.saleId)
     if (!sale) continue
@@ -163,10 +171,11 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
     }
     movedByLine.delete(key)
     saleTotals.set(sale.id, add(saleTotals.get(sale.id) ?? 0, amount))
-    const rowId = JSON.stringify([group.id, item.productId, item.productNameSnapshot, price])
+    const format = soldAs(item, inferredSets.has(item.saleId))
+    const rowId = JSON.stringify([group.id, item.productId, item.productNameSnapshot, price, format])
     let row = rowMap.get(rowId)
     if (!row) {
-      row = { id: rowId, name: item.productNameSnapshot, priceCentavos: price, payments: emptyPayments(), totalSold: 0 }
+      row = { id: rowId, name: item.productNameSnapshot, priceCentavos: price, format, payments: emptyPayments(), totalSold: 0 }
       rowMap.set(rowId, row)
       group.rows.push(row)
     }
