@@ -1,3 +1,4 @@
+import { businessRepository } from "../repositories/businessRepository.js"
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { posCatalogService } from './posCatalogService.js'
 import { createSampleCatalog, populateCatalog } from './catalogTestFixture.js'
@@ -97,4 +98,14 @@ it.each([
   corrupt(backup)
   await expect(businessBackupService.prepareRestore(JSON.stringify(backup))).rejects.toThrow(/backup/i)
   expect(await businessBackupRepository.read()).toEqual(before)
+})
+
+it('receives stock together and rolls back every movement on an invalid batch', async () => {
+  const product = await businessService.addProduct({ name: 'Gift box', pricePesos: '99', openingStock: 3 })
+  const receipt = { productId: product.id, quantity: 4 }
+  const before = await businessBackupRepository.read()
+  await expect(businessRepository.receiveStock([receipt, receipt])).rejects.toThrow('stock groups')
+  expect(await businessBackupRepository.read()).toEqual(before)
+  await businessRepository.receiveStock([receipt])
+  expect((await dailyAuditService.getReport(getManilaDate())).summary.remainingQuantity).toBe(7)
 })

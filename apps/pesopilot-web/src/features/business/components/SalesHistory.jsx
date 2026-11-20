@@ -1,13 +1,38 @@
+import { useState } from 'react'
+import { getManilaDate } from '../services/dailyAuditService.js'
 import { Card } from '@/components/ui/Card.jsx'
 import { dateTime, peso } from './businessPresentation.js'
 import { BUSINESS_PAYMENT_LABELS } from '../constants/businessConstants.js'
 
-export function SalesHistory({ sales }) {
+function periodKey(date, period) {
+  if (period === 'Month') return date.slice(0, 7)
+  if (period === 'Year') return date.slice(0, 4)
+  if (period === 'Week') {
+    const monday = new Date(date + 'T00:00:00Z')
+    monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7)
+    return monday.toISOString().slice(0, 10)
+  }
+  return date
+}
+
+export function SalesHistory({ sales: history }) {
+  const [period, setPeriod] = useState('All time')
+  const [date, setDate] = useState(() => getManilaDate())
+  const sales = period === 'All time' ? history : history.filter(sale =>
+    periodKey(getManilaDate(sale.confirmedAt), period) === periodKey(date, period))
+  const units = sales.reduce((sum, sale) => sum + sale.items.reduce((count, item) => count + item.quantity, 0), 0)
   return (
     <Card className="p-5">
       <h2 className="font-heading text-lg font-semibold">Sales History</h2>
       <p className="mb-3 text-sm text-content-muted">Completed transactions, newest first. Details use the original sale snapshots and cannot be edited here.</p>
-      {sales.length === 0 ? <p className="text-sm text-content-muted">No completed sales yet. Review and confirm a sale to record it here.</p> : (
+      <div className="mb-4 flex flex-wrap items-end gap-4">
+        <label>Sales period<select className="block rounded border p-2" value={period} onChange={event => setPeriod(event.target.value)}>
+          {['Day', 'Week', 'Month', 'Year', 'All time'].map(value => <option key={value}>{value}</option>)}
+        </select></label>
+        {period !== 'All time' && <label>Date in period<input className="block rounded border p-2" type="date" value={date} onChange={event => { if (event.target.value) setDate(event.target.value) }} /></label>}
+        <p aria-live="polite"><strong>{peso(sales.reduce((sum, sale) => sum + sale.totalCentavos, 0))}</strong> · {units} units · {sales.length} transactions</p>
+      </div>
+      {sales.length === 0 ? <p className="text-sm text-content-muted">{history.length ? 'No completed sales for this period.' : 'No completed sales yet. Review and confirm a sale to record it here.'}</p> : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Completed sales with original product and price snapshots</caption>

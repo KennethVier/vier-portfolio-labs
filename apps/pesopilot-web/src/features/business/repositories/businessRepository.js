@@ -102,6 +102,21 @@ export function createBusinessRepository(businessDb) {
     return product
   },
 
+  receiveStock(entries) {
+    return businessDb.transaction('rw', businessDb.products, businessDb.inventoryPools,
+      businessDb.inventoryMovements, businessDb.auditEvents, async () => {
+        const pools = new Set()
+        const occurredAt = new Date().toISOString()
+        for (const { productId, quantity } of entries) {
+          const product = await businessDb.products.get(productId)
+          if (!product || product.catalog?.sampleKey || pools.has(product.inventoryPoolId)) throw new Error('Review the selected stock groups.')
+          if (!Number.isSafeInteger(quantity) || quantity <= 0) throw new Error('Enter a positive whole quantity.')
+          pools.add(product.inventoryPoolId)
+          await this.adjustStock({ productId, delta: quantity, reason: 'Stock received', occurredAt })
+        }
+      })
+  },
+
   async adjustStock({ productId, delta, reason, occurredAt }) {
     return businessDb.transaction(
       'rw',

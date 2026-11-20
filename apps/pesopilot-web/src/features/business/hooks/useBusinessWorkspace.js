@@ -1,5 +1,6 @@
 import { productPhotoService } from '../services/productPhotoService.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { businessRepository } from '../repositories/businessRepository.js'
 import { businessService } from '../services/businessService.js'
 
 export function useBusinessWorkspace() {
@@ -67,6 +68,7 @@ export function useBusinessWorkspace() {
     uploadPhoto: (file, familyId) => mutate(() => productPhotoService.upload(file, familyId)),
     removePhoto: (familyId) => mutate(() => productPhotoService.remove(familyId)),
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
+    receiveStock: (entries) => mutate(() => businessRepository.receiveStock(entries)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
   }

@@ -46,6 +46,11 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
     <p className="mb-5 mt-2 text-sm text-content-muted">Choose a category, select your item, then check the details before saving.</p>
     <form onSubmit={submit}>
       <fieldset disabled={disabled || action.saving} className="space-y-5">
+        <Button type="button" variant="secondary" aria-pressed={category === 'Other product'} onClick={() => {
+          setSelection({ ...emptySelection, category: 'Other product' })
+          setOpeningStock('0')
+          setPoolId('')
+        }}>Add a custom product</Button>
         <label className="block text-sm font-semibold">Product Category
           <select required className={selectClass} value={category} onChange={(event) => {
             setSelection({ ...emptySelection, category: event.target.value })
