@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useBusinessAction } from '../hooks/useBusinessAction.js'
 import { ProductVisual } from './ProductVisual.jsx'
 import { Button } from '@/components/ui/Button.jsx'
 import { Input } from '@/components/ui/Input.jsx'
@@ -7,10 +9,17 @@ import { peso, selectClass } from './businessPresentation.js'
 import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { PRODUCT_SCENTS } from '../constants/catalogMetadata.js'
 
-export function RecordSaleModal({ family, photo, products, completeSale, disabled, onClose, onRecorded }) {
+export function RecordSaleModal({ family, photo, products, receiveStock, onReceived, completeSale, disabled, onClose, onRecorded }) {
   const variants = products.filter((product) => family.products.some((item) => item.id === product.id))
   const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.stockQuantity > 0) ?? variants[0]
   const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded)
+  const [received, setReceived] = useState('')
+  const receipt = useBusinessAction()
+  async function saveStock(event) {
+    event.preventDefault()
+    if (await receipt.run(() => receiveStock([{ productId: sale.product.id, presetName: sale.product.presetName, quantity: Number(received) }]))) onReceived()
+  }
+  const needsStock = sale.product?.stockQuantity === 0
   const dimensions = [['scent', 'Scent'], ['type', 'Solo / Set'], ['size', 'Size']]
   const ambiguous = new Set(variants.map((product) => JSON.stringify(dimensions.map(([key]) => product.catalog?.[key] ?? null)))).size !== variants.length ||
     dimensions.some(([key]) => variants.some((product) => product.catalog?.[key]) && variants.some((product) => !product.catalog?.[key]))
@@ -37,8 +46,8 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
         <Button className="min-h-12 flex-1" disabled={sale.saving || (disabled && sale.canEdit)} onClick={sale.confirmSale}>{sale.saving ? 'Recording…' : sale.error ? 'Retry Confirmed Sale' : 'Owner: Confirm Completed Sale'}</Button>
         <Button variant="secondary" disabled={!sale.canEdit} onClick={sale.editSale}>Back to Edit</Button>
       </div>
-    </section> : <form onSubmit={sale.reviewSale}>
-      <fieldset disabled={disabled || sale.saving} className="space-y-5">
+    </section> : <form onSubmit={needsStock ? saveStock : sale.reviewSale}>
+      <fieldset disabled={disabled || sale.saving || receipt.saving} className="space-y-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-content-muted">{family.category}</p>
           <p className="business-amount shrink-0 text-xl text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
@@ -56,7 +65,13 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
             <div className="flex flex-wrap gap-2">{options.map((value) => <Button key={value} variant={sale.product?.catalog?.[dimension] === value ? 'primary' : 'secondary'} aria-pressed={sale.product?.catalog?.[dimension] === value} onClick={() => selectVariant(dimension, value)}>{value}</Button>)}</div>
           </fieldset> : null
         })}
-        <div className="rounded-lg bg-surface-container-low p-4">
+        {needsStock ? <section className="space-y-3 rounded-lg bg-surface-container-low p-4">
+          <h3 className="font-semibold">Add stock first</h3>
+          <p>{sale.product.name} is out of stock. Enter the units received before recording a sale.</p>
+          <Input label="Units received" type="number" required min="1" step="1" inputMode="numeric" value={received} onChange={event => setReceived(event.target.value)} />
+          <Button type="submit" disabled={!Number.isSafeInteger(Number(received)) || Number(received) < 1}>Save stock</Button>
+          {receipt.error && <p role="alert">{receipt.error}</p>}
+        </section> : <><div className="rounded-lg bg-surface-container-low p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label htmlFor="sale-quantity" className="text-sm font-semibold">Sale quantity<span className="mt-1 block font-normal text-content-muted">{sale.product?.stockQuantity ?? 0} available</span></label>
             <div className="flex items-center gap-2">
@@ -76,7 +91,7 @@ export function RecordSaleModal({ family, photo, products, completeSale, disable
         </div>
         {!sale.preview ? <p role="alert" className="text-sm text-error">{sale.validation}</p> : null}
         <Button type="submit" className="min-h-12 w-full text-base" disabled={!sale.preview}>Record Sale</Button>
-        <p className="text-center text-xs text-content-muted">Review and confirm before saving.</p>
+        <p className="text-center text-xs text-content-muted">Review and confirm before saving.</p></>}
       </fieldset>
     </form>}
     {sale.error ? <p role="alert" className="mt-4 text-sm text-error">{sale.error}</p> : null}
