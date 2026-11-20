@@ -70,9 +70,9 @@ describe('actual workspace routes and first-use selection', () => {
     await render()
     await settle(() => expect(container.textContent).toContain('Record Sales'))
     for (const [label, path, content] of [
-      ['Inventory', '/business/inventory', 'Manual stock adjustment'],
+      ['Inventory', '/business/inventory', 'Correct stock'],
       ['Daily Audit', '/business/audit', 'Audit date (Philippines)'],
-      ['Sales History', '/business/history', 'No completed sales yet'],
+      ['Sales Analytics', '/business/history', 'No completed sales yet'],
       ['Settings / Backup', '/business/settings', 'Download Business Backup'],
       ['POS', '/business', 'Record Sales'],
     ]) {
@@ -124,12 +124,12 @@ describe('actual workspace routes and first-use selection', () => {
     await settle(() => expect(container.textContent).toContain('No inventory or sales recorded for this date'))
     expect(getActiveWorkspace()).toBe('business')
     expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
-    await click('Back to Business')
+    await click('POS')
     await settle(() => expect(container.textContent).toContain('Record Sales'))
     await click('Daily Audit')
     await settle(() => expect(router.state.location.pathname).toBe('/business/audit'))
   })
-  it('offers first-use choice, enters Business without cutoff guidance, and switches both ways', async () => {
+  it('offers first-use choice, enters Business without cutoff guidance, and keeps the Personal route available', async () => {
     await render()
     await settle(() => expect(container.textContent).toContain('How will you use PesoPilot?'))
     expect(cutoffService.syncCutoffLifecycle).not.toHaveBeenCalled()
@@ -138,7 +138,7 @@ describe('actual workspace routes and first-use selection', () => {
     expect(router.state.location.pathname).toBe('/business')
     expect(getActiveWorkspace()).toBe('business')
     expect(container.textContent).not.toContain('No Current Cutoff')
-    await click('Switch to Personal')
+    await navigate('/dashboard')
     await settle(() => expect(container.textContent).toContain('Personal dashboard test content'))
     expect(getActiveWorkspace()).toBe('personal')
     expect(container.textContent).not.toContain('How will you use PesoPilot?')

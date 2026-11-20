@@ -4,11 +4,11 @@ import { Card } from '@/components/ui/Card.jsx'
 import { Input } from '@/components/ui/Input.jsx'
 import { useBusinessAction } from '../hooks/useBusinessAction.js'
 import { peso, selectClass } from './businessPresentation.js'
-import { PRODUCT_CATEGORIES, PRODUCT_SCENTS, SHAWL_OPTIONS, PILLOW_OPTIONS, PACKAGE_OPTIONS,
+import { PRODUCT_CATEGORIES, PRODUCT_SCENTS, SHAWL_OPTIONS, PILLOW_OPTIONS,
   findDuplicateProduct, availableSharedStock } from '../constants/productCatalog.js'
 import { productCreationService } from '../services/productCreationService.js'
 
-const emptySelection = { category: '', shawl: '', scent: '', type: '', size: '', name: '', price: '' }
+const emptySelection = { category: '', shawl: '', scent: '', size: '', name: '', price: '' }
 
 export function ProductForm({ addProduct, disabled, products = [] }) {
   const [selection, setSelection] = useState(emptySelection)
@@ -16,13 +16,14 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
   const [poolId, setPoolId] = useState('')
   const action = useBusinessAction()
   const { category } = selection
-  const preview = productCreationService.preview(selection)
+  const hasScent = category && !['Shawls', 'Magic Pillows', 'Other product'].includes(category)
+  const preview = productCreationService.preview({
+    ...selection, type: hasScent && category !== 'Hallelujah Inhaler' ? 'Solo' : undefined,
+  })
   const duplicate = preview.input ? findDuplicateProduct(products, preview.input) : null
-  const pools = availableSharedStock(products)
+  const pools = availableSharedStock(products.filter(product => product.catalog?.type !== 'Set'))
   const sharedStock = pools.find((product) => product.inventoryPoolId === poolId)
   const staleSelection = Boolean(poolId && !sharedStock)
-  const hasScent = category && !['Shawls', 'Magic Pillows', 'Other product'].includes(category)
-  const hasPackage = hasScent && category !== 'Hallelujah Inhaler'
 
   function select(key, value) {
     setSelection((current) => ({ ...current, [key]: value }))
@@ -71,11 +72,6 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
             {hasScent ? <label className="text-sm font-semibold">Scent
               <select required className={selectClass} value={selection.scent} onChange={(event) => select('scent', event.target.value)}>
                 <option value="">Choose a scent</option>{PRODUCT_SCENTS.map((value) => <option key={value}>{value}</option>)}
-              </select>
-            </label> : null}
-            {hasPackage ? <label className="text-sm font-semibold">Solo / Set
-              <select required className={selectClass} value={selection.type} onChange={(event) => select('type', event.target.value)}>
-                <option value="">Choose Solo or Set</option>{PACKAGE_OPTIONS.map((option) => <option key={option.type} value={option.type}>{option.type} — {peso(option.priceCentavos)}</option>)}
               </select>
             </label> : null}
             {category === 'Magic Pillows' ? <label className="text-sm font-semibold">Pillow size

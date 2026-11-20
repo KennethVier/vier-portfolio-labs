@@ -11,7 +11,7 @@ import { PRODUCT_SCENTS } from '../constants/catalogMetadata.js'
 
 export function RecordSaleModal({ family, photo, products, receiveStock, onReceived, completeSale, disabled, onClose, onRecorded }) {
   const variants = products.filter((product) => family.products.some((item) => item.id === product.id))
-  const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.stockQuantity > 0) ?? variants[0]
+  const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.catalog?.type !== 'Set') ?? variants[0]
   const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded)
   const [received, setReceived] = useState('')
   const receipt = useBusinessAction()
@@ -19,7 +19,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
     event.preventDefault()
     if (await receipt.run(() => receiveStock([{ productId: sale.product.id, presetName: sale.product.presetName, quantity: Number(received) }]))) onReceived()
   }
-  const needsStock = sale.product?.stockQuantity === 0
+  const needsStock = !sale.isSet && sale.product?.stockQuantity === 0
   const dimensions = [['scent', 'Scent'], ['type', 'Solo / Set'], ['size', 'Size']]
   const ambiguous = new Set(variants.map((product) => JSON.stringify(dimensions.map(([key]) => product.catalog?.[key] ?? null)))).size !== variants.length ||
     dimensions.some(([key]) => variants.some((product) => product.catalog?.[key]) && variants.some((product) => !product.catalog?.[key]))
@@ -28,6 +28,8 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
     const choices = variants.filter((product) => product.catalog?.[dimension] === value)
     const exact = choices.find((product) => dimensions.every(([key]) => key === dimension || product.catalog?.[key] === sale.product?.catalog?.[key]))
     sale.setProductId((exact ?? choices[0]).id)
+    sale.setAgreedPrice('')
+    sale.setMix(null)
   }
 
   return <BusinessDialog title={sale.review ? 'Confirm completed sale' : <span className="business-product-name">{family.name}</span>} canClose={sale.canEdit} onClose={onClose}>
@@ -52,7 +54,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
           <p className="text-sm text-content-muted">{family.category}</p>
           <p className="business-amount shrink-0 text-xl text-primary">{sale.product ? peso(sale.product.unitPriceCentavos) : '—'}</p>
         </div>
-        {ambiguous ? <label className="block text-sm font-semibold">Product variant
+        {ambiguous || family.category === 'Shawls' ? <label className="block text-sm font-semibold">Product variant
           <select className={selectClass} value={sale.productId} onChange={(event) => sale.setProductId(event.target.value)}>
             {variants.map((product) => <option key={product.id} value={product.id}>{product.name} · {peso(product.unitPriceCentavos)} · {product.stockQuantity} available</option>)}
           </select>
@@ -60,7 +62,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
           const options = [...new Set(variants.map((product) => product.catalog?.[dimension]).filter(Boolean))]
           if (dimension === 'type') options.sort((a, b) => (a === 'Solo' ? 0 : 1) - (b === 'Solo' ? 0 : 1))
           if (dimension === 'scent') options.sort((a, b) => PRODUCT_SCENTS.indexOf(a) - PRODUCT_SCENTS.indexOf(b))
-          return options.length ? <fieldset key={dimension}>
+          return options.length && !(sale.isSet && dimension === 'scent') ? <fieldset key={dimension}>
             <legend className="mb-2 text-sm font-semibold">{label}</legend>
             <div className="flex flex-wrap gap-2">{options.map((value) => <Button key={value} variant={sale.product?.catalog?.[dimension] === value ? 'primary' : 'secondary'} aria-pressed={sale.product?.catalog?.[dimension] === value} onClick={() => selectVariant(dimension, value)}>{value}</Button>)}</div>
           </fieldset> : null
@@ -73,17 +75,26 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
           {receipt.error && <p role="alert">{receipt.error}</p>}
         </section> : <><div className="rounded-lg bg-surface-container-low p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label htmlFor="sale-quantity" className="text-sm font-semibold">Sale quantity<span className="mt-1 block font-normal text-content-muted">{sale.product?.stockQuantity ?? 0} available</span></label>
+            <label htmlFor="sale-quantity" className="text-sm font-semibold">{sale.isSet ? 'Number of sets' : 'Sale quantity'}<span className="mt-1 block font-normal text-content-muted">{sale.isSet ? '5 pieces per set' : (sale.product?.stockQuantity ?? 0) + ' available'}</span></label>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" aria-label="Decrease quantity" disabled={Number(sale.quantity) <= 1} onClick={() => sale.setQuantity(String(Number(sale.quantity) - 1))}>−</Button>
-              <Input id="sale-quantity" aria-label="Sale quantity" required type="number" inputMode="numeric" min="1" step="1" max={sale.product?.stockQuantity} value={sale.quantity} className="w-20 text-center font-mono" onChange={(event) => sale.setQuantity(event.target.value)} />
-              <Button variant="secondary" aria-label="Increase quantity" disabled={Number(sale.quantity) >= (sale.product?.stockQuantity ?? 0)} onClick={() => sale.setQuantity(String(Number(sale.quantity) + 1))}>+</Button>
+              <Button variant="secondary" aria-label="Decrease quantity" disabled={Number(sale.quantity) <= 1} onClick={() => { sale.setQuantity(String(Number(sale.quantity) - 1)); sale.setMix(null) }}>−</Button>
+              <Input id="sale-quantity" aria-label="Sale quantity" required type="number" inputMode="numeric" min="1" step="1" max={sale.isSet ? undefined : sale.product?.stockQuantity} value={sale.quantity} className="w-20 text-center font-mono" onChange={(event) => { sale.setQuantity(event.target.value); sale.setMix(null) }} />
+              <Button variant="secondary" aria-label="Increase quantity" disabled={!sale.isSet && Number(sale.quantity) >= (sale.product?.stockQuantity ?? 0)} onClick={() => { sale.setQuantity(String(Number(sale.quantity) + 1)); sale.setMix(null) }}>+</Button>
             </div>
           </div>
         </div>
-        <fieldset><legend className="mb-2 text-sm font-semibold">Method of Payment</legend><div className="payment-options grid grid-cols-3 gap-2">
-          {BUSINESS_PAYMENT_METHODS.map((method) => <Button key={method} aria-pressed={sale.paymentMethod === method} variant={sale.paymentMethod === method ? 'primary' : 'secondary'} onClick={() => sale.setPaymentMethod(method)}>{BUSINESS_PAYMENT_LABELS[method]}</Button>)}
-        </div></fieldset>
+        {sale.isSet && <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="mb-2 font-semibold">Set contents</legend>
+          {sale.pieces.map(item => <Input key={item.id} label={item.catalog.scent + ' · ' + item.stockQuantity + ' available'}
+            type="number" min="0" step="1" inputMode="numeric" value={sale.mix?.[item.id] ?? sale.quantity}
+            onChange={event => sale.setMix({ ...sale.mix, [item.id]: event.target.value })} />)}
+        </fieldset>}
+        <Input label="Agreed price per piece (₱) · Optional tawad" inputMode="decimal" value={sale.agreedPrice}
+          placeholder={sale.isSet ? '150.00' : (sale.product.unitPriceCentavos / 100).toFixed(2)}
+          onChange={event => sale.setAgreedPrice(event.target.value)} />
+        <fieldset><legend className="mb-2 text-sm font-semibold">Method of Payment</legend><div className="payment-options grid grid-cols-2 gap-2">
+          {BUSINESS_PAYMENT_METHODS.filter(method => method !== 'coop').map((method) => <Button key={method} aria-pressed={sale.paymentMethod === method} variant={sale.paymentMethod === method ? 'primary' : 'secondary'} onClick={() => sale.setPaymentMethod(method)}>{BUSINESS_PAYMENT_LABELS[method]}</Button>)}
+        </div><details className="mt-2" open={sale.paymentMethod === 'coop' || undefined}><summary className="cursor-pointer text-sm">More payment methods</summary><Button aria-pressed={sale.paymentMethod === 'coop'} onClick={() => sale.setPaymentMethod('coop')}>Coop Pay</Button></details></fieldset>
         <div aria-live="polite" className="sale-summary rounded-xl p-4">
           <p className="mb-2 text-sm text-content-muted"><span className="business-product-name">{family.name}</span>{sale.product?.catalog ? ` · ${[sale.product.catalog.scent, sale.product.catalog.type, sale.product.catalog.size].filter(Boolean).join(' · ')}` : ''}</p>
           <p className="mb-3 text-sm text-content-muted">Quantity: {sale.quantity || '—'} · Payment: {BUSINESS_PAYMENT_LABELS[sale.paymentMethod]}</p>

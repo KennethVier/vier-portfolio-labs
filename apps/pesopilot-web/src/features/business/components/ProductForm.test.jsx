@@ -47,7 +47,7 @@ const cases = [
   ['Shawls', [['Shawl', 'Shawl B']], 'Shawl B', '199.00', { category: 'Shawls', family: 'Shawl B' }],
   ['Hallelujah Inhaler', [['Scent', 'Negative Ion']], 'Hallelujah Inhaler · Negative Ion', '99.00', { category: 'Hallelujah Inhaler', family: 'Hallelujah Inhaler', scent: 'Negative Ion' }],
   ...['Hallelujah Rub', 'Hallelujah Roll', 'Reigna Aroma Rub', 'Reigna Aroma Roll'].map((category) => [
-    category, [['Scent', 'Lavender'], ['Solo / Set', 'Set']], `${category} · Lavender · Set`, '150.00', { category, family: category, scent: 'Lavender', type: 'Set' },
+    category, [['Scent', 'Lavender']], `${category} · Lavender · Solo`, '199.00', { category, family: category, scent: 'Lavender', type: 'Solo' },
   ]),
   ['Magic Pillows', [['Pillow size', '18x28 Queen Size']], '18x28 Queen Size', '799.00', { category: 'Magic Pillows', family: 'Magic Pillows', size: '18x28 Queen Size' }],
   ['Other product', [['Custom product name', 'Handwoven bag'], ['Custom unit price', '350.25']], 'Handwoven bag', '350.25', undefined],
@@ -90,14 +90,11 @@ it.each(cases)('guides %s with relevant fields, price, summary and zero-stock ex
   expect(container.querySelector('[role="status"]').textContent).toContain('Product photos below')
 })
 
-it('updates Solo/Set prices and clears irrelevant selections and stock on category change', async () => {
+it('uses the single-piece price and clears irrelevant selections and stock on category change', async () => {
   await render()
   await change('Product Category', 'Hallelujah Rub')
   await change('Scent', 'Turmeric')
-  await change('Solo / Set', 'Solo')
   expect(field('Unit price').value).toBe('199.00')
-  await change('Solo / Set', 'Set')
-  expect(field('Unit price').value).toBe('150.00')
   await change('Opening Stock Quantity', '7')
   await change('Product Category', 'Magic Pillows')
   expect(field('Opening Stock Quantity').value).toBe('0')
@@ -109,10 +106,9 @@ it('updates Solo/Set prices and clears irrelevant selections and stock on catego
 
 it('blocks an existing variant using metadata even if its display name and price differ', async () => {
   await render([{ id: 'saved', name: 'Existing lavender', unitPriceCentavos: 100,
-    catalog: { category: 'Hallelujah Rub', family: 'Hallelujah Rub', scent: 'Lavender', type: 'Set' } }])
+    catalog: { category: 'Hallelujah Rub', family: 'Hallelujah Rub', scent: 'Lavender', type: 'Solo' } }])
   await change('Product Category', 'Hallelujah Rub')
   await change('Scent', 'Lavender')
-  await change('Solo / Set', 'Set')
   expect(container.querySelector('[role="alert"]').textContent).toContain('already in your inventory')
   expect(container.querySelector('button[type="submit"]').disabled).toBe(true)
   await save()
@@ -124,7 +120,6 @@ it('shares stock only after an explicit Advanced selection, submits zero opening
   await render([existing, { ...existing, id: 'sample', inventoryPoolId: 'sample-pool', inventoryPoolName: 'Fictional', catalog: { sampleKey: 'pos-demo-v1-x' } }])
   await change('Product Category', 'Hallelujah Roll')
   await change('Scent', 'Lavender')
-  await change('Solo / Set', 'Set')
   await change('Opening Stock Quantity', '9')
   expect(field('Use existing stock group').value).toBe('')
   await act(async () => container.querySelector('details summary').click())

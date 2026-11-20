@@ -3,14 +3,15 @@ import { Button } from '@/components/ui/Button.jsx'
 import { Card } from '@/components/ui/Card.jsx'
 import { Input } from '@/components/ui/Input.jsx'
 import { useBusinessAction } from '../hooks/useBusinessAction.js'
-import { peso, selectClass } from './businessPresentation.js'
+import { selectClass } from './businessPresentation.js'
 
-export function InventoryPanel({ products, adjustStock, disabled }) {
+export function InventoryPanel({ products, adjustStock, disabled, children }) {
   const [productId, setProductId] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [direction, setDirection] = useState('add')
   const [reason, setReason] = useState('')
   const action = useBusinessAction()
+  const pools = [...new Map(products.map(item => [item.inventoryPoolId, item])).values()]
   const product = products.find((item) => item.id === productId)
 
   async function submit(event) {
@@ -24,30 +25,15 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
 
   return (
     <Card className="p-5">
-      <h2 className="mb-3 font-heading text-lg font-semibold">Inventory</h2>
-      {products.length === 0 ? <p className="text-sm text-content-muted">No products yet. Add a product with its price and opening quantity.</p> : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">Products, unit prices and available stock</caption>
-            <thead><tr className="border-b border-outline-variant">
-              {['Product', 'Unit price', 'Stock group', 'Available quantity (shared per group)', 'Status'].map((label) => <th key={label} scope="col" className="p-2">{label}</th>)}
-            </tr></thead>
-            <tbody>{products.map((item) => (
-              <tr key={item.id} className="border-b border-outline-variant">
-                <th scope="row" className="business-product-name p-2">{item.name}</th>
-                <td className="business-amount p-2">{peso(item.unitPriceCentavos)}</td>
-                <td className="p-2">{item.inventoryPoolName}</td>
-                <td className="p-2 font-mono">{item.stockQuantity}</td>
-                <td className={`p-2 ${item.stockQuantity === 0 ? 'text-error' : 'text-secondary'}`}>
-                  {item.stockQuantity === 0 ? 'Out of stock' : 'In stock'}
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      )}
-      <h3 className="mb-2 mt-5 font-semibold">Manual stock adjustment</h3>
-      <p className="mb-3 text-sm text-content-muted">Add received stock or remove damaged/miscounted units. Every adjustment requires a reason and affects the selected product’s entire stock group. Shared quantities are not additive.</p>
+      <h2 className="mb-3 font-heading text-lg font-semibold">Stock on hand · {pools.reduce((sum, item) => sum + item.stockQuantity, 0)} units</h2>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {[...pools].sort((a, b) => a.stockQuantity - b.stockQuantity).map(item => <div key={item.id} className="rounded-lg border border-outline-variant p-3">
+          <p className="business-product-name font-semibold">{item.inventoryPoolName}{item.catalog?.type === 'Set' ? ' (legacy stock)' : ''}</p>
+          <p className={item.stockQuantity === 0 ? 'text-error' : ''}>{item.stockQuantity === 0 ? 'Out of stock' : item.stockQuantity + ' available'}</p>
+        </div>)}
+      </div>
+      {children}
+      <details className="mt-5"><summary className="cursor-pointer font-semibold">Correct stock</summary>
       <form onSubmit={submit}>
         <fieldset disabled={disabled || action.saving || products.length === 0} className="grid items-end gap-3 sm:grid-cols-2">
           <label className="text-sm">Product to adjust
@@ -68,6 +54,7 @@ export function InventoryPanel({ products, adjustStock, disabled }) {
       </form>
       {action.error ? <p role="alert" className="mt-3 text-sm text-error">{action.error}</p> : null}
       {action.notice ? <p role="status" className="mt-3 text-sm text-secondary">{action.notice}</p> : null}
+      </details>
     </Card>
   )
 }

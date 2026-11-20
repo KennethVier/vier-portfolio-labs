@@ -1,7 +1,7 @@
 import { productFamilyId } from '../constants/productPresentation.js'
 
 export const posCatalogService = {
-  families(products, { category = 'All Products', search = '' } = {}) {
+  families(products, { category = 'All Products', search = '', groupShawls = false } = {}) {
     const groups = new Map()
     const term = search.trim().toLowerCase()
     for (const product of products) {
@@ -10,8 +10,9 @@ export const posCatalogService = {
       const productCategory = metadata?.category ?? 'Other Products'
       if (category !== 'All Products' && category !== productCategory) continue
       // Old products remain independently selectable; their names are never parsed.
-      const key = productFamilyId(product)
-      if (!groups.has(key)) groups.set(key, { id: key, name: metadata?.family ?? product.name, category: productCategory, products: [] })
+      const combined = groupShawls && productCategory === 'Shawls'
+      const key = combined ? 'shawls' : productFamilyId(product)
+      if (!groups.has(key)) groups.set(key, { id: key, name: combined ? 'Shawls' : metadata?.family ?? product.name, category: productCategory, products: [] })
       groups.get(key).products.push(product)
     }
     return [...groups.values()].filter((family) => !term || [family.name, family.category,

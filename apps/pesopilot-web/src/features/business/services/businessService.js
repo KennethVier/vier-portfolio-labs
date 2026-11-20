@@ -103,7 +103,7 @@ export const businessService = {
     }
 
     const seen = new Set()
-    const validatedItems = items.map(({ productId, quantity, expectedUnitPriceCentavos }) => {
+    const validatedItems = items.map(({ productId, quantity, expectedUnitPriceCentavos, acceptedUnitPriceCentavos }) => {
       if (typeof productId !== 'string' || !productId.trim() || seen.has(productId)) {
         throw new Error('Each sale item must reference a different product')
       }
@@ -112,7 +112,11 @@ export const businessService = {
           (!Number.isSafeInteger(expectedUnitPriceCentavos) || expectedUnitPriceCentavos < 1)) {
         throw new Error('Invalid reviewed price')
       }
-      return { productId, quantity: assertQuantity(quantity), expectedUnitPriceCentavos }
+      if (acceptedUnitPriceCentavos !== undefined &&
+          (!Number.isSafeInteger(acceptedUnitPriceCentavos) || acceptedUnitPriceCentavos < 1)) {
+        throw new Error('Enter a valid agreed unit price')
+      }
+      return { productId, quantity: assertQuantity(quantity), expectedUnitPriceCentavos, acceptedUnitPriceCentavos }
     })
 
     return businessRepository.commitConfirmedSale({

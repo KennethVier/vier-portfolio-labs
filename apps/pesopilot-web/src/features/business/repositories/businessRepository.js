@@ -178,8 +178,8 @@ export function createBusinessRepository(businessDb) {
           const matches = previous.paymentMethod === sale.paymentMethod &&
             previousItems.length === items.length && items.every((item) =>
               previousItems.some((saved) => saved.productId === item.productId &&
-                saved.quantity === item.quantity && (item.expectedUnitPriceCentavos === undefined ||
-                  saved.unitPriceCentavos === item.expectedUnitPriceCentavos)))
+                saved.quantity === item.quantity && ((item.acceptedUnitPriceCentavos ?? item.expectedUnitPriceCentavos) === undefined ||
+                  saved.unitPriceCentavos === (item.acceptedUnitPriceCentavos ?? item.expectedUnitPriceCentavos))))
           if (!matches) throw new Error('This request key already belongs to a different sale')
           return { sale: previous, duplicate: true }
         }
@@ -208,7 +208,8 @@ export function createBusinessRepository(businessDb) {
             throw new Error('Insufficient stock')
           }
 
-          const lineTotalCentavos = product.unitPriceCentavos * item.quantity
+          const unitPriceCentavos = item.acceptedUnitPriceCentavos ?? product.unitPriceCentavos
+          const lineTotalCentavos = unitPriceCentavos * item.quantity
           totalCentavos += lineTotalCentavos
           if (!Number.isSafeInteger(lineTotalCentavos) || !Number.isSafeInteger(totalCentavos)) {
             throw new Error('Sale amount exceeds supported limit')
@@ -224,7 +225,7 @@ export function createBusinessRepository(businessDb) {
             poolNameSnapshot: pool.name,
             inventoryUnitsPerSale: 1,
             quantity: item.quantity,
-            unitPriceCentavos: product.unitPriceCentavos,
+            unitPriceCentavos,
             lineTotalCentavos,
           })
           movements.push({

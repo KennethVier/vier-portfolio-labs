@@ -1,3 +1,4 @@
+import { useAutomaticBusinessBackup } from '../hooks/useAutomaticBusinessBackup.js'
 import { MorningStockCheck } from './MorningStockCheck.jsx'
 import { NavLink, Link } from 'react-router-dom'
 import { BusinessIcon } from './BusinessIcon.jsx'
@@ -5,11 +6,12 @@ import '../business.css'
 
 const links = [
   ['/business', 'POS', 'pos'], ['/business/inventory', 'Inventory', 'inventory'],
-  ['/business/audit', 'Daily Audit', 'audit'], ['/business/history', 'Sales History', 'history'],
+  ['/business/audit', 'Daily Audit', 'audit'], ['/business/history', 'Sales Analytics', 'history'],
   ['/business/settings', 'Settings / Backup', 'settings'],
 ]
 
 export function BusinessShell({ children }) {
+  useAutomaticBusinessBackup()
   return <div className="business-touch min-h-screen">
     <MorningStockCheck />
     <header className="border-b border-outline-variant bg-surface-container-lowest">
@@ -26,7 +28,6 @@ export function BusinessShell({ children }) {
     <main id="business-main" className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
     <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 border-t border-outline-variant px-4 py-4 text-xs text-content-muted sm:px-8">
       <p>Stored on this device · Back up after each selling day</p>
-      <Link to="/dashboard" className="flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4">Switch to Personal</Link>
     </footer>
   </div>
 }
