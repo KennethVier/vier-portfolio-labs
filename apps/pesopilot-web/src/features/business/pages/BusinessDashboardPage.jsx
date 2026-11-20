@@ -1,7 +1,7 @@
 import { stockPresets } from '../services/stockPresets.js'
 import { findDuplicateProduct } from '../constants/productCatalog.js'
 import { ProductVisual } from '../components/ProductVisual.jsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
 import { Input } from '@/components/ui/Input.jsx'
@@ -22,6 +22,13 @@ export function BusinessDashboardPage() {
   const [category, setCategory] = useState('All Products')
   const [selected, setSelected] = useState(null)
   const [notice, setNotice] = useState('')
+  const [saleToast, setSaleToast] = useState(null)
+
+  useEffect(() => {
+    if (!saleToast) return
+    const timeout = window.setTimeout(() => setSaleToast(null), 3000)
+    return () => window.clearTimeout(timeout)
+  }, [saleToast])
   const { isLoading, error } = workspace
   const products = [...workspace.products, ...stockPresets.filter(preset => !findDuplicateProduct(workspace.products, preset))
     .map(preset => ({ ...preset, id: 'preset:' + preset.name, presetName: preset.name, stockQuantity: 0,
@@ -36,6 +43,9 @@ export function BusinessDashboardPage() {
       <div><p className="business-boutique-heading mb-2 text-xs uppercase text-primary">Point of sale</p><h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Record Sales</h1><p className="mt-2 text-base text-content-muted">Select a product to record a sale.</p></div>
     </div>
     {notice ? <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-secondary bg-surface-container-lowest p-4 text-secondary"><p>{notice}</p><Button variant="ghost" onClick={() => setNotice('')}>Dismiss</Button></div> : null}
+    <div role="status" className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center sm:justify-end">
+      {saleToast && <p className="rounded-lg border border-secondary bg-surface-container-lowest px-4 py-3 font-semibold text-secondary shadow-lg">{saleToast.message}</p>}
+    </div>
     <WorkspaceStatus workspace={workspace} />
     <section aria-label="Product catalog" className="pos-catalog space-y-5">
       <div className="relative max-w-xl"><Input label="Search products" type="search" placeholder="Search a product, scent, or size…" value={search} onChange={(event) => setSearch(event.target.value)} className="min-h-12 pl-11" /><span className="pointer-events-none absolute bottom-3.5 left-3 text-content-muted"><BusinessIcon name="search" /></span></div>
@@ -68,6 +78,6 @@ export function BusinessDashboardPage() {
         </div> : <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-14 text-center"><BusinessIcon className="mx-auto mb-4 h-10 w-10 text-primary" name="inventory" /><h3 className="font-heading text-xl font-semibold">{products.length ? 'No matching products' : 'No products yet'}</h3><p className="mx-auto mt-2 max-w-md text-content-muted">{products.length ? 'Try a different search or category.' : 'Add your first product in Inventory to start recording sales.'}</p>{products.length ? <Button className="mt-5" variant="secondary" onClick={() => { setSearch(''); setCategory('All Products') }}>Clear filters</Button> : <Link to="/business/inventory" className="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 font-semibold text-white">Open Inventory</Link>}</div>}
       </> : null}
     </section>
-    {selected ? <RecordSaleModal photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} receiveStock={workspace.receiveStock} onReceived={() => { setSelected(null); setNotice('Stock added. Select the product to record a sale.') }} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setNotice(message) }} /> : null}
+    {selected ? <RecordSaleModal photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} receiveStock={workspace.receiveStock} onReceived={() => { setSelected(null); setNotice('Stock added. Select the product to record a sale.') }} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setSaleToast({ message }) }} /> : null}
   </BusinessShell>
 }
