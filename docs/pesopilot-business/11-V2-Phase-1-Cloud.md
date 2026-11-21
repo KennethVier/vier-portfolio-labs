@@ -21,23 +21,36 @@ Dexie realm membership grants read access to shared objects. The Staff role has 
 
 ## Owner setup on Windows
 
-Use the existing verified **development** database and its original operator directory. Keep the owner key there. The following commands assume the Phase 1 branch has been checked out, and start in the repository root.
+The browser deliberately uses OTP with login-only intent. Dexie rejects an unknown application user before the client reads realm membership. The original bootstrap only imported realm data. A verified database owner or an imported member may therefore still receive “This user is not registered.” An incomplete realm import can independently deny Business access after authentication.
+
+In Dexie Cloud Manager confirm this development database uses the **Email** identity strategy, email OTP and restricted user admission. Stop if it uses another identity strategy. Do not switch the strategy on an established database. Run these commands with Node 24 in PowerShell from a checkout of the updated Phase 1 branch:
 
 ```powershell
 $app = (Resolve-Path .\apps\pesopilot-web).Path
-Set-Location (Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev')
-node "$app\cloud\bootstrap-dev.mjs" (Read-Host 'Verified first Admin email')
-npx --yes dexie-cloud@3.0.7 import business-bootstrap.local.json
-npx --yes dexie-cloud@3.0.7 whitelist http://localhost:5173
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+$ownerEmail = Read-Host 'Verified development owner email'
+& "$app\cloud\setup-first-admin.ps1" -Email $ownerEmail -OperatorDirectory $operator
+
+Push-Location $operator
+try {
+    npx.cmd --yes dexie-cloud@3.0.7 whitelist http://localhost:5173
+    if ($LASTEXITCODE -ne 0) { throw 'Development origin configuration failed.' }
+} finally { Pop-Location }
+
 Set-Location $app
-npm ci
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
 $env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
-npm run dev -- --port 5173 --strictPort
+npm.cmd run dev -- --port 5173 --strictPort
 ```
 
-The generator checks the configured development URL and refuses to overwrite an existing import file. Review the generated JSON before importing. In Dexie Cloud Manager use the verified-email identity strategy, OTP, and restricted onboarding. Ensure the first Admin identity is registered with the development database before using the login-only UI. If the database's admission policy requires pre-approved users, approve an invited Staff email there before first login. Database ownership and an application's Admin membership are separate.
+The setup script checks the URL from the operator directory, exchanges the local CLI credential at the fixed development endpoint, and checks the exact application user, realm and stable membership ID before writing. It registers a missing user through the supported POST /users API with a development evaluation license. Existing users keep their license and evaluation time. An incompatible identity, inactive license or conflicting realm owner/member stops the procedure. A partial import generates a fresh temporary manifest for the missing records and uses the official CLI import. A successful rerun performs reads only against the user and realm data. The previous local JSON manifest is ignored. Registration and import are separate provider operations, so repeat the same command after a partial failure. Run one owner bootstrap at a time.
 
-Open `http://localhost:5173/business`, sign in with the verified developer email and enter the code directly in Dexie's dialog. Subsequent sign-ins use fresh email codes, including account recovery via the verified mailbox. Use **Users** to invite a real authorized Staff tester. Accept the invitation using a separate browser profile. A public URL alone cannot import a schema, grant membership or whitelist an origin.
+Use the same command with `-VerifyOnly` for read-only diagnostics. It reports whether the application user already exists, the realm owner matches, and the Admin membership is accepted. A 401/403 requires checking the existing local operator authorization. Do not share the local key, access tokens or email codes. Under restricted admission, an invited Staff tester also needs an approved application user via the database manager. Assign only Staff membership for that person.
+
+Open `http://localhost:5173/business` in a separate development browser profile, enter the verified owner email and finish OTP in Dexie's dialog. Confirm **Users** is accessible. A successful bootstrap read-back proves the three provider records exist; it does not prove live OTP or server enforcement.
+
+Provider references: [Dexie application-user management](https://dexie.org/docs/cloud/rest-api#users-endpoint), [identity strategies](https://dexie.org/docs/cloud/authentication), [realm access control](https://dexie.org/docs/cloud/access-control).
 
 ## Hosted acceptance
 

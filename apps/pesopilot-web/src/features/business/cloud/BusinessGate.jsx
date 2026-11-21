@@ -18,7 +18,11 @@ export function BusinessGate() {
     try {
       await action()
     } catch (failure) {
-      setError(failure.message || 'Unable to complete the request.')
+      setError(
+        failure.code === 'USER_NOT_REGISTERED'
+          ? 'Ask the Admin to provision your Dexie Cloud application user, then sign in again.'
+          : failure.message || 'Unable to complete the request.',
+      )
     } finally {
       setBusy(false)
     }
@@ -55,7 +59,7 @@ export function BusinessGate() {
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault()
-          const email = String(new FormData(event.currentTarget).get('email')).trim()
+          const email = String(new FormData(event.currentTarget).get('email')).trim().toLowerCase()
           run(() => db.cloud.login({ email, grant_type: 'otp', intent: 'login' }))
         }}
       >

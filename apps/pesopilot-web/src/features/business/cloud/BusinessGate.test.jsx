@@ -82,3 +82,22 @@ it('locks the page when profile verification fails', async () => {
   expect(container.querySelector('[role=alert]').textContent).toContain('Active profile required')
   expect(container.textContent).not.toContain('Signed in as')
 })
+
+it('keeps an unregistered OTP identity outside Business without attempting registration', async () => {
+  await render('/business/users')
+  await emit({})
+  db.cloud.login.mockRejectedValueOnce(
+    Object.assign(new Error('This user is not registered.'), { code: 'USER_NOT_REGISTERED' }),
+  )
+  container.querySelector('[name=email]').value = ' Unknown@example.test '.trim()
+  await act(async () =>
+    container
+      .querySelector('form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+  )
+  expect(db.cloud.login.mock.calls).toEqual([
+    [{ email: 'unknown@example.test', grant_type: 'otp', intent: 'login' }],
+  ])
+  expect(container.querySelector('[role=alert]').textContent).toContain('application user')
+  expect(container.textContent).not.toContain('Manage users')
+})
