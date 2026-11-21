@@ -100,16 +100,7 @@ export async function provision(owner, api, prepare = false, log = console.log) 
   return manifest
 }
 
-async function main() {
-  const [mode, email, manifestPath] = process.argv.slice(2)
-  const owner = email?.trim().toLowerCase()
-  if (
-    !['--prepare', '--verify'].includes(mode) ||
-    !owner ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner) ||
-    (mode === '--prepare' && !manifestPath)
-  )
-    throw new Error('Run the owner setup PowerShell script with the verified email.')
+export async function operatorApi(write = false) {
   async function readConfig(file) {
     try {
       return JSON.parse(await readFile(file, 'utf8'))
@@ -123,7 +114,7 @@ async function main() {
   if (!key?.clientId || !key.clientSecret)
     throw new Error('No local CLI credential for the development URL.')
   const scopes = ['ACCESS_DB', 'GLOBAL_READ']
-  if (mode === '--prepare') scopes.push('GLOBAL_WRITE')
+  if (write) scopes.push('GLOBAL_WRITE')
   const response = await fetch(url + '/token', {
     method: 'POST',
     redirect: 'error',
@@ -167,6 +158,21 @@ async function main() {
           throw new Error('Invalid Dexie record response.')
         })
   }
+
+  return api
+}
+
+async function main() {
+  const [mode, email, manifestPath] = process.argv.slice(2)
+  const owner = email?.trim().toLowerCase()
+  if (
+    !['--prepare', '--verify'].includes(mode) ||
+    !owner ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner) ||
+    (mode === '--prepare' && !manifestPath)
+  )
+    throw new Error('Run the owner setup PowerShell script with the verified email.')
+  const api = await operatorApi(mode === '--prepare')
   const manifest = await provision(owner, api, mode === '--prepare')
   if (manifest) await writeFile(manifestPath, JSON.stringify(manifest), { mode: 0o600, flag: 'wx' })
 }

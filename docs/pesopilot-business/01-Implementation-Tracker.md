@@ -242,3 +242,7 @@ Applied presentation/documentation differences:
 ## Business V2 Phase 1 — development review
 
 Dexie Cloud owns OTP and shared-realm synchronization. Supabase is a server-only recovery target. The existing POS ledger stays local through Phase 1. The repository implementation and staging SQL checks are ready for review. Owner-side realm bootstrap and live two-account acceptance are pending. See [Phase 1 setup, migration and verification](11-V2-Phase-1-Cloud.md).
+
+### Controlled Admin identity transfer
+
+Added an operator-only transfer from the existing developer Admin to the approved business email. User and membership provisioning precede the realm owner write. Repeated execution preserves licenses and existing records. Read-back checks, resumable failure handling and rollback retain developer access. Hosted execution and business OTP are pending.

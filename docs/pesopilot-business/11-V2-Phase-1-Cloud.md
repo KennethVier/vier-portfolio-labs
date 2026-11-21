@@ -52,6 +52,35 @@ Open `http://localhost:5173/business` in a separate development browser profile,
 
 Provider references: [Dexie application-user management](https://dexie.org/docs/cloud/rest-api#users-endpoint), [identity strategies](https://dexie.org/docs/cloud/authentication), [realm access control](https://dexie.org/docs/cloud/access-control).
 
+## Controlled development Admin transfer
+
+The approved primary application Admin is now `pesopilotbusiness@gmail.com`. The existing developer application user and accepted Admin membership remain available until the business account completes live verification. Use the dedicated transfer command after the original bootstrap has succeeded. The original first-Admin command deliberately continues to reject conflicting owners. After transfer, use the transfer verifier for the business identity.
+
+From the updated feature worktree in Windows PowerShell:
+
+```powershell
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+& "$app\cloud\transfer-admin.ps1" -Mode transfer -OperatorDirectory $operator
+& "$app\cloud\transfer-admin.ps1" -Mode verify -OperatorDirectory $operator
+```
+
+The operator script uses only the existing development CLI credential locally. It validates the original developer user and Admin membership, then registers the business application user with an evaluation license if missing. It preserves an existing active license. It creates the business account's accepted Admin membership under a separate stable ID, reads it back, and only then replaces the existing realm object with a copy whose owner is the business email. It checks realm metadata and both memberships afterward. Run one transfer at a time and pause other membership changes during execution. The REST API offers object replacement rather than a compare-and-swap transaction, so a concurrent operator must coordinate with this procedure.
+
+If a step fails, already completed steps persist. Re-run the same transfer command after addressing the diagnostic. A user or membership created before failure is reused, and an already transferred owner is verified without another write. Unexpected owners, conflicting memberships and inactive users require inspection. No automatic license reset or deletion occurs.
+
+To return application realm ownership to the developer account:
+
+```powershell
+& "$app\cloud\transfer-admin.ps1" -Mode rollback -OperatorDirectory $operator
+```
+
+Rollback retains both users, both Admin memberships, all stock snapshots and current realm metadata. It restores only the realm owner after confirming developer Admin access. A repeated rollback is safe. Run transfer again when ready to retry. Keep developer Admin access until business OTP, session restoration and authorized stock/user operations pass in a separate browser profile. Removing developer access is a later explicit action.
+
+This transfer changes the application's shared realm `owner` property. It does not transfer the Dexie Cloud database creator, API clients or management authorization. Neither stock object owners nor private realms are rewritten. Realm ownership gives access to manage realm objects, while the accepted membership supplies visibility. The Supabase recovery configuration is outside this operation.
+
+These local script read-backs cannot establish that OTP was completed. Live acceptance still requires the business email to sign in, reach Users, publish a synthetic snapshot, restore a session, and retain access after the developer signs out. Verify Staff rejection and revocation separately before closing Phase 1.
+
 ## Hosted acceptance
 
 1. Sign in as Admin, create synthetic local stock and publish a shared snapshot. Wait for the sync status to reach in-sync.
