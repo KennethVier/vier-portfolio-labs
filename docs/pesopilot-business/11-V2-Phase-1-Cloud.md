@@ -171,3 +171,32 @@ Use Retry access check or reload with the existing browser profile. A new HTTP 4
 Live investigation reproduced the reported development /sync HTTP 422 using application/tson and an empty changes array. Individual schema probes also received the generic sealed-schema rejection, which does not name the missing table. An authenticated hosted schema export is still required to identify the exact hosted difference; catalogStock is the verified application table susceptible to the skipped-bootstrap path. No management credential is available in the agent runtime. Consequently this repository fix and representative sealed-schema tests do not establish successful hosted synchronization. Record the missing-table output and complete the actual business Admin login, dashboard, Users page and authorized synthetic snapshot operation after repair. Keep PR #10 and Phase 1 open until these pass.
 
 Reference: [Dexie Cloud sealed schema updates and primary keys](https://dexie.org/docs/cloud/cli).
+
+## Full serialized-schema investigation after an unsuccessful repair
+
+Correction to the earlier diagnostic scope: the four-table test checks the synchronized table set declared by a fresh client. The actual /sync schema field includes the entire merged cloud schema, including local addon metadata entries and persisted declarations. In addon 4.4.16, mergePersistedSchema starts from the persisted map and retains entries absent from current declarations. getSchema updates primary keys for existing local tables; the request serializes that complete map. Therefore passing the four-table comparison does not prove compatibility of the transmitted request. The generic 422 and the unauthenticated probes did not identify the remaining mismatch.
+
+Use the following diagnostic before another schema repair. It observes a normal app request without triggering sync itself, mutating its payload or changing IndexedDB. It saves only schema metadata, addon version, local table/index declarations and the HTTP status. Request headers, identities, tokens, revisions, changes and response records are excluded.
+
+1. Update the Phase 1 branch and restart the existing local Vite development server.
+2. Open Chrome DevTools Console on the affected localhost app. Execute this reviewed development module, then click Retry access check once within 60 seconds.
+
+```javascript
+(await import('/src/features/business/cloud/captureSchema.js')).captureNextSync()
+```
+
+A normal sync attempt downloads pesopilot-sync-schema.json. If there is no new request, the capture expires and restores fetch after 60 seconds. The observer also restores fetch after its first request. It reads the local $syncState schema record and lists all local table keys/indexes, but reads no business records. The addon still performs its normal sync request. This diagnostic does not turn a retry into a read-only network operation.
+
+From the repository worktree in PowerShell, export the hosted schema and compare the captured transport:
+
+```powershell
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\\pesopilot-business-v2-dev'
+& "$app\\cloud\\diagnose-schema.ps1" -CapturePath (Join-Path $env:USERPROFILE 'Downloads\\pesopilot-sync-schema.json') -OperatorDirectory $operator
+```
+
+The operator script only invokes the official schema export and a local comparison. It prints and saves schema-comparison-<guid>.json in the operator directory. Every transmitted table is reported, including entries without markedForSync=true, with primary-key/generation differences, missing host declarations and provenance in persisted/current schema. No automatic repair is performed. A missing local-only metadata entry is evidence for investigation, not authorization to import it into the hosted database.
+
+To determine what the previous repair changed, supply its exact retained schema-before and schema-after files as -RepairBeforePath and -RepairAfterPath. The report compares the same transmitted schema with both snapshots. If those files or the original console output are unavailable, the current hosted export cannot establish what happened during an earlier import.
+
+Share only the generated comparison report and the missing-table/verification lines from the earlier repair if available. Keep CLI keys, OTPs and raw network exports private. Wait for a fix based on the complete evidence. A successful /sync status must also be followed by live Admin dashboard/Users verification. Phase 1 and PR #10 remain open.

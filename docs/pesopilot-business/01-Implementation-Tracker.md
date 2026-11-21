@@ -254,3 +254,7 @@ The account observer now waits for the initial online cloud pull before deciding
 ### Sealed schema rejection and stalled initial pull
 
 Added a schema-only owner-side export/compare/import/read-back procedure that retains sealing and existing definitions. Bootstrap now emits schema even when existing identity records need no update. Actual development endpoint reproduced HTTP 422 with an empty-change sync probe. Addon sync-state errors now reach the gate with sanitized diagnostics and a bounded pending-pull wait. Exact hosted table difference and successful authenticated sync require owner-side execution. Both Admin memberships and business realm ownership remain outside this repair.
+
+### Full transport schema diagnostics
+
+The earlier four-table compatibility assertion did not cover the full persisted schema serialized by the addon. Added opt-in development capture of the actual request's schema metadata and a read-only authenticated hosted export comparator. The comparator reports every transmitted entry and can compare prior repair exports. No further schema or membership mutation is proposed until the affected browser capture identifies the difference. Live 422 and Admin access remain blocked.
