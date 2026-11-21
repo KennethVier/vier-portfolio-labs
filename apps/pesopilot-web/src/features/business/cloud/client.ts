@@ -1,6 +1,6 @@
 import Dexie, { liveQuery, type Table } from 'dexie'
 import dexieCloud from 'dexie-cloud-addon'
-import { combineLatest, switchMap, of, from } from 'rxjs'
+import { combineLatest, switchMap, of, Observable } from 'rxjs'
 
 export const realmId = 'rlm-pesopilot-business-dev'
 const devUrl = 'https://z5jxogiwe.dexie.cloud'
@@ -34,22 +34,73 @@ export function observeAccount(database: CloudDb) {
         (user.license.status !== 'ok' ||
           (user.license.validUntil && new Date(user.license.validUntil).getTime() <= Date.now()))
       )
-        return of({ denied: true })
+        return of({
+          denied: true,
+          reason: 'Your Dexie Cloud license is inactive or expired.',
+          diagnostics: { userId: user.userId, license: user.license.status, realmId },
+        })
       const id = user.userId
-      return from(
-        liveQuery(async () => {
-          const realm = await database.realms.get(realmId)
-          const members = await database.members
-            .where('[userId+realmId]')
-            .equals([id, realmId])
-            .toArray()
-          const accepted = members.filter((m) => m.accepted && !m.rejected)
-          const role =
-            realm?.owner === id ? 'admin' : accepted.find((m) => m.roles?.length === 1)?.roles?.[0]
-          if (!realm || !['admin', 'staff'].includes(role ?? '')) return { denied: true }
-          return { profile: { id, email: user.email ?? id, role, enabled: true } }
-        }),
-      )
+      return new Observable<object>((subscriber) => {
+        let cancelled = false
+        let subscription: { unsubscribe(): void } | undefined
+        const diagnostics = {
+          userId: id,
+          license: user.license?.status ?? 'not provided',
+          realmId,
+        }
+        subscriber.next({ loading: true, synchronizing: true, diagnostics })
+        async function start() {
+          const offline = typeof navigator !== 'undefined' && !navigator.onLine
+          try {
+            if (!offline) await database.cloud.sync({ purpose: 'pull', wait: true })
+            if (cancelled) return
+            subscription = liveQuery(async () => {
+              const realm = await database.realms.get(realmId)
+              const members = await database.members
+                .where('[userId+realmId]')
+                .equals([id, realmId])
+                .toArray()
+              const accepted = members.filter((m) => m.accepted && !m.rejected)
+              const role =
+                realm?.owner === id ? 'admin' : accepted.find((m) => m.roles?.length === 1)?.roles?.[0]
+              const details = {
+                ...diagnostics,
+                realmVisible: Boolean(realm),
+                realmOwner: realm?.owner ?? 'not visible',
+                acceptedMemberships: accepted.length,
+                roles: accepted.flatMap((m) => m.roles ?? []),
+              }
+              if (!realm || !['admin', 'staff'].includes(role ?? '')) {
+                return offline
+                  ? { error: 'Connect to the internet to verify Business access.', diagnostics: details }
+                  : { denied: true, diagnostics: details }
+              }
+              return {
+                profile: { id, email: user.email ?? id, role, enabled: true },
+                diagnostics: details,
+              }
+            }).subscribe({
+              next: (state) => subscriber.next(state),
+              error: () =>
+                subscriber.next({
+                  error: 'Unable to read synchronized Business membership.',
+                  diagnostics,
+                }),
+            })
+          } catch {
+            if (!cancelled)
+              subscriber.next({
+                error: 'Business access synchronization failed. Check your connection and retry.',
+                diagnostics,
+              })
+          }
+        }
+        void start()
+        return () => {
+          cancelled = true
+          subscription?.unsubscribe()
+        }
+      })
     }),
   )
 }

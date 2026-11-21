@@ -8,10 +8,14 @@ import '../business.css'
 
 export function BusinessGate() {
   const [state, setState] = useState({ loading: true })
+  const [attempt, setAttempt] = useState(0)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const { pathname } = useLocation()
-  useEffect(() => (db ? watchAccount(db, setState) : undefined), [])
+  useEffect(() => {
+    setState({ loading: true })
+    return db ? watchAccount(db, setState) : undefined
+  }, [attempt])
   async function run(action) {
     setBusy(true)
     setError('')
@@ -32,12 +36,32 @@ export function BusinessGate() {
     <main className="business-touch mx-auto max-w-md space-y-4 p-6">
       <h1 className="font-heading text-2xl">PesoPilot Business</h1>
       {content}
+      {state.diagnostics && (
+        <details>
+          <summary>Access diagnostics</summary>
+          <pre className="overflow-auto whitespace-pre-wrap text-xs">
+            {JSON.stringify(state.diagnostics, null, 2)}
+          </pre>
+        </details>
+      )}
       {error && <p role="alert">{error}</p>}
     </main>
   )
   if (!db) return panel(<p role="alert">Configure the development Dexie Cloud URL to sign in.</p>)
-  if (state.error) return panel(<p role="alert">{state.error}</p>)
-  if (state.loading) return panel(<p role="status">Checking Business membership…</p>)
+  if (state.error)
+    return panel(
+      <>
+        <p role="alert">{state.error}</p>
+        <Button onClick={() => setAttempt((value) => value + 1)}>Retry access check</Button>
+        <Button onClick={logout}>Sign out</Button>
+      </>,
+    )
+  if (state.loading)
+    return panel(
+      <p role="status">
+        {state.synchronizing ? 'Synchronizing Business access…' : 'Checking Business membership…'}
+      </p>,
+    )
   if (!state.profile && state.invite)
     return panel(
       <Button disabled={busy} onClick={() => run(() => state.invite.accept())}>
@@ -47,7 +71,7 @@ export function BusinessGate() {
   if (state.denied)
     return panel(
       <>
-        <p>Ask the Admin for access to this business.</p>
+        <p>{state.reason || 'Ask the Admin for access to this business.'}</p>
         <Button disabled={busy} onClick={logout}>
           Sign out
         </Button>
@@ -75,6 +99,14 @@ export function BusinessGate() {
   return (
     <AccessContext.Provider key={state.profile.id} value={{ profile: state.profile, logout }}>
       <Outlet />
+      {state.diagnostics && (
+        <details>
+          <summary>Access diagnostics</summary>
+          <pre className="overflow-auto whitespace-pre-wrap text-xs">
+            {JSON.stringify(state.diagnostics, null, 2)}
+          </pre>
+        </details>
+      )}
       {error && <p role="alert">{error}</p>}
     </AccessContext.Provider>
   )

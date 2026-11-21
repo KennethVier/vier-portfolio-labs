@@ -101,3 +101,19 @@ it('keeps an unregistered OTP identity outside Business without attempting regis
   expect(container.querySelector('[role=alert]').textContent).toContain('application user')
   expect(container.textContent).not.toContain('Manage users')
 })
+
+it('shows first-pull loading and sync failures without displaying an access denial', async () => {
+  await render()
+  await emit({ loading: true, synchronizing: true })
+  expect(container.textContent).toContain('Synchronizing Business access')
+  expect(container.textContent).not.toContain('Ask the Admin')
+  await emit({ error: 'Business access synchronization failed.' })
+  expect(container.querySelector('[role=alert]').textContent).toContain('synchronization failed')
+  expect(container.textContent).not.toContain('Ask the Admin')
+  await act(async () =>
+    [...container.querySelectorAll('button')]
+      .find((b) => b.textContent === 'Retry access check')
+      .click(),
+  )
+  expect(watchAccount).toHaveBeenCalledTimes(2)
+})

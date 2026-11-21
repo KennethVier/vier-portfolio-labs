@@ -246,3 +246,7 @@ Dexie Cloud owns OTP and shared-realm synchronization. Supabase is a server-only
 ### Controlled Admin identity transfer
 
 Added an operator-only transfer from the existing developer Admin to the approved business email. User and membership provisioning precede the realm owner write. Repeated execution preserves licenses and existing records. Read-back checks, resumable failure handling and rollback retain developer access. Hosted execution and business OTP are pending.
+
+### First-login authorization race
+
+The account observer now waits for the initial online cloud pull before deciding realm access. Loading, inactive license, access denial and synchronization failure have distinct states. Read-only session diagnostics and retry support live verification. Regression coverage includes transferred Admin login with delayed realm arrival, failed pull, logout during pull and cached offline Admin access. Live business authorization remains pending.
