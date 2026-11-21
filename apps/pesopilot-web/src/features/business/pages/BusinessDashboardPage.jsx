@@ -1,3 +1,4 @@
+import { useBusinessAccess } from '../cloud/access.js'
 import { stockPresets } from '../services/stockPresets.js'
 import { findDuplicateProduct } from '../constants/productCatalog.js'
 import { ProductVisual } from '../components/ProductVisual.jsx'
@@ -17,6 +18,7 @@ import { CATALOG_CATEGORIES } from '../constants/catalogMetadata.js'
 
 export function BusinessDashboardPage() {
   useWorkspaceRoute('business')
+  const staff = useBusinessAccess()?.profile.role === 'staff'
   const workspace = useBusinessWorkspace()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All Products')
@@ -75,11 +77,11 @@ export function BusinessDashboardPage() {
               <span className="business-product-name product-card-title mt-1 font-heading text-xl">{family.name}</span>
               <span className="business-amount mt-2 text-lg text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
               <span className="mt-2 text-sm text-content-muted">{scents ? `${scents} scents` : family.products.length > 1 ? `${family.products.length} options` : 'Single product'}</span>
-              <span className="mt-auto flex w-full items-center justify-between border-t border-outline-variant pt-4 text-sm font-semibold text-primary"><span className="pt-3">{inStock ? 'Tap to record sale' : 'Add stock first'}</span><span aria-hidden="true" className="pt-3">↗</span></span>
+              <span className="mt-auto flex w-full items-center justify-between border-t border-outline-variant pt-4 text-sm font-semibold text-primary"><span className="pt-3">{inStock ? 'Tap to record sale' : staff ? 'Out of stock' : 'Add stock first'}</span><span aria-hidden="true" className="pt-3">↗</span></span>
               </div>
             </button>
           })}
-        </div> : <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-14 text-center"><BusinessIcon className="mx-auto mb-4 h-10 w-10 text-primary" name="inventory" /><h3 className="font-heading text-xl font-semibold">{products.length ? 'No matching products' : 'No products yet'}</h3><p className="mx-auto mt-2 max-w-md text-content-muted">{products.length ? 'Try a different search or category.' : 'Add your first product in Inventory to start recording sales.'}</p>{products.length ? <Button className="mt-5" variant="secondary" onClick={() => { setSearch(''); setCategory('All Products') }}>Clear filters</Button> : <Link to="/business/inventory" className="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 font-semibold text-white">Open Inventory</Link>}</div>}
+        </div> : <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-14 text-center"><BusinessIcon className="mx-auto mb-4 h-10 w-10 text-primary" name="inventory" /><h3 className="font-heading text-xl font-semibold">{products.length ? 'No matching products' : 'No products yet'}</h3><p className="mx-auto mt-2 max-w-md text-content-muted">{products.length ? 'Try a different search or category.' : 'Add your first product in Inventory to start recording sales.'}</p>{products.length ? <Button className="mt-5" variant="secondary" onClick={() => { setSearch(''); setCategory('All Products') }}>Clear filters</Button> : !staff && <Link to="/business/inventory" className="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 font-semibold text-white">Open Inventory</Link>}</div>}
       </> : null}
     </section>
     {selected ? <RecordSaleModal photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} receiveStock={workspace.receiveStock} onReceived={() => { setSelected(null); setNotice('Stock added. Select the product to record a sale.') }} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setSaleToast({ message }) }} /> : null}

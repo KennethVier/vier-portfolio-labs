@@ -5,6 +5,11 @@ import { App } from './App.jsx'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage.jsx'
 import { getActiveWorkspace } from '@/features/business/services/workspacePreference.js'
 
+const BusinessGate = lazy(() => import('@/features/business/cloud/BusinessGate.jsx').then(module => ({ default: module.BusinessGate })))
+const SharedStockPage = lazy(() => import('@/features/business/cloud/SharedStockPage.jsx').then(module => ({ default: module.SharedStockPage })))
+const UsersPage = lazy(() => import('@/features/business/cloud/UsersPage.jsx').then(module => ({ default: module.UsersPage })))
+const ReceiptsPage = lazy(() => import('@/features/business/cloud/ReceiptsPage.jsx').then(module => ({ default: module.ReceiptsPage })))
+
 const BusinessDashboardPage = lazy(() =>
   import('@/features/business/pages/BusinessDashboardPage.jsx').then((module) => ({
     default: module.BusinessDashboardPage,
@@ -129,16 +134,18 @@ export const router = createBrowserRouter([
   },
   {
     path: '/business',
-    element: wrapLazyRoute(<BusinessDashboardPage />, 'Loading business workspace'),
+    element: wrapLazyRoute(<BusinessGate />, 'Checking Business account'),
+    children: [
+      { index: true, element: wrapLazyRoute(<BusinessDashboardPage />, 'Loading business workspace') },
+      { path: 'stock', element: wrapLazyRoute(<SharedStockPage />, 'Loading shared stock') },
+      { path: 'receipts', element: wrapLazyRoute(<ReceiptsPage />, 'Loading receipts') },
+      { path: 'users', element: wrapLazyRoute(<UsersPage />, 'Loading users') },
+      { path: 'audit', element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit') },
+      ...['inventory', 'history', 'settings'].map(screen => ({
+        path: screen, element: wrapLazyRoute(<BusinessAdminPage screen={screen} />, 'Loading business workspace'),
+      })),
+    ],
   },
-  {
-    path: '/business/audit',
-    element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit'),
-  },
-  ...['inventory', 'history', 'settings'].map((screen) => ({
-    path: `/business/${screen}`,
-    element: wrapLazyRoute(<BusinessAdminPage screen={screen} />, `Loading business ${screen}`),
-  })),
   {
     path: '/',
     element: <App />,

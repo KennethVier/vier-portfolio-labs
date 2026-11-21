@@ -1,0 +1,5 @@
+
+# Dexie Cloud operator configuration
+dexie-cloud.json
+*.key
+business-bootstrap.local.json
