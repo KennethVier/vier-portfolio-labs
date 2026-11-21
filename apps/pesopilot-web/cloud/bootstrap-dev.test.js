@@ -48,8 +48,14 @@ describe('development first Admin provisioning', () => {
   it('repairs an imported membership with no registered login, then reruns without writing', async () => {
     const { api, writes } = registry({ realm, member })
     const log = vi.fn()
-    expect(await provision(email, api, true, log)).toBeNull()
-    expect(await provision(email, api, true, log)).toBeNull()
+    expect(await provision(email, api, true, log)).toMatchObject({
+      sealed: true,
+      schema: { catalogStock: 'id' },
+    })
+    expect(await provision(email, api, true, log)).toMatchObject({
+      sealed: true,
+      schema: { catalogStock: 'id' },
+    })
     expect(writes()).toHaveLength(1)
     expect(log).toHaveBeenCalledWith('Application user: already registered (eval)')
   })

@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { businessSchema } from './schema.mjs'
 import { pathToFileURL } from 'node:url'
 
 const url = 'https://z5jxogiwe.dexie.cloud'
@@ -7,7 +8,7 @@ const memberId = 'mmb-pesopilot-dev-admin'
 
 function importDefinition(owner) {
   return {
-    schema: { realms: '@realmId', members: '@id', roles: '[realmId+name]', catalogStock: 'id' },
+    schema: businessSchema,
     sealed: true,
     roles: {
       admin: {
@@ -93,7 +94,8 @@ export async function provision(owner, api, prepare = false, log = console.log) 
     validateUser(user)
     log('Created and verified the development evaluation user.')
   }
-  if (business && membership) return null
+  // Schema registration must run even when identities and realm were previously provisioned.
+  if (business && membership) return { schema: businessSchema, sealed: true }
   const manifest = importDefinition(owner)
   if (business) delete manifest.data[realm].realms
   if (membership) delete manifest.data[realm].members

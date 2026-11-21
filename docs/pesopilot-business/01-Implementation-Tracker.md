@@ -250,3 +250,7 @@ Added an operator-only transfer from the existing developer Admin to the approve
 ### First-login authorization race
 
 The account observer now waits for the initial online cloud pull before deciding realm access. Loading, inactive license, access denial and synchronization failure have distinct states. Read-only session diagnostics and retry support live verification. Regression coverage includes transferred Admin login with delayed realm arrival, failed pull, logout during pull and cached offline Admin access. Live business authorization remains pending.
+
+### Sealed schema rejection and stalled initial pull
+
+Added a schema-only owner-side export/compare/import/read-back procedure that retains sealing and existing definitions. Bootstrap now emits schema even when existing identity records need no update. Actual development endpoint reproduced HTTP 422 with an empty-change sync probe. Addon sync-state errors now reach the gate with sanitized diagnostics and a bounded pending-pull wait. Exact hosted table difference and successful authenticated sync require owner-side execution. Both Admin memberships and business realm ownership remain outside this repair.

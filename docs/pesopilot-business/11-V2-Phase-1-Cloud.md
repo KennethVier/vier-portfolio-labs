@@ -128,3 +128,46 @@ The gate displays Synchronizing Business access while waiting. Failed pulls show
 For live diagnosis, expand Access diagnostics on a blocked screen. Check userId against `pesopilotbusiness@gmail.com`, the actual license status, realm ID, visible realm owner, accepted membership count and role list. These values come from the current session and its local synchronized scope. They contain no tokens. Use the owner-side `transfer-admin.ps1 -Mode verify` to independently verify the application users, realm owner and both Admin memberships in the hosted database. A missing realm after a successful pull indicates a visibility or identity issue requiring owner inspection.
 
 The screenshot alone does not expose the authenticated user ID, license or server membership. Hosted business OTP was reported successful by the user, while authorization is still pending. After updating, reload the development app with its existing browser profile, sign in, wait for the initial pull, and confirm Admin navigation and an authorized synthetic stock operation. If it fails, report the Access diagnostics and whether it shows a sync error or access denied. Retain both Admin memberships throughout acceptance.
+
+## Sealed schema HTTP 422 repair
+
+The initial bootstrap returned early when the developer realm and accepted Admin membership existed. That path skipped the schema manifest entirely. Provisioning a missing application user fixed OTP but could leave catalogStock absent from a sealed database. The ownership transfer does not write schema. Waiting for the first pull cannot repair a rejected schema, and the addon's sync promise can remain pending while its worker retries.
+
+The pinned addon 4.4.16 declares four synchronized tables. The application matches its actual generated schema against this import contract in a regression test.
+
+| Synchronized table | Primary key declaration |
+| --- | --- |
+| members | @id |
+| roles | [realmId+name] |
+| realms | @realmId |
+| catalogStock | id |
+
+The addon also maintains local $jobs, $syncState, $baseRevs, $logins and mutation-log tables. They are outside the synchronized table set. Secondary indexes are local query details and do not explain an absent cloud table. The schema-only repair preserves existing hosted table declarations and refuses primary-key changes.
+
+Run from the updated Phase 1 worktree, using the existing operator directory:
+
+```powershell
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\\pesopilot-business-v2-dev'
+& "$app\\cloud\\update-schema.ps1" -OperatorDirectory $operator
+```
+
+This command checks the operator database URL, exports the hosted schema through the official CLI, prints the missing synchronized tables, and imports a schema-only additive manifest with sealed=true. It exports again and checks required keys, preservation of every previous declaration and sealing. Before/patch/after files have unique names and remain locally for inspection. No user, member, role definition or realm record appears in the import. A second run is safe. If interrupted, retain the exports and rerun. A primary-key conflict requires inspection before continuing. Do not import the old bootstrap to repair the transferred business Admin.
+
+After schema verification, stop the local development server and restart from the app directory:
+
+```powershell
+Set-Location $app
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+Use Retry access check or reload with the existing browser profile. A new HTTP 422 becomes an actionable sealed-schema error from the supported cloud.syncState observable. A silent pull is bounded at 30 seconds. Raw provider messages are not shown. A retry starts a new pull despite a stale error state. Authorization still requires a successful pull and legitimate realm visibility/membership.
+
+Live investigation reproduced the reported development /sync HTTP 422 using application/tson and an empty changes array. Individual schema probes also received the generic sealed-schema rejection, which does not name the missing table. An authenticated hosted schema export is still required to identify the exact hosted difference; catalogStock is the verified application table susceptible to the skipped-bootstrap path. No management credential is available in the agent runtime. Consequently this repository fix and representative sealed-schema tests do not establish successful hosted synchronization. Record the missing-table output and complete the actual business Admin login, dashboard, Users page and authorized synthetic snapshot operation after repair. Keep PR #10 and Phase 1 open until these pass.
+
+Reference: [Dexie Cloud sealed schema updates and primary keys](https://dexie.org/docs/cloud/cli).

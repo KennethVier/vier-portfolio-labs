@@ -1,3 +1,4 @@
+import { initialPull } from './initialPull'
 import Dexie, { liveQuery, type Table } from 'dexie'
 import dexieCloud from 'dexie-cloud-addon'
 import { combineLatest, switchMap, of, Observable } from 'rxjs'
@@ -52,7 +53,7 @@ export function observeAccount(database: CloudDb) {
         async function start() {
           const offline = typeof navigator !== 'undefined' && !navigator.onLine
           try {
-            if (!offline) await database.cloud.sync({ purpose: 'pull', wait: true })
+            if (!offline) await initialPull(database)
             if (cancelled) return
             subscription = liveQuery(async () => {
               const realm = await database.realms.get(realmId)
@@ -87,10 +88,11 @@ export function observeAccount(database: CloudDb) {
                   diagnostics,
                 }),
             })
-          } catch {
+          } catch (failure) {
             if (!cancelled)
               subscriber.next({
-                error: 'Business access synchronization failed. Check your connection and retry.',
+                error:
+                  failure instanceof Error ? failure.message : 'Business access synchronization failed.',
                 diagnostics,
               })
           }

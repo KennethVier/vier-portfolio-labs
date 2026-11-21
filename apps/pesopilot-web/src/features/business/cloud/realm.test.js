@@ -11,6 +11,7 @@ beforeEach(async () => {
   database.cloud = {
     currentUser: new BehaviorSubject({ isLoggedIn: true, userId: 'employee' }),
     currentUserId: 'employee',
+    syncState: new BehaviorSubject({ phase: 'initial' }),
     sync: vi.fn().mockResolvedValue(undefined),
   }
   await database.realms.add({ realmId, owner: 'developer' })
@@ -129,4 +130,18 @@ it('restores cached Admin access offline without waiting for the network', async
   } finally {
     vi.restoreAllMocks()
   }
+})
+
+it('matches the pinned addon synchronized tables and primary keys to the sealed import manifest', async () => {
+  const { businessSchema } = await import('../../../../cloud/schema.mjs')
+  const cloud = createCloudDb('https://z5jxogiwe.dexie.cloud')
+  const syncTables = Object.entries(cloud.cloud.schema).filter(([, spec]) => spec.markedForSync)
+  expect(syncTables.map(([name]) => name).sort()).toEqual(Object.keys(businessSchema).sort())
+  for (const [name, spec] of syncTables) {
+    const key = cloud.table(name).schema.primKey.keyPath
+    const pk = Array.isArray(key) ? '[' + key.join('+') + ']' : key
+    expect((spec.generatedGlobalId ? '@' : '') + pk).toBe(businessSchema[name])
+  }
+  expect(syncTables.some(([name]) => name.startsWith('$'))).toBe(false)
+  cloud.close()
 })
