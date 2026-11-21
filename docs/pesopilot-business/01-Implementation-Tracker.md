@@ -238,3 +238,7 @@ Applied presentation/documentation differences:
 - No calculation, schema, transaction, dependency or Personal Finance change was required. Existing provisional Reload Qty/consumption assumptions and access/privacy/backup/browser QA gates remain. No acceptance status is marked complete.
 - Follow-up validation executed: `npm run test` PASS (106 files / 1,122 tests, zero failures), `npm run lint` PASS (zero errors / warnings), `npm run build` PASS (921 modules). Existing non-failing React Router/useLayoutEffect notices remain. Real-browser scenarios remain unverified; the earlier browser-host/native-approval blocker was not retested for these copy changes.
 - Follow-up changed-surface security review considered OWASP Top 10:2025 and applicable ASVS 5.0 output-encoding/integrity controls. Text changes preserve React escaping and introduce no persistence, authorization or dependency change; no new finding identified. Dependency scan remains unrun (`npm audit --audit-level=high`).
+
+## Business V2 Phase 1 — development review
+
+Dexie Cloud owns OTP and shared-realm synchronization. Supabase is a server-only recovery target. The existing POS ledger stays local through Phase 1. The repository implementation and staging SQL checks are ready for review. Owner-side realm bootstrap and live two-account acceptance are pending. See [Phase 1 setup, migration and verification](11-V2-Phase-1-Cloud.md).

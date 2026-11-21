@@ -404,3 +404,7 @@ Architecture Changes
 If a change is not recorded:
 
 It should be assumed unofficial.
+
+## Business V2 ADR — one realm and a server-only recovery copy
+
+Accepted for isolated Business V2 development. Use Dexie Cloud Free for authentication, membership and primary synchronization. Keep the existing v3 POS database intact while testing a shared stock projection in a separate addon-enabled cache. Supabase Free receives server-validated recovery observations. Full ledger sync and recovery orchestration belong to Phase 2. See the [Business V2 Phase 1 runbook](pesopilot-business/11-V2-Phase-1-Cloud.md).
