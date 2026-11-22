@@ -167,6 +167,22 @@ export function projectBranch(catalog, events, branchId) {
             !integer(line.unitPriceCentavos) ||
             line.unitPriceCentavos < 1 ||
             line.lineTotalCentavos !== line.quantity * line.unitPriceCentavos ||
+            (line.unitCostCentavos !== undefined &&
+              (!integer(line.unitCostCentavos) || line.unitCostCentavos < 0)) ||
+            (line.catalogUnitPriceCentavos !== undefined &&
+              (!integer(line.catalogUnitPriceCentavos) ||
+                line.catalogUnitPriceCentavos < 1)) ||
+            (line.priceBasisCentavos !== undefined &&
+              (!integer(line.priceBasisCentavos) ||
+                line.priceBasisCentavos < 1)) ||
+            (line.priceOverride !== undefined &&
+              (typeof line.priceOverride !== 'boolean' ||
+                line.priceOverride !==
+                  (line.unitPriceCentavos !== line.priceBasisCentavos) ||
+                (line.priceOverride &&
+                  (typeof line.priceOverrideReason !== 'string' ||
+                    !line.priceOverrideReason.trim() ||
+                    line.priceOverrideReason.length > 240)))) ||
             line.saleId !== entry.sale.id ||
             !entry.movements.some(
               (m) =>
@@ -357,6 +373,27 @@ export function createBranchRepository(database, { userId, branchId }) {
           !catalog.some((p) => p.inventoryPoolId === product.inventoryPoolId)
         )
           throw new Error('Choose an existing shared stock pool.')
+        if (
+          product.catalog?.type === 'Set' &&
+          product.inventoryPoolId === product.id
+        ) {
+          const solo = catalog.find(
+            (row) =>
+              row.catalog?.type === 'Solo' &&
+              row.catalog.category === product.catalog.category &&
+              row.catalog.family === product.catalog.family &&
+              row.catalog.scent === product.catalog.scent,
+          )
+          if (!solo)
+            throw new Error(
+              'Add the matching Solo scent before its Set price option.',
+            )
+          product = {
+            ...product,
+            inventoryPoolId: solo.inventoryPoolId,
+            inventoryPoolName: solo.inventoryPoolName,
+          }
+        }
         const shared = catalog.find(
           (p) => p.inventoryPoolId === product.inventoryPoolId,
         )
@@ -383,6 +420,65 @@ export function createBranchRepository(database, { userId, branchId }) {
           unitPriceCentavos: priceCentavos,
         })
       })
+    },
+    async setUnitCost(productId, unitCostCentavos) {
+      return database.transaction('rw', tables, async () => {
+        await requireAdmin()
+        if (
+          unitCostCentavos !== undefined &&
+          (!integer(unitCostCentavos) || unitCostCentavos < 0)
+        )
+          throw new Error('Invalid purchase cost.')
+        const product = await database.branchCatalog.get(productId)
+        if (product?.realmId !== BUSINESS_REALM)
+          throw new Error('Product not found.')
+        await database.branchCatalog.update(productId, { unitCostCentavos })
+      })
+    },
+    receiveStock(entries, { reason, requestKey, occurredAt }) {
+      if (
+        !Array.isArray(entries) ||
+        !entries.length ||
+        entries.length > 100 ||
+        !reason?.trim() ||
+        reason.trim().length > 240 ||
+        entries.some((row) => !integer(row.quantity) || row.quantity < 1)
+      )
+        throw new Error('Choose stock, whole quantities and a receipt reason.')
+      return append(
+        requestKey,
+        { entries, reason: reason.trim() },
+        (state, id) => {
+          const used = new Set()
+          const movements = entries.map((row, index) => {
+            const product = state.products.find((p) => p.id === row.productId)
+            const pool = state.pools.find(
+              (p) => p.id === product?.inventoryPoolId,
+            )
+            if (!pool || product.catalog?.type === 'Set')
+              throw new Error(
+                'Receive physical Solo pieces, not set price options.',
+              )
+            if (used.has(pool.id))
+              throw new Error('Choose each physical stock group once.')
+            used.add(pool.id)
+            if (!integer(pool.stockQuantity + row.quantity))
+              throw new Error('Stock limit exceeded.')
+            return {
+              id: id + ':movement:' + index,
+              productId: product.id,
+              inventoryPoolId: pool.id,
+              poolNameSnapshot: pool.name,
+              type: 'stock_received',
+              delta: row.quantity,
+              reason: reason.trim(),
+              saleId: null,
+              occurredAt,
+            }
+          })
+          return { kind: 'stock_adjustment', movements, occurredAt }
+        },
+      )
     },
     adjustStock({ productId, delta, reason, occurredAt, requestKey }) {
       if (
@@ -443,6 +539,18 @@ export function createBranchRepository(database, { userId, branchId }) {
         )
       )
         throw new Error('Invalid sale items or payment method.')
+      if (
+        items.some((item) => item.pricingProductId !== undefined) &&
+        (items.some(
+          (item) =>
+            item.saleFormat !== 'set' ||
+            item.pricingProductId !== items[0].pricingProductId,
+        ) ||
+          items.reduce((sum, item) => sum + item.quantity, 0) % 5 !== 0)
+      )
+        throw new Error(
+          'Choose exactly five pieces per set using one catalog price option.',
+        )
       const input = { paymentMethod: sale.paymentMethod, items }
       return append(sale.requestKey, input, (state, id) => {
         if (state.conflicts.length)
@@ -455,6 +563,7 @@ export function createBranchRepository(database, { userId, branchId }) {
           items,
           new Map(state.products.map((p) => [p.id, p])),
           new Map(state.pools.map((p) => [p.id, p])),
+          { requirePriceReason: true },
         )
         return {
           kind: 'sale',

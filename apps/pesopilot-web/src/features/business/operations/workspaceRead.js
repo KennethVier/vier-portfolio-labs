@@ -1,3 +1,4 @@
+import { catalogPhotos } from './catalogMedia.js'
 import {
   authorizedBranches,
   createBranchRepository,
@@ -180,6 +181,7 @@ export async function readBranchWorkspace(
     sales,
     branches,
     catalog,
+    photos: catalogPhotos(catalog),
     members,
     registry,
     overviews,

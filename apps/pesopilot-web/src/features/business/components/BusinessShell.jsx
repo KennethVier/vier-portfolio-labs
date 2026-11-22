@@ -1,3 +1,4 @@
+import { useAutomaticBranchBackup } from '../operations/useAutomaticBranchBackup.js'
 import { roleNavigation } from '../operations/navigation.js'
 import { BusinessAccountMenu } from './BusinessAccountMenu.jsx'
 import { useBusinessAccess } from '../cloud/access.js'
@@ -7,14 +8,16 @@ import { NavLink, Link } from 'react-router-dom'
 import { BusinessIcon } from './BusinessIcon.jsx'
 import '../business.css'
 
-export function BusinessShell({ children }) {
+export function BusinessShell({ children, workspace }) {
   const access = useBusinessAccess()
   const isStaff = access?.profile.role === 'staff'
   const navigation = roleNavigation(access?.profile.role)
-  useAutomaticBusinessBackup()
+  useAutomaticBusinessBackup(!access || !workspace)
+  useAutomaticBranchBackup(workspace)
   return (
     <div className="business-touch min-h-screen">
       {!access && !isStaff && <MorningStockCheck />}
+      {isStaff && workspace && <MorningStockCheck workspace={workspace} />}
       <header className="border-b border-outline-variant bg-surface-container-lowest">
         <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-4 sm:px-8">
           <Link

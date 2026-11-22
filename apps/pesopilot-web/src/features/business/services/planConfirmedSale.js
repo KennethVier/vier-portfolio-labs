@@ -1,5 +1,11 @@
 // Shared accounting planner for the legacy repository and branch ledger. No persistence.
-export function planConfirmedSale(sale, items, products, pools) {
+export function planConfirmedSale(
+  sale,
+  items,
+  products,
+  pools,
+  { requirePriceReason = false } = {},
+) {
   let totalCentavos = 0
   const lineItems = []
   const movements = []
@@ -31,8 +37,49 @@ export function planConfirmedSale(sale, items, products, pools) {
       throw new Error('Insufficient stock')
     }
 
-    const unitPriceCentavos =
-      item.acceptedUnitPriceCentavos ?? product.unitPriceCentavos
+    const pricing =
+      item.pricingProductId === undefined
+        ? product
+        : products.get(item.pricingProductId)
+    if (
+      !pricing ||
+      (item.pricingProductId !== undefined &&
+        (item.saleFormat !== 'set' ||
+          pricing.catalog?.type !== 'Set' ||
+          !product.catalog?.family ||
+          pricing.catalog.family !== product.catalog.family ||
+          pricing.catalog.category !== product.catalog.category ||
+          product.catalog.type !== 'Solo'))
+    )
+      throw new Error('Choose a valid catalog price option for this product.')
+    if (
+      item.expectedPricingUnitPriceCentavos !== undefined &&
+      item.expectedPricingUnitPriceCentavos !== pricing.unitPriceCentavos
+    )
+      throw new Error('Product price changed. Review the sale again')
+    if (
+      !Number.isSafeInteger(pricing.unitPriceCentavos) ||
+      pricing.unitPriceCentavos < 1
+    )
+      throw new Error('Invalid stored catalog price option')
+    const priceBasisCentavos = pricing.unitPriceCentavos
+    const acceptedPrice = item.acceptedUnitPriceCentavos ?? priceBasisCentavos
+    if (!Number.isSafeInteger(acceptedPrice) || acceptedPrice < 1)
+      throw new Error('Invalid agreed price')
+    const priceOverride = acceptedPrice !== priceBasisCentavos
+    if (
+      requirePriceReason &&
+      priceOverride &&
+      !item.priceOverrideReason?.trim()
+    )
+      throw new Error('Explain the agreed price before confirming this sale.')
+    if (
+      product.unitCostCentavos !== undefined &&
+      (!Number.isSafeInteger(product.unitCostCentavos) ||
+        product.unitCostCentavos < 0)
+    )
+      throw new Error('Invalid stored purchase cost')
+    const unitPriceCentavos = acceptedPrice
     const lineTotalCentavos = unitPriceCentavos * item.quantity
     totalCentavos += lineTotalCentavos
     if (
@@ -62,6 +109,19 @@ export function planConfirmedSale(sale, items, products, pools) {
       quantity: item.quantity,
       unitPriceCentavos,
       lineTotalCentavos,
+      ...(requirePriceReason
+        ? {
+            catalogUnitPriceCentavos: product.unitPriceCentavos,
+            priceBasisCentavos,
+            priceOverride,
+            ...(item.pricingProductId
+              ? { pricingProductId: item.pricingProductId }
+              : {}),
+            ...(priceOverride
+              ? { priceOverrideReason: item.priceOverrideReason.trim() }
+              : {}),
+          }
+        : {}),
       ...(item.saleFormat ? { saleFormat: item.saleFormat } : {}),
       ...(product.unitCostCentavos === undefined
         ? {}

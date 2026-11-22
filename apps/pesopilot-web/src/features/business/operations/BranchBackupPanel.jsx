@@ -1,3 +1,4 @@
+import { snapshots } from '../repositories/businessSnapshots.js'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button.jsx'
 import { useBusinessAccess } from '../cloud/access.js'
@@ -38,6 +39,45 @@ export function BranchBackupPanel() {
         }}
       >
         Download backup
+      </Button>
+      <p className="text-sm">
+        When the owner workspace is open after 7 AM Philippine time, up to seven
+        daily branch copies are saved on this device. They contain the records
+        available here, including photos. Keep a downloaded copy separately.
+      </p>
+      <Button
+        variant="secondary"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true)
+          try {
+            const rows = await snapshots.branchDaily
+              .where('userId')
+              .equals(access.profile.id)
+              .sortBy('day')
+            const latest = rows.at(-1)
+            if (!latest) {
+              setMessage(
+                'No automatic branch backup yet. Open Overview after 7 AM, or download a backup now.',
+              )
+              return
+            }
+            downloadBranchBackup(latest.content)
+            setMessage(
+              'Automatic branch backup dated ' +
+                latest.day +
+                ' downloaded. Keep it private.',
+            )
+          } catch {
+            setMessage(
+              'Automatic backup could not be read. Download a current backup instead.',
+            )
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        Download latest automatic branch backup
       </Button>
       {message && <p role="status">{message}</p>}
     </section>

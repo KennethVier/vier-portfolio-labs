@@ -10,7 +10,8 @@ function newId() {
 }
 
 function assertQuantity(value, { allowZero = false } = {}) {
-  const valid = Number.isSafeInteger(value) && (allowZero ? value >= 0 : value > 0)
+  const valid =
+    Number.isSafeInteger(value) && (allowZero ? value >= 0 : value > 0)
   if (!valid) throw new Error('Quantity must be a valid whole number')
   return value
 }
@@ -23,135 +24,258 @@ export function parsePriceCentavos(input) {
   const [pesos, fraction = ''] = text.split('.')
   const centavos = Number(pesos) * 100 + Number(fraction.padEnd(2, '0'))
   if (!Number.isSafeInteger(centavos) || centavos < 1) {
-    throw new Error('Price must be greater than zero and within the supported limit')
+    throw new Error(
+      'Price must be greater than zero and within the supported limit',
+    )
   }
   return centavos
 }
 
 export function createBusinessService(businessRepository) {
-return {
-  listProducts: () => businessRepository.listProducts(),
-  listSales: () => businessRepository.listSales(),
-  listSalesHistory: () => businessRepository.listSalesHistory(),
-  listAuditEvents: () => businessRepository.listAuditEvents(),
+  return {
+    listProducts: () => businessRepository.listProducts(),
+    listSales: () => businessRepository.listSales(),
+    listSalesHistory: () => businessRepository.listSalesHistory(),
+    listAuditEvents: () => businessRepository.listAuditEvents(),
 
-  async addProduct({ name, pricePesos, openingStock = 0, inventoryPoolId, inventoryPoolName, catalog }) {
-    const cleanName = typeof name === 'string' ? name.trim() : ''
-    if (!cleanName || cleanName.length > 120) {
-      throw new Error('Product name must contain 1–120 characters')
-    }
-    if (inventoryPoolId !== undefined && (typeof inventoryPoolId !== 'string' || !inventoryPoolId.trim())) {
-      throw new Error('Choose a valid inventory pool')
-    }
-    if (inventoryPoolId && openingStock !== 0) throw new Error('Shared variants must not add opening stock')
-    const poolName = inventoryPoolName === undefined ? cleanName : typeof inventoryPoolName === 'string' ? inventoryPoolName.trim() : ''
-    if (!poolName || poolName.length > 120) throw new Error('Stock group name must contain 1–120 characters')
-    const id = newId()
-    const metadata = catalog === undefined ? undefined : catalogMetadataSchema.parse(catalog)
-    if (metadata?.sampleKey) throw new Error('Archived catalog identifiers cannot be assigned to new products')
-    const unitPriceCentavos = parsePriceCentavos(pricePesos)
-    const product = {
-      id,
-      name: cleanName,
-      initialNameSnapshot: cleanName,
-      initialPriceCentavos: unitPriceCentavos,
-      unitPriceCentavos,
-      inventoryPoolId: inventoryPoolId ?? id,
-      inventoryPoolName: poolName,
-      inventoryUnitsPerSale: 1,
-      stockQuantity: assertQuantity(openingStock, { allowZero: true }),
-      createdAt: new Date().toISOString(),
-      ...(metadata ? { catalog: metadata } : {}),
-    }
-    return businessRepository.addProduct(product)
-  },
-
-  setUnitCost(productId, value) {
-    const cost = String(value).trim()
-    const unitCostCentavos = cost === '' ? undefined : /^0(?:\.0{1,2})?$/.test(cost) ? 0 : parsePriceCentavos(cost)
-    return businessRepository.setUnitCost(productId, unitCostCentavos)
-  },
-
-  adjustStock({ productId, quantity, direction, reason, requestKey }) {
-    assertQuantity(quantity)
-    if (typeof productId !== 'string' || !productId.trim()) throw new Error('Product is required')
-    if (!['add', 'remove'].includes(direction)) throw new Error('Choose add or remove stock')
-    const cleanReason = typeof reason === 'string' ? reason.trim() : ''
-    if (!cleanReason || cleanReason.length > 240) {
-      throw new Error('Adjustment reason must contain 1–240 characters')
-    }
-    return businessRepository.adjustStock({
-      productId,
-      requestKey,
-      delta: direction === 'add' ? quantity : -quantity,
-      reason: cleanReason,
-      occurredAt: new Date().toISOString(),
-    })
-  },
-
-  previewSale(product, quantity) {
-    if (!product) throw new Error('Select a product')
-    assertQuantity(quantity)
-    if (quantity > product.stockQuantity) throw new Error('Insufficient stock')
-    const totalCentavos = product.unitPriceCentavos * quantity
-    if (!Number.isSafeInteger(totalCentavos)) throw new Error('Sale amount exceeds supported limit')
-    return { quantity, unitPriceCentavos: product.unitPriceCentavos, totalCentavos }
-  },
-
-  async completeSale({ items, paymentMethod, requestKey, ownerConfirmed }) {
-    if (ownerConfirmed !== true) throw new Error('Owner confirmation is required')
-    if (!BUSINESS_PAYMENT_METHODS.includes(paymentMethod)) {
-      throw new Error('Choose Cash, GCash or Coop Pay')
-    }
-    if (typeof requestKey !== 'string' || !requestKey.trim()) {
-      throw new Error('A stable sale request key is required')
-    }
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new Error('Add at least one product')
-    }
-
-    const seen = new Set()
-    const validatedItems = items.map(({ productId, quantity, expectedUnitPriceCentavos, acceptedUnitPriceCentavos, saleFormat }) => {
-      if (typeof productId !== 'string' || !productId.trim() || seen.has(productId)) {
-        throw new Error('Each sale item must reference a different product')
+    async addProduct({
+      name,
+      pricePesos,
+      openingStock = 0,
+      inventoryPoolId,
+      inventoryPoolName,
+      catalog,
+    }) {
+      const cleanName = typeof name === 'string' ? name.trim() : ''
+      if (!cleanName || cleanName.length > 120) {
+        throw new Error('Product name must contain 1–120 characters')
       }
-      seen.add(productId)
-      if (expectedUnitPriceCentavos !== undefined &&
-          (!Number.isSafeInteger(expectedUnitPriceCentavos) || expectedUnitPriceCentavos < 1)) {
-        throw new Error('Invalid reviewed price')
+      if (
+        inventoryPoolId !== undefined &&
+        (typeof inventoryPoolId !== 'string' || !inventoryPoolId.trim())
+      ) {
+        throw new Error('Choose a valid inventory pool')
       }
-      if (acceptedUnitPriceCentavos !== undefined &&
-          (!Number.isSafeInteger(acceptedUnitPriceCentavos) || acceptedUnitPriceCentavos < 1)) {
-        throw new Error('Enter a valid agreed unit price')
+      if (inventoryPoolId && openingStock !== 0)
+        throw new Error('Shared variants must not add opening stock')
+      const poolName =
+        inventoryPoolName === undefined
+          ? cleanName
+          : typeof inventoryPoolName === 'string'
+            ? inventoryPoolName.trim()
+            : ''
+      if (!poolName || poolName.length > 120)
+        throw new Error('Stock group name must contain 1–120 characters')
+      const id = newId()
+      const metadata =
+        catalog === undefined ? undefined : catalogMetadataSchema.parse(catalog)
+      if (metadata?.sampleKey)
+        throw new Error(
+          'Archived catalog identifiers cannot be assigned to new products',
+        )
+      const unitPriceCentavos = parsePriceCentavos(pricePesos)
+      const product = {
+        id,
+        name: cleanName,
+        initialNameSnapshot: cleanName,
+        initialPriceCentavos: unitPriceCentavos,
+        unitPriceCentavos,
+        inventoryPoolId: inventoryPoolId ?? id,
+        inventoryPoolName: poolName,
+        inventoryUnitsPerSale: 1,
+        stockQuantity: assertQuantity(openingStock, { allowZero: true }),
+        createdAt: new Date().toISOString(),
+        ...(metadata ? { catalog: metadata } : {}),
       }
-      if (saleFormat !== undefined && !['solo', 'set'].includes(saleFormat)) throw new Error('Invalid sale format')
-      return { productId, quantity: assertQuantity(quantity), expectedUnitPriceCentavos, acceptedUnitPriceCentavos, saleFormat }
-    })
+      return businessRepository.addProduct(product)
+    },
 
-    return businessRepository.commitConfirmedSale({
-      sale: {
-        id: newId(),
+    setUnitCost(productId, value) {
+      const cost = String(value).trim()
+      const unitCostCentavos =
+        cost === ''
+          ? undefined
+          : /^0(?:\.0{1,2})?$/.test(cost)
+            ? 0
+            : parsePriceCentavos(cost)
+      return businessRepository.setUnitCost(productId, unitCostCentavos)
+    },
+
+    adjustStock({ productId, quantity, direction, reason, requestKey }) {
+      assertQuantity(quantity)
+      if (typeof productId !== 'string' || !productId.trim())
+        throw new Error('Product is required')
+      if (!['add', 'remove'].includes(direction))
+        throw new Error('Choose add or remove stock')
+      const cleanReason = typeof reason === 'string' ? reason.trim() : ''
+      if (!cleanReason || cleanReason.length > 240) {
+        throw new Error('Adjustment reason must contain 1–240 characters')
+      }
+      return businessRepository.adjustStock({
+        productId,
         requestKey,
-        paymentMethod,
-        confirmedAt: new Date().toISOString(),
-      },
-      items: validatedItems,
-    }).catch((error) => {
-      // Dexie rejects only after aborting the transaction. Editing is safe in this case.
-      error.saleNotRecorded = true
-      throw error
-    })
-  },
+        delta: direction === 'add' ? quantity : -quantity,
+        reason: cleanReason,
+        occurredAt: new Date().toISOString(),
+      })
+    },
 
-  summarizeSales(sales) {
-    return sales.reduce((summary, sale) => ({
-      totalCentavos: summary.totalCentavos + sale.totalCentavos,
-      cashCentavos: summary.cashCentavos + (sale.paymentMethod === 'cash' ? sale.totalCentavos : 0),
-      gcashCentavos: summary.gcashCentavos + (sale.paymentMethod === 'gcash' ? sale.totalCentavos : 0),
-      coopCentavos: summary.coopCentavos + (sale.paymentMethod === 'coop' ? sale.totalCentavos : 0),
-    }), { totalCentavos: 0, cashCentavos: 0, gcashCentavos: 0, coopCentavos: 0 })
-  },
-}
+    receiveStock(entries, { reason, requestKey } = {}) {
+      if (!Array.isArray(entries) || !entries.length || entries.length > 100)
+        throw new Error('Choose 1–100 stock items.')
+      const cleanReason = typeof reason === 'string' ? reason.trim() : ''
+      if (!cleanReason || cleanReason.length > 240)
+        throw new Error('A receipt reason is required (1–240 characters).')
+      const seen = new Set()
+      const rows = entries.map(({ productId, quantity }) => {
+        if (typeof productId !== 'string' || !productId || seen.has(productId))
+          throw new Error('Choose each product once.')
+        seen.add(productId)
+        return { productId, quantity: assertQuantity(quantity) }
+      })
+      return businessRepository.receiveStock(rows, {
+        reason: cleanReason,
+        requestKey,
+        occurredAt: new Date().toISOString(),
+      })
+    },
 
+    previewSale(product, quantity) {
+      if (!product) throw new Error('Select a product')
+      assertQuantity(quantity)
+      if (quantity > product.stockQuantity)
+        throw new Error('Insufficient stock')
+      const totalCentavos = product.unitPriceCentavos * quantity
+      if (!Number.isSafeInteger(totalCentavos))
+        throw new Error('Sale amount exceeds supported limit')
+      return {
+        quantity,
+        unitPriceCentavos: product.unitPriceCentavos,
+        totalCentavos,
+      }
+    },
+
+    async completeSale({ items, paymentMethod, requestKey, ownerConfirmed }) {
+      if (ownerConfirmed !== true)
+        throw new Error('Owner confirmation is required')
+      if (!BUSINESS_PAYMENT_METHODS.includes(paymentMethod)) {
+        throw new Error('Choose Cash, GCash or Coop Pay')
+      }
+      if (typeof requestKey !== 'string' || !requestKey.trim()) {
+        throw new Error('A stable sale request key is required')
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new Error('Add at least one product')
+      }
+
+      const seen = new Set()
+      const validatedItems = items.map(
+        ({
+          productId,
+          quantity,
+          expectedUnitPriceCentavos,
+          acceptedUnitPriceCentavos,
+          saleFormat,
+          pricingProductId,
+          expectedPricingUnitPriceCentavos,
+          priceOverrideReason,
+        }) => {
+          if (
+            typeof productId !== 'string' ||
+            !productId.trim() ||
+            seen.has(productId)
+          ) {
+            throw new Error('Each sale item must reference a different product')
+          }
+          seen.add(productId)
+          if (
+            expectedUnitPriceCentavos !== undefined &&
+            (!Number.isSafeInteger(expectedUnitPriceCentavos) ||
+              expectedUnitPriceCentavos < 1)
+          ) {
+            throw new Error('Invalid reviewed price')
+          }
+          if (
+            acceptedUnitPriceCentavos !== undefined &&
+            (!Number.isSafeInteger(acceptedUnitPriceCentavos) ||
+              acceptedUnitPriceCentavos < 1)
+          ) {
+            throw new Error('Enter a valid agreed unit price')
+          }
+          if (saleFormat !== undefined && !['solo', 'set'].includes(saleFormat))
+            throw new Error('Invalid sale format')
+          if (
+            pricingProductId !== undefined &&
+            (typeof pricingProductId !== 'string' || !pricingProductId)
+          )
+            throw new Error('Invalid price option')
+          if (
+            expectedPricingUnitPriceCentavos !== undefined &&
+            (!Number.isSafeInteger(expectedPricingUnitPriceCentavos) ||
+              expectedPricingUnitPriceCentavos < 1)
+          )
+            throw new Error('Invalid reviewed price option')
+          if (
+            priceOverrideReason !== undefined &&
+            (typeof priceOverrideReason !== 'string' ||
+              priceOverrideReason.trim().length > 240)
+          )
+            throw new Error('Invalid agreed price reason')
+          return {
+            productId,
+            quantity: assertQuantity(quantity),
+            expectedUnitPriceCentavos,
+            acceptedUnitPriceCentavos,
+            saleFormat,
+            ...(pricingProductId === undefined
+              ? {}
+              : { pricingProductId, expectedPricingUnitPriceCentavos }),
+            ...(priceOverrideReason === undefined
+              ? {}
+              : { priceOverrideReason: priceOverrideReason.trim() }),
+          }
+        },
+      )
+
+      return businessRepository
+        .commitConfirmedSale({
+          sale: {
+            id: newId(),
+            requestKey,
+            paymentMethod,
+            confirmedAt: new Date().toISOString(),
+          },
+          items: validatedItems,
+        })
+        .catch((error) => {
+          // Dexie rejects only after aborting the transaction. Editing is safe in this case.
+          error.saleNotRecorded = true
+          throw error
+        })
+    },
+
+    summarizeSales(sales) {
+      return sales.reduce(
+        (summary, sale) => ({
+          totalCentavos: summary.totalCentavos + sale.totalCentavos,
+          cashCentavos:
+            summary.cashCentavos +
+            (sale.paymentMethod === 'cash' ? sale.totalCentavos : 0),
+          gcashCentavos:
+            summary.gcashCentavos +
+            (sale.paymentMethod === 'gcash' ? sale.totalCentavos : 0),
+          coopCentavos:
+            summary.coopCentavos +
+            (sale.paymentMethod === 'coop' ? sale.totalCentavos : 0),
+        }),
+        {
+          totalCentavos: 0,
+          cashCentavos: 0,
+          gcashCentavos: 0,
+          coopCentavos: 0,
+        },
+      )
+    },
+  }
 }
 export const businessService = createBusinessService(businessRepository)

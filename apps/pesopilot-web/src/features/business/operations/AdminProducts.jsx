@@ -1,10 +1,12 @@
+import { Input } from '@/components/ui/Input.jsx'
+import { standardCatalogDefinitions } from './standardCatalog.js'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
-import { Input } from '@/components/ui/Input.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
 import { peso } from '../components/businessPresentation.js'
-import { parsePriceCentavos } from '../services/businessService.js'
+import { CatalogProductEditor } from './CatalogProductEditor.jsx'
+import { ProductPhotoManager } from '../components/ProductPhotoManager.jsx'
 import { businessRepository } from '../repositories/businessRepository.js'
 import { db } from '../cloud/client.ts'
 import { previewCatalogImport } from './catalogImport.js'
@@ -18,7 +20,8 @@ export function AdminProducts({ work, busy, run, online }) {
   const [reviewing, setReviewing] = useState(false)
   const [failure, setFailure] = useState('')
   const [notice, setNotice] = useState('')
-  async function review() {
+  const [search, setSearch] = useState('')
+  async function review(kind = 'device') {
     if (lock.current) return
     lock.current = true
     setReviewing(true)
@@ -27,13 +30,14 @@ export function AdminProducts({ work, busy, run, online }) {
     setPreview(null)
     setConfirmed(false)
     try {
-      setPreview(
-        await previewCatalogImport(
-          db,
-          work.profile.id,
-          await businessRepository.listProducts(),
-        ),
-      )
+      const products =
+        kind === 'standard'
+          ? standardCatalogDefinitions(work.catalog)
+          : await businessRepository.listProducts()
+      setPreview({
+        ...(await previewCatalogImport(db, work.profile.id, products)),
+        kind,
+      })
     } catch {
       setFailure(
         'Could not review products on this device. Check Admin access and try again. No products were imported.',
@@ -62,7 +66,9 @@ export function AdminProducts({ work, busy, run, online }) {
       await publishCatalog(
         db,
         work.profile.id,
-        await businessRepository.listProducts(),
+        preview.kind === 'standard'
+          ? preview.source
+          : await businessRepository.listProducts(),
         preview.snapshot,
       )
       setPreview(null)
@@ -146,8 +152,24 @@ export function AdminProducts({ work, busy, run, online }) {
         className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4 space-y-3"
       >
         <summary className="cursor-pointer min-h-11 font-semibold">
-          Import existing products from this device
+          More product choices
         </summary>
+        <h3 className="font-semibold">Standard products</h3>
+        <p className="text-sm">
+          Review the familiar shawls, scents, Solo/Set options and pillows. Add
+          missing choices at the standard prices; keep existing products, prices
+          and branch quantities. No stock is received.
+        </p>
+        <Button
+          variant="secondary"
+          disabled={busy || reviewing}
+          onClick={() => review('standard')}
+        >
+          Review standard product choices
+        </Button>
+        <h3 className="font-semibold">
+          Import existing products from this device
+        </h3>
         <p>
           Use this once if the owner already added products on this browser
           before branch setup. Review the list before importing.
@@ -161,7 +183,7 @@ export function AdminProducts({ work, busy, run, online }) {
         <Button
           variant="secondary"
           disabled={busy || reviewing}
-          onClick={review}
+          onClick={() => review('device')}
         >
           {reviewing ? 'Reviewing…' : 'Preview existing products'}
         </Button>
@@ -185,6 +207,11 @@ export function AdminProducts({ work, busy, run, online }) {
         {notice && <p role="status">{notice}</p>}
         {preview && (
           <section aria-label="Product import preview" className="space-y-3">
+            <p>
+              {preview.kind === 'standard'
+                ? 'Standard product choices'
+                : 'Existing products from this device'}
+            </p>
             <p>
               {preview.added} to add · {preview.existing} already in the product
               list · {preview.conflicts} need review
@@ -255,49 +282,50 @@ export function AdminProducts({ work, busy, run, online }) {
           </section>
         )}
       </details>
+      <ProductPhotoManager
+        shared
+        products={work.catalog}
+        photos={work.photos ?? []}
+        uploadPhoto={work.uploadPhoto}
+        removePhoto={work.removePhoto}
+        disabled={busy || reviewing}
+      />
       {work.catalog.length > 0 && (
         <section aria-label="Saved products" className="space-y-3">
           <h2 className="font-heading text-xl">
             Product list · {work.catalog.length}
           </h2>
+          <Input
+            label="Find saved products"
+            type="search"
+            placeholder="Product, scent, size, Solo or Set"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
           <ul className="space-y-2">
-            {work.catalog.map((product) => (
-              <li key={product.id}>
-                <details className="rounded-lg border border-outline-variant bg-surface-container-lowest p-3">
-                  <summary className="cursor-pointer min-h-11 font-semibold">
-                    {product.name} · {peso(product.unitPriceCentavos)} · Edit
-                    price
-                  </summary>
-                  <form
-                    className="mt-3 flex flex-wrap items-end gap-3"
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      const price = new FormData(event.currentTarget).get(
-                        'price',
-                      )
-                      run(
-                        () =>
-                          work.repo.setPrice(
-                            product.id,
-                            parsePriceCentavos(price),
-                          ),
-                        'Price saved on this device. Staff will see it when the changes are shared.',
-                      )
-                    }}
-                  >
-                    <Input
-                      label="New price (PHP)"
-                      name="price"
-                      inputMode="decimal"
-                      required
-                    />
-                    <Button disabled={busy} type="submit">
-                      Save price
-                    </Button>
-                  </form>
-                </details>
-              </li>
-            ))}
+            {work.catalog
+              .filter((product) =>
+                [
+                  product.name,
+                  product.catalog?.scent,
+                  product.catalog?.type,
+                  product.catalog?.size,
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(search.trim().toLowerCase()),
+              )
+              .map((product) => (
+                <li key={product.id}>
+                  <CatalogProductEditor
+                    product={product}
+                    work={work}
+                    busy={busy}
+                    run={run}
+                  />
+                </li>
+              ))}
           </ul>
         </section>
       )}

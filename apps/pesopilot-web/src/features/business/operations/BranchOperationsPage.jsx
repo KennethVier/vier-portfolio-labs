@@ -130,7 +130,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
     branches: 'Branches and Users',
   }
   return (
-    <BusinessShell>
+    <BusinessShell workspace={work}>
       <h1 className="font-heading text-3xl">{titles[screen]}</h1>
       {screen === 'home' && admin && <BusinessSetup work={work} />}
       {status}
@@ -268,12 +268,14 @@ export function BranchOperationsPage({ screen = 'home' }) {
                   <section key={row.branch.id} className="space-y-2">
                     <h2 className="text-xl">{row.branch.name}</h2>
                     <ul>
-                      {row.products.map((product) => (
-                        <li key={product.id}>
-                          {product.name} · {product.stockQuantity} available ·{' '}
-                          {peso(product.unitPriceCentavos)}
-                        </li>
-                      ))}
+                      {row.products
+                        .filter((product) => product.catalog?.type !== 'Set')
+                        .map((product) => (
+                          <li key={product.id}>
+                            {product.name} · {product.stockQuantity} available ·{' '}
+                            {peso(product.unitPriceCentavos)}
+                          </li>
+                        ))}
                     </ul>
                     {row.conflicts.length > 0 && (
                       <p role="alert">
@@ -299,6 +301,12 @@ export function BranchOperationsPage({ screen = 'home' }) {
             ))}
           {screen === 'audit' && (
             <>
+              <Button
+                disabled={busy || work.isLoading}
+                onClick={() => run(work.refresh, 'Audit records reloaded.')}
+              >
+                Refresh audit
+              </Button>
               <Input
                 label="Audit date"
                 type="date"

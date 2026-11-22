@@ -1,3 +1,4 @@
+import { uploadCatalogPhoto, saveCatalogPhoto } from './catalogMedia.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { liveQuery } from 'dexie'
 import { useBusinessAccess } from '../cloud/access.js'
@@ -137,19 +138,21 @@ export function useBranchWorkspace(database = db) {
 
   return {
     ...state,
+    database,
     branchId,
     setBranchId,
     repo,
     service,
     profile,
-    photos: [],
+    photos: state.photos ?? [],
+    uploadPhoto: (file, familyId) =>
+      uploadCatalogPhoto(database, profile.id, file, familyId),
+    removePhoto: (familyId) =>
+      saveCatalogPhoto(database, profile.id, familyId, null),
     sync,
     invites,
     refresh,
     completeSale: (input) => service.completeSale(input),
-    receiveStock: () =>
-      Promise.reject(
-        new Error('Use Branch Inventory to receive stock with a reason.'),
-      ),
+    receiveStock: (entries, options) => service.receiveStock(entries, options),
   }
 }

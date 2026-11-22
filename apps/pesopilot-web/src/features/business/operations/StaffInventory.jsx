@@ -1,3 +1,4 @@
+import { DailyStock } from '../components/DailyStock.jsx'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
@@ -239,6 +240,12 @@ export function StaffInventory({ work }) {
           </div>
         </section>
       )}
+      <DailyStock
+        operational
+        products={work.products}
+        receiveStock={work.receiveStock}
+        disabled={work.isLoading || Boolean(work.error)}
+      />
     </section>
   )
 }
