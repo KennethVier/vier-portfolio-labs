@@ -221,3 +221,7 @@
 @media (prefers-reduced-motion: reduce) {
   .business-touch * { transition: none !important; }
 }
+
+.business-touch .business-account { color: var(--business-ivory); border-color: #D8B45D40; }
+.business-touch .business-account .business-signout { color: var(--business-navy); background: var(--business-ivory); border-color: var(--business-gold); }
+.business-touch .business-users-panel { color: var(--business-navy); background: var(--business-ivory); border-color: var(--business-gold-border); }

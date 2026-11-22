@@ -258,3 +258,58 @@ npm ci must print Verified Dexie 4.4.16 sealed-schema transport compatibility. T
 Reload the existing Chrome profile and sign in as pesopilotbusiness@gmail.com. Confirm an authenticated /sync returns 200, then open the dashboard and Users page. Publish a synthetic stock snapshot and confirm an authenticated successful push and arrival in the shared stock view. Check the new network request rather than an earlier 422 retained in DevTools. Keep both Admin memberships. If this fails, inspect only the schema property of the new request and its status to verify the four-entry projection with explicit yProps arrays. Do not export headers or business payloads.
 
 Repository regression tests reproduce the two confirmed rejection shapes, verify schema projection without mutation and check both patched distribution artifacts. Clean npm ci applies the patch. Actual authenticated sync, Admin page access, synthetic stock and Staff enforcement remain owner-side acceptance gates. Phase 1 and PR #10 remain open.
+
+## Restricted Staff onboarding and license audit
+
+The user confirmed live business Admin dashboard access after the transport fix. A subsequent Staff invitation appeared in Users but OTP rejected the email as unregistered. The browser's invitation writes a members row; restricted login independently requires an application-user record. Accepted membership alone cannot establish registration or license status.
+
+Phase 1 uses an owner-operated registry step instead of adding a privileged provisioning service. The Users page labels the invitation separately from registration and says Owner verification required for Staff accounts. It cannot query the management-only user registry. The owner script verifies an existing, unambiguous Staff invitation before registering a missing user. It assigns an evaluation license only on initial creation, reads the user and membership back, and preserves existing licenses, membership and invitation acceptance. An inactive or exhausted evaluation is reported for review. A completed registration survives subsequent failure and is reused on retry.
+
+### Register the affected Staff account
+
+From PowerShell, update the existing worktree and run the operator script:
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+
+& "$app\cloud\staff-accounts.ps1" -Mode audit -OperatorDirectory $operator
+& "$app\cloud\staff-accounts.ps1" -Mode provision -Email 'kennethcerrado18@gmail.com' -OperatorDirectory $operator
+& "$app\cloud\staff-accounts.ps1" -Mode audit -OperatorDirectory $operator
+```
+
+This uses the existing local management credential against the fixed development database. Registration sends no OTP and creates no new invitation. The Staff user requests an email code in the app. If the first read-back failed, repeat provision with the same email. If the invitation has been removed, resolve that membership in Users first. Do not rerun first-Admin bootstrap for a Staff account.
+
+For a new Staff account, first submit its invitation in Users, then run provision for that exact email, then let Staff sign in. The email input clears only when invitation synchronization succeeds and remains populated on failure. A failure after a local invitation was recorded can leave it pending sync. Check the membership list and connection before resubmitting.
+
+### Actual license verification
+
+Audit pages through the managed /users registry and prints counts by license type, total production-user records, and the type, evaluation days, expiry, deactivation and last-login fields for the two known Admin emails and affected Staff email. It performs no writes. A realm membership is not a production seat. Only a prod application-user license occupies a production seat; eval and demo accounts do not. The Free plan includes three production seats. The report labels production records rather than claiming the provider's allocated-seat billing state. Confirm current seat allocation in Dexie Cloud Manager. No authenticated registry credential is available in the agent runtime, so actual current counts remain owner-verified through this command.
+
+Removing a realm membership does not change its application user's license. Do not delete application users to manage seats because private data can be deleted with them. This implementation does not promote, downgrade, reset or extend existing evaluations.
+
+References: [managed application users](https://dexie.org/docs/cloud/rest-api#users-endpoint), [license types and seats](https://dexie.org/pricing).
+
+### Optional developer membership removal
+
+The default Staff workflow leaves both Admin memberships untouched. Once the business account completes OTP, opens Users and successfully writes a synthetic shared-stock snapshot, the owner can apply the separately requested developer membership removal:
+
+```powershell
+& "$app\cloud\staff-accounts.ps1" -Mode remove-developer -BusinessAdminVerified -OperatorDirectory $operator
+```
+
+This verifies business realm ownership, an active business application user and accepted business Admin membership before deleting only mmb-pesopilot-dev-admin. It checks that the developer membership is absent afterward and can be retried safely. It retains kennethcerrado23@gmail.com's application user, license, private data and database management access. Consequently this removes the developer from the application's Admin list but does not release a prod license. Current transfer/rollback scripts expect the original developer membership; after intentional removal, use the business Admin and operator management access for any later access restoration. The agent has not executed removal.
+
+### Staff live acceptance
+
+1. Restart the updated development app and sign in as the business Admin. Confirm its account email and Sign out control are readable at desktop and narrow widths.
+2. After provision succeeds, open a separate browser profile and sign in as kennethcerrado18@gmail.com. Enter OTP privately and accept the business invitation if offered. An already accepted invitation need not be accepted again.
+3. Confirm POS, My sales and Shared stock are accessible. Record a synthetic local Cash sale on a test device/profile with test stock and confirm its own receipt. Existing local sales/audit data must remain available to Admin.
+4. Navigate directly to /business/users, /business/inventory, /business/audit and /business/history as Staff. Confirm redirect to POS. Check Admin-owned shared stock is readable and a Staff direct cloud write to a dedicated synthetic test snapshot is rejected by Dexie, not merely hidden by UI.
+5. As Admin, click Remove Staff, cancel once and verify access remains, then confirm removal. Wait for successful synchronization and verify Staff loses realm access on a fresh pull. Offline cached access and local records are not remotely erased. User-management success is shown only after push completes.
+6. Review the owner audit and provider seat allocation, then decide whether to execute the optional developer-membership removal. Recheck business Admin access afterward.
+
+Live Staff OTP, direct server write rejection, revocation and actual current licensing cannot be claimed from repository tests. Keep Phase 1 and PR #10 open until those checks are recorded.

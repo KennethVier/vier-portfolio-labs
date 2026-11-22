@@ -136,14 +136,14 @@ export async function operatorApi(write = false) {
     throw new Error('Invalid Dexie token response.')
   })
   if (!accessToken) throw new Error('Dexie did not issue a management session.')
-  async function api(path, body) {
+  async function api(path, body, method = body ? 'POST' : 'GET') {
     const result = await fetch(url + path, {
-      method: body ? 'POST' : 'GET',
+      method,
       redirect: 'error',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
     })
-    if (!body && result.status === 404) return null
+    if (method === 'GET' && result.status === 404) return null
     if (!result.ok)
       throw new Error(
         'Dexie ' +
@@ -154,7 +154,7 @@ export async function operatorApi(write = false) {
           result.status +
           ').',
       )
-    return body
+    return method !== 'GET'
       ? null
       : result.json().catch(() => {
           throw new Error('Invalid Dexie record response.')

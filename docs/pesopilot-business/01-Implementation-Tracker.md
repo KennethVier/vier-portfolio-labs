@@ -266,3 +266,7 @@ Replaced the timed fetch wrapper with a development-only button that immediately
 ### Evidence-supported sealed-schema transport correction
 
 Analyzed the owner's matching four-table hosted comparison. Local-only entries are now reported separately. Controlled real endpoint probes identified rejection of local metadata entries even when unmarked, and rejection when empty yProps arrays are omitted. Added a version-pinned, idempotent addon request-schema compatibility patch that filters local-only entries and normalizes yProps. The committed helper returned HTTP 200 in an empty-change unauthenticated probe. Persisted data, credentials and memberships remain intact. Authenticated business Admin and synthetic-stock acceptance are pending.
+
+### Staff application-user registration and account UI
+
+User confirmed Admin dashboard access. Staff invitation still lacked the independent restricted-admission application-user record. Added idempotent owner-side Staff registration with read-back, preserved licenses and a paginated read-only license audit. Users distinguishes membership and unverified registration, clears successful invitation inputs, preserves failed input, confirms Remove Staff and uses responsive panels. The account header has explicit contrasting styles. Optional owner-side developer-membership removal retains its application user/private data and checks business Admin continuity. No live account mutation or audit was executed from the agent runtime.
