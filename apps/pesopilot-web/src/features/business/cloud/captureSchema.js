@@ -1,81 +1,51 @@
-import { db } from './client.ts'
 import { schemaMetadata } from '../../../../cloud/schema-diagnostic.mjs'
 
-// Installed only by an explicit development-console action. Observes one existing
-// request; it does not trigger synchronization or read business records.
-export function captureNextSync() {
-  if (!import.meta.env.DEV || location.hostname !== 'localhost' || !db)
+// Matches the installed addon's getSchema() metadata projection. Does not open
+// the database, start synchronization, intercept fetch, or read business records.
+export async function readMergedSchema(database) {
+  if (!database?.isOpen()) throw new Error('Wait for the existing cloud database to open.')
+  const persisted = await database.transaction('r', database.table('$syncState'), () =>
+    database.table('$syncState').get('schema'),
+  )
+  if (!persisted) throw new Error('The addon has not persisted its schema yet.')
+  const merged = structuredClone(persisted)
+  const localTables = database.tables.map((table) => {
+    const key = table.schema.primKey.keyPath
+    if (key && merged[table.name])
+      merged[table.name].primaryKey = Array.isArray(key) ? '[' + key.join('+') + ']' : key
+    return {
+      name: table.name,
+      primaryKey: key,
+      autoIncrement: table.schema.primKey.auto,
+      secondaryIndexes: table.schema.indexes.map((index) => index.name),
+    }
+  })
+  return {
+    databaseUrl: database.cloud.options?.databaseUrl,
+    addonVersion: database.cloud.version,
+    syncContext: {
+      usingServiceWorker: Boolean(database.cloud.usingServiceWorker),
+      tryUseServiceWorker: Boolean(database.cloud.options?.tryUseServiceWorker),
+      controlledByServiceWorker:
+        typeof navigator !== 'undefined' && Boolean(navigator.serviceWorker?.controller),
+    },
+    evidence: 'persisted-getSchema-equivalent',
+    merged: schemaMetadata(merged),
+    declared: schemaMetadata(database.cloud.schema),
+    persisted: schemaMetadata(persisted),
+    localTables,
+  }
+}
+export async function downloadMergedSchema(database) {
+  if (!import.meta.env.DEV || location.hostname !== 'localhost')
     throw new Error('Use the local development app.')
-  if (window.__pesoSchemaCapture) throw new Error('A capture is already active.')
-  const original = window.fetch
-  let claimed = false
-  let timer
-  function restore() {
-    if (window.fetch === wrapped) window.fetch = original
-    delete window.__pesoSchemaCapture
-    clearTimeout(timer)
-  }
-  const wrapped = async function (input, init) {
-    const address = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-    if (claimed || address !== 'https://z5jxogiwe.dexie.cloud/sync')
-      return original.call(this, input, init)
-    claimed = true
-    let metadata
-    try {
-      // The pinned addon supplies a serialized TSON string in init.body.
-      if (typeof init?.body !== 'string') throw new Error('Unexpected request encoding.')
-      metadata = schemaMetadata(JSON.parse(init.body).schema)
-    } catch {
-      restore()
-      console.info('Schema capture could not decode the request. No request content was saved.')
-      return original.call(this, input, init)
-    }
-    const persisted = await db
-      .table('$syncState')
-      .get('schema')
-      .catch(() => null)
-    const report = {
-      databaseUrl: 'https://z5jxogiwe.dexie.cloud',
-      addonVersion: db.cloud.version,
-      transmitted: metadata,
-      declared: schemaMetadata(db.cloud.schema),
-      persisted: persisted ? schemaMetadata(persisted) : null,
-      localTables: db.tables.map((table) => ({
-        name: table.name,
-        primaryKey: table.schema.primKey.keyPath,
-        autoIncrement: table.schema.primKey.auto,
-        secondaryIndexes: table.schema.indexes.map((index) => index.name),
-      })),
-    }
-    try {
-      const response = await original.call(this, input, init)
-      report.httpStatus = response.status
-      save(report)
-      return response
-    } catch (error) {
-      report.httpStatus = null
-      save(report)
-      throw error
-    } finally {
-      restore()
-    }
-  }
-  function save(report) {
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
-    )
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'pesopilot-sync-schema.json'
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-    console.info('Saved schema metadata only to pesopilot-sync-schema.json.')
-  }
-  window.fetch = wrapped
-  window.__pesoSchemaCapture = true
-  timer = setTimeout(() => {
-    restore()
-    console.info('Schema capture timed out without a sync request.')
-  }, 60000)
-  console.info('Schema capture armed. Click Retry access check once within 60 seconds.')
+  const report = await readMergedSchema(database)
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
+  )
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'pesopilot-sync-schema.json'
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

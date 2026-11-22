@@ -172,31 +172,41 @@ Live investigation reproduced the reported development /sync HTTP 422 using appl
 
 Reference: [Dexie Cloud sealed schema updates and primary keys](https://dexie.org/docs/cloud/cli).
 
-## Full serialized-schema investigation after an unsuccessful repair
+## Persistent 422 evidence collection
 
-Correction to the earlier diagnostic scope: the four-table test checks the synchronized table set declared by a fresh client. The actual /sync schema field includes the entire merged cloud schema, including local addon metadata entries and persisted declarations. In addon 4.4.16, mergePersistedSchema starts from the persisted map and retains entries absent from current declarations. getSchema updates primary keys for existing local tables; the request serializes that complete map. Therefore passing the four-table comparison does not prove compatibility of the transmitted request. The generic 422 and the unauthenticated probes did not identify the remaining mismatch.
+The timed window.fetch observer was removed after it failed in the affected browser. The installed 4.4.16 modern and minified sources do not cache a fetch reference at module initialization. The observer watched only an exact URL in the page's window during a 60-second window. A different context, existing in-flight request or worker retry/backoff could evade it, but the affected browser's exact cause has not been established. A timeout was not evidence that no network request occurred.
 
-Use the following diagnostic before another schema repair. It observes a normal app request without triggering sync itself, mutating its payload or changing IndexedDB. It saves only schema metadata, addon version, local table/index declarations and the HTTP status. Request headers, identities, tokens, revisions, changes and response records are excluded.
+Use **Download schema metadata** on the blocked development access screen. This button reads the already-open cloud database's persisted $syncState schema in a read-only transaction and applies the addon's getSchema() primary-key projection from current table definitions. It preserves every entry, including previously persisted declarations and addon metadata. It opens no database and triggers no sync. The download excludes users, tokens, headers, revisions, changes and business records. It includes only schema definitions, local table/index metadata and booleans identifying service-worker configuration. No fetch wrapper, timer or console instrumentation is installed.
 
-1. Update the Phase 1 branch and restart the existing local Vite development server.
-2. Open Chrome DevTools Console on the affected localhost app. Execute this reviewed development module, then click Retry access check once within 60 seconds.
+The report explicitly labels this evidence persisted-getSchema-equivalent. It is a read-time snapshot of the source the addon uses, not a claim that an exact failed request was intercepted. The authenticated hosted comparison prints every entry, including those without markedForSync=true, and optional before/after schema exports can establish what the previous repair changed.
 
-```javascript
-(await import('/src/features/business/cloud/captureSchema.js')).captureNextSync()
-```
+### One owner-side procedure
 
-A normal sync attempt downloads pesopilot-sync-schema.json. If there is no new request, the capture expires and restores fetch after 60 seconds. The observer also restores fetch after its first request. It reads the local $syncState schema record and lists all local table keys/indexes, but reads no business records. The addon still performs its normal sync request. This diagnostic does not turn a retry into a read-only network operation.
-
-From the repository worktree in PowerShell, export the hosted schema and compare the captured transport:
+1. Update and launch the existing development worktree in PowerShell.
 
 ```powershell
-$app = Join-Path (git rev-parse --show-toplevel) 'apps\\pesopilot-web'
-$operator = Join-Path $env:USERPROFILE 'DexieCloud\\pesopilot-business-v2-dev'
-& "$app\\cloud\\diagnose-schema.ps1" -CapturePath (Join-Path $env:USERPROFILE 'Downloads\\pesopilot-sync-schema.json') -OperatorDirectory $operator
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+Set-Location $app
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --port 5173 --strictPort
 ```
 
-The operator script only invokes the official schema export and a local comparison. It prints and saves schema-comparison-<guid>.json in the operator directory. Every transmitted table is reported, including entries without markedForSync=true, with primary-key/generation differences, missing host declarations and provenance in persisted/current schema. No automatic repair is performed. A missing local-only metadata entry is evidence for investigation, not authorization to import it into the hosted database.
+2. Reload the same affected Chrome profile, wait for the synchronization error and click **Download schema metadata**. The download is pesopilot-sync-schema.json. No manually timed Console command is required.
 
-To determine what the previous repair changed, supply its exact retained schema-before and schema-after files as -RepairBeforePath and -RepairAfterPath. The report compares the same transmitted schema with both snapshots. If those files or the original console output are unavailable, the current hosted export cannot establish what happened during an earlier import.
+3. Open a second PowerShell and run the read-only hosted comparison.
 
-Share only the generated comparison report and the missing-table/verification lines from the earlier repair if available. Keep CLI keys, OTPs and raw network exports private. Wait for a fix based on the complete evidence. A successful /sync status must also be followed by live Admin dashboard/Users verification. Phase 1 and PR #10 remain open.
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+& "$app\cloud\diagnose-schema.ps1" -CapturePath (Join-Path $env:USERPROFILE 'Downloads\pesopilot-sync-schema.json') -OperatorDirectory $operator
+```
+
+The script invokes only the official authenticated schema export and a local comparison. It prints and saves schema-comparison-<guid>.json in the operator directory. Share that report. Optional -RepairBeforePath and -RepairAfterPath accept the exact exports retained by the previous repair and compare both to the current local schema.
+
+For exact wire confirmation, Chrome DevTools Network can inspect the existing failed /sync request directly. In Payload, expand only the schema property. Compare table names, primaryKey and generatedGlobalId with the report. If they differ, copy only the schema property's value into a separate JSON file. Do not copy the entire request, export a HAR, use Copy as fetch, or include headers. Local snapshots may differ from an older in-flight payload, so note a difference before any repair.
+
+No additional schema migration is justified until this evidence identifies the remaining entry. Missing local-only metadata is a diagnostic difference, not an instruction to import it. Keep the development-only diagnostic idle after downloading. Remove the diagnostic entry point after hosted repair and live acceptance. A successful authenticated /sync status and verified Admin dashboard/Users access are still required. Both Admin memberships, realm ownership, POS IndexedDB and Supabase recovery stay outside this diagnostic.

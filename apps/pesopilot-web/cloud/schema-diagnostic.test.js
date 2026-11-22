@@ -41,3 +41,12 @@ it('excludes credentials, row changes and unknown metadata from schema output', 
   })
   expect(result).toEqual({ stock: { primaryKey: 'id' } })
 })
+
+it('labels a direct persisted schema snapshot without claiming it was captured from the wire', () => {
+  const report = compareSchemas(
+    { databaseUrl: capture.databaseUrl, merged: capture.transmitted, persisted: capture.persisted },
+    { schema: { catalogStock: 'id' }, sealed: true },
+  )
+  expect(report.evidence).toBe('persisted-getSchema-equivalent')
+  expect(report.rows.find((row) => row.table === 'oldTable').status).toBe('missing-on-host')
+})

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
 import { Input } from '@/components/ui/Input.jsx'
+import { downloadMergedSchema } from './captureSchema.js'
 import { db, watchAccount } from './client.ts'
 import { AccessContext, permits } from './access.js'
 import '../business.css'
@@ -54,6 +55,11 @@ export function BusinessGate() {
         <p role="alert">{state.error}</p>
         <Button onClick={() => setAttempt((value) => value + 1)}>Retry access check</Button>
         <Button onClick={logout}>Sign out</Button>
+        {import.meta.env.DEV && (
+          <Button disabled={busy} onClick={() => run(() => downloadMergedSchema(db))}>
+            Download schema metadata
+          </Button>
+        )}
       </>,
     )
   if (state.loading)

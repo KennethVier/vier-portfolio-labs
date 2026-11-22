@@ -258,3 +258,7 @@ Added a schema-only owner-side export/compare/import/read-back procedure that re
 ### Full transport schema diagnostics
 
 The earlier four-table compatibility assertion did not cover the full persisted schema serialized by the addon. Added opt-in development capture of the actual request's schema metadata and a read-only authenticated hosted export comparator. The comparator reports every transmitted entry and can compare prior repair exports. No further schema or membership mutation is proposed until the affected browser capture identifies the difference. Live 422 and Admin access remain blocked.
+
+### Immediate persisted-schema diagnostic
+
+Replaced the timed fetch wrapper with a development-only button that immediately reads the already-open cloud database's merged persisted schema. It mirrors the pinned addon's getSchema primary-key projection and labels the evidence source explicitly. The tests verify no network request or persisted write. The page also reports worker-context booleans. Exact remaining mismatch and hosted success still require the affected browser's snapshot and authenticated export.

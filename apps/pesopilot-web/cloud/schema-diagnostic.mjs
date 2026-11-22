@@ -37,9 +37,10 @@ function keyOf(definition) {
 }
 export function compareSchemas(capture, hosted) {
   if (capture.databaseUrl !== 'https://z5jxogiwe.dexie.cloud') throw new Error('Wrong capture database.')
-  if (!capture.transmitted) throw new Error('Capture has no serialized request schema.')
+  const source = capture.transmitted ?? capture.merged
+  if (!source) throw new Error('Capture has no request or merged persisted schema.')
   const remote = schemaMetadata(hosted.schema)
-  const transmitted = schemaMetadata(capture.transmitted)
+  const transmitted = schemaMetadata(source)
   const rows = Object.entries(transmitted).map(([table, definition]) => {
     const clientKey = keyOf(definition)
     const serverKey = remote[table] ? keyOf(remote[table]) : null
@@ -65,6 +66,7 @@ export function compareSchemas(capture, hosted) {
   return {
     databaseUrl: capture.databaseUrl,
     addonVersion: capture.addonVersion,
+    evidence: capture.transmitted ? 'serialized-request' : 'persisted-getSchema-equivalent',
     httpStatus: capture.httpStatus,
     sealed: hosted.sealed,
     rows,
