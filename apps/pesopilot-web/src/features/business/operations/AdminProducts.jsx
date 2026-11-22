@@ -176,7 +176,7 @@ export function AdminProducts({ work, busy, run, online }) {
             <Button
               variant="secondary"
               disabled={!online || reviewing || busy}
-              onClick={() => run(work.refresh, 'Latest updates received.')}
+              onClick={() => run(work.refresh, 'Business records reloaded.')}
             >
               Try sharing again
             </Button>

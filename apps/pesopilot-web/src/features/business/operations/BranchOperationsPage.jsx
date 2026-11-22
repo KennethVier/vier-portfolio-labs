@@ -1,3 +1,4 @@
+import { WorkspaceReadDiagnostics } from './WorkspaceReadDiagnostics.jsx'
 import { BusinessSetup } from './BusinessSetup.jsx'
 import { BusinessSyncStatus } from './BusinessSyncStatus.jsx'
 import { useBusinessOnline } from './useBusinessOnline.js'
@@ -87,13 +88,21 @@ export function BranchOperationsPage({ screen = 'home' }) {
         phase={work.sync.phase}
         online={online}
         busy={busy}
-        retry={() => run(work.refresh, 'Latest updates received.')}
+        retry={() => run(work.refresh, 'Business records reloaded.')}
+        recordsStatus={
+          work.readStatus ??
+          (work.error ? 'error' : work.isLoading ? 'loading' : 'ready')
+        }
         problem={
           work.error
             ? 'Business records could not be loaded. Try again or ask the owner for help.'
             : error
         }
         notice={notice}
+      />
+      <WorkspaceReadDiagnostics
+        profile={work.profile}
+        report={work.diagnostics}
       />
       {work.conflicts.length > 0 && (
         <p role="alert">
@@ -158,6 +167,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
           <select
             className={selectClass}
             value={work.branchId}
+            disabled={busy || work.isLoading}
             onChange={(event) => work.setBranchId(event.target.value)}
           >
             <option value="">All branches</option>

@@ -20,21 +20,27 @@ export function eventId(branch, actor, key) {
     throw new Error('A stable branch, actor and request key are required.')
   return JSON.stringify([branch, actor, key])
 }
-export async function businessAdmin(database, uid) {
-  const realm = await database.realms.get(BUSINESS_REALM)
+const directRead = (_stage, action) => action()
+export async function businessAdmin(database, uid, read = directRead) {
+  const realm = await read('authorization.admin.realm', () =>
+    database.realms.get(BUSINESS_REALM),
+  )
   if (!realm || !uid) return false
   if (realm.owner === uid) return true
   return (
-    await database.members.where('realmId').equals(BUSINESS_REALM).toArray()
+    await read('authorization.admin.members', () =>
+      database.members.where('realmId').equals(BUSINESS_REALM).toArray(),
+    )
   ).some((m) => m.userId === uid && accepted(m) && same(m.roles, ['admin']))
 }
-export async function authorizedBranches(database, uid) {
-  const branches = await database.businessBranches
-    .where('realmId')
-    .equals(BUSINESS_REALM)
-    .toArray()
-  const members = await database.members.toArray()
-  const admin = await businessAdmin(database, uid)
+export async function authorizedBranches(database, uid, read = directRead) {
+  const branches = await read('authorization.registry', () =>
+    database.businessBranches.where('realmId').equals(BUSINESS_REALM).toArray(),
+  )
+  const members = await read('authorization.members', () =>
+    database.members.toArray(),
+  )
+  const admin = await businessAdmin(database, uid, read)
   if (
     !admin &&
     !members.some(
@@ -47,7 +53,9 @@ export async function authorizedBranches(database, uid) {
   )
     return []
   const realms = new Map(
-    (await database.realms.toArray()).map((row) => [row.realmId, row]),
+    (await read('authorization.realms', () => database.realms.toArray())).map(
+      (row) => [row.realmId, row],
+    ),
   )
   return branches.filter(
     (branch) =>
@@ -83,23 +91,49 @@ export function projectBranch(catalog, events, branchId) {
     movements = [],
     auditEvents = []
   const seen = new Set()
+  function integrity(condition, code) {
+    if (!condition)
+      throw Object.assign(
+        new Error(
+          'Branch ledger integrity check failed. No stock was replaced.',
+        ),
+        { code },
+      )
+  }
+  // Owner is provider access metadata, not an accounting invariant. The pinned addon
+  // replaces null with the writer; existing creator-owned records must remain readable.
+  for (const entry of events) {
+    integrity(entry && typeof entry === 'object', 'BRANCH_RECORD_SHAPE')
+    integrity(
+      typeof entry.id === 'string' && Boolean(entry.id),
+      'BRANCH_EVENT_ID',
+    )
+    integrity(
+      entry.realmId === branchId && entry.branchId === branchId,
+      'BRANCH_SCOPE_MISMATCH',
+    )
+    integrity(
+      typeof entry.actorId === 'string' && Boolean(entry.actorId),
+      'BRANCH_ACTOR_MISSING',
+    )
+    integrity(
+      entry.owner == null ||
+        (typeof entry.owner === 'string' && Boolean(entry.owner)),
+      'BRANCH_OWNER_SHAPE',
+    )
+    integrity(!seen.has(entry.id), 'BRANCH_EVENT_DUPLICATE')
+    integrity(
+      typeof entry.occurredAt === 'string' &&
+        Number.isFinite(Date.parse(entry.occurredAt)),
+      'BRANCH_TIME_INVALID',
+    )
+    seen.add(entry.id)
+  }
   const ordered = [...events].sort(
     (a, b) =>
       a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id),
   )
   for (const entry of ordered) {
-    if (
-      entry.realmId !== branchId ||
-      entry.branchId !== branchId ||
-      !entry.actorId ||
-      entry.owner !== null ||
-      seen.has(entry.id) ||
-      !Number.isFinite(Date.parse(entry.occurredAt))
-    )
-      throw new Error(
-        'Branch ledger integrity check failed. No stock was replaced.',
-      )
-    seen.add(entry.id)
     if (
       !['sale', 'stock_adjustment', 'legacyImport'].includes(entry.kind) ||
       !Array.isArray(entry.movements)
@@ -274,6 +308,11 @@ export function createBranchRepository(database, { userId, branchId }) {
       const entry = build(state, id)
       if (!Number.isFinite(Date.parse(entry.occurredAt)))
         throw new Error('Invalid operation time.')
+      const branch = await database.realms.get(branchId)
+      if (typeof branch?.owner !== 'string' || !branch.owner)
+        throw new Error(
+          'Branch owner is missing. Ask the owner to review this branch.',
+        )
       await database.branchTransactions.add({
         ...entry,
         id,
@@ -281,7 +320,7 @@ export function createBranchRepository(database, { userId, branchId }) {
         realmId: branchId,
         branchId,
         actorId: userId,
-        owner: null,
+        owner: branch.owner,
       })
       return { sale: entry.sale, duplicate: false }
     })

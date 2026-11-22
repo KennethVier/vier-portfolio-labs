@@ -129,7 +129,7 @@ export async function importLegacy(database, uid, input, branchId, confirmed) {
         id,
         realmId: branchId,
         branchId,
-        owner: null,
+        owner: uid,
         actorId: uid,
         kind: 'legacyImport',
         source: plan.source,

@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { liveQuery } from 'dexie'
 import { useBusinessAccess } from '../cloud/access.js'
 import { db } from '../cloud/client.ts'
+import { initialPull } from '../cloud/initialPull.ts'
 import { createBusinessService } from '../services/businessService.js'
+import { createBranchRepository } from './branchRepository.js'
 import {
-  authorizedBranches,
-  createBranchRepository,
-  projectBranch,
-  BUSINESS_REALM,
-} from './branchRepository.js'
+  readBranchWorkspace,
+  workspaceReadReport,
+  WorkspaceReadError,
+  WORKSPACE_READ_MESSAGE,
+} from './workspaceRead.js'
 
-export function useBranchWorkspace() {
+export function useBranchWorkspace(database = db) {
   const { profile } = useBusinessAccess()
   const [branchId, setBranchId] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -23,91 +25,116 @@ export function useBranchWorkspace() {
     events: [],
     conflicts: [],
     isLoading: true,
+    readStatus: 'loading',
   })
   const [sync, setSync] = useState({ phase: 'initial' })
   const [invites, setInvites] = useState([])
+  const generation = useRef(0)
+  const refreshing = useRef(null)
+  const active = useRef(null)
+  const phase = useRef('initial')
+  const context = useMemo(
+    () => ({ userId: profile.id, role: profile.role, branchId }),
+    [profile.id, profile.role, branchId],
+  )
   const repo = useMemo(
-    () => createBranchRepository(db, { userId: profile.id, branchId }),
-    [profile.id, branchId],
+    () => createBranchRepository(database, context),
+    [database, context],
   )
   const service = useMemo(() => createBusinessService(repo), [repo])
-  useEffect(() => {
-    const status = db.cloud.syncState.subscribe(setSync)
-    const invitations = db.cloud.invites.subscribe(setInvites)
-    const subscription = liveQuery(async () => {
-      const branches = await authorizedBranches(db, profile.id)
-      const catalog = await db.branchCatalog
-        .where('realmId')
-        .equals(BUSINESS_REALM)
-        .toArray()
-      const members = await db.members.toArray()
-      const registry = await db.businessBranches
-        .where('realmId')
-        .equals(BUSINESS_REALM)
-        .toArray()
-      const overviews = await Promise.all(
-        branches.map(async (branch) => ({
-          branch,
-          ...projectBranch(
-            catalog,
-            await db.branchTransactions
-              .where('realmId')
-              .equals(branch.id)
-              .toArray(),
-            branch.id,
-          ),
-        })),
-      )
-      if (
-        profile.role === 'staff' &&
-        branches.length === 1 &&
-        branchId !== branches[0].id
-      )
-        return { branches, catalog, members, select: branches[0].id }
-      const permitted =
-        branches.some((branch) => branch.id === branchId) &&
-        (profile.role === 'admin' || branches.length === 1)
-      const source = permitted
-        ? await repo.source()
-        : { products: [], sales: [], events: [], conflicts: [] }
-      const sales = permitted ? await repo.listSalesHistory() : []
-      return {
-        ...source,
-        sales,
-        branches,
-        catalog,
-        members,
-        overviews,
-        registry,
+  const accept = useCallback(
+    (value) => {
+      setState(value)
+      if (value.resolvedBranchId !== context.branchId)
+        setBranchId(value.resolvedBranchId)
+    },
+    [context],
+  )
+  const fail = useCallback(
+    (error) =>
+      setState((old) => ({
+        ...old,
+        error: WORKSPACE_READ_MESSAGE,
         isLoading: false,
-        error: null,
-      }
-    }).subscribe({
+        readStatus: 'error',
+        diagnostics: workspaceReadReport(database, error, phase.current),
+      })),
+    [database],
+  )
+  useEffect(() => {
+    const current = ++generation.current
+    const session = { disposed: false }
+    setState((old) => ({ ...old, isLoading: true, readStatus: 'loading' }))
+    const status = database.cloud.syncState.subscribe((value) => {
+      phase.current = value.phase
+      setSync(value)
+    })
+    const invitations = database.cloud.invites.subscribe(setInvites)
+    const subscription = liveQuery(
+      async () => await readBranchWorkspace(database, context),
+    ).subscribe({
       next(value) {
-        if (value.select) setBranchId(value.select)
-        else setState(value)
+        if (!session.disposed && generation.current === current) accept(value)
       },
-      error() {
-        setState((old) => ({
-          ...old,
-          products: [],
-          sales: [],
-          error:
-            'Unable to read branch operations. Check schema, membership and ledger integrity.',
-          isLoading: false,
-        }))
+      error(error) {
+        if (!session.disposed && generation.current === current) fail(error)
       },
     })
+    active.current = { subscription, session }
     return () => {
+      session.disposed = true
       subscription.unsubscribe()
       status.unsubscribe()
       invitations.unsubscribe()
     }
-  }, [profile.id, profile.role, repo, branchId, attempt])
-  const refresh = useCallback(async () => {
-    await db.cloud.sync({ purpose: 'pull', wait: true })
-    setAttempt((value) => value + 1)
-  }, [])
+  }, [database, context, accept, fail, attempt])
+  const refresh = useCallback(() => {
+    if (refreshing.current) return refreshing.current
+    const task = (async () => {
+      const current = ++generation.current
+      const session = active.current?.session
+      active.current?.subscription.unsubscribe()
+      setState((old) => ({ ...old, isLoading: true, readStatus: 'loading' }))
+      let loaded = false
+      try {
+        let pullFailure
+        try {
+          await initialPull(database)
+        } catch (error) {
+          pullFailure = new WorkspaceReadError('synchronization', error)
+          pullFailure.message =
+            'Could not get cloud updates. Available business records remain on this device.'
+        }
+        const value = await readBranchWorkspace(database, context)
+        if (!session || session.disposed || generation.current !== current)
+          throw new DOMException(
+            'Business view changed during reload.',
+            'AbortError',
+          )
+        accept(value)
+        loaded = true
+        setAttempt((value) => value + 1)
+        if (pullFailure) throw pullFailure
+      } catch (error) {
+        if (
+          !loaded &&
+          session &&
+          !session.disposed &&
+          generation.current === current
+        )
+          fail(error)
+        throw error
+      }
+    })()
+    refreshing.current = task
+    void task
+      .finally(() => {
+        if (refreshing.current === task) refreshing.current = null
+      })
+      .catch(() => {})
+    return task
+  }, [database, context, accept, fail])
+
   return {
     ...state,
     branchId,

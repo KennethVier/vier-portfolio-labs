@@ -59,6 +59,10 @@ const sale = (quantity = 2, key = 'sale') => ({
 it('receives 10, sells 2, projects 8 and reconciles the same sale/audit on a second Admin connection', async () => {
   await service.adjustStock(stock())
   expect((await service.listProducts())[0].stockQuantity).toBe(10)
+  expect((await db.branchTransactions.toArray())[0]).toMatchObject({
+    owner: 'owner',
+    actorId: 'employee',
+  })
   const result = await service.completeSale(sale())
   expect(result.sale).toMatchObject({
     branchId: 'A',
@@ -250,14 +254,27 @@ it('detects tampered branch declarations rather than mixing them into stock', as
   )
 })
 it('creates a branch and retry-safe Staff invitation with branch-only direct permissions', async () => {
-  const id = await createBranch(db, 'owner', 'Branch C', 'synthetic-C')
-  expect(await createBranch(db, 'owner', 'Branch C', 'synthetic-C')).toBe(id)
+  const id = await createBranch(
+    db,
+    'owner',
+    'Muntinlupa',
+    'synthetic-muntinlupa',
+  )
+  expect(
+    await createBranch(db, 'owner', 'Muntinlupa', 'synthetic-muntinlupa'),
+  ).toBe(id)
   const assigned = await db.members.where('realmId').equals('A').first()
   await db.members.delete(assigned.id)
   await assignStaff(db, 'owner', id, 'staff@example.test')
   await assignStaff(db, 'owner', id, 'staff@example.test')
   const invitations = await db.members.where('realmId').equals(id).toArray()
   expect(invitations).toHaveLength(1)
+  expect(
+    (await db.businessBranches.toArray()).filter(
+      (branch) => branch.name === 'Muntinlupa',
+    ),
+  ).toHaveLength(1)
+  expect(await db.realms.get(id)).toMatchObject({ realmId: id, owner: 'owner' })
   expect(invitations[0]).toMatchObject({
     roles: ['staff'],
     permissions: { add: ['branchTransactions'] },
