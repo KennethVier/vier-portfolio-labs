@@ -1,3 +1,4 @@
+import { InventoryOverview } from './InventoryOverview.jsx'
 import { WorkspaceReadDiagnostics } from './WorkspaceReadDiagnostics.jsx'
 import { BusinessSetup } from './BusinessSetup.jsx'
 import { BusinessSyncStatus } from './BusinessSyncStatus.jsx'
@@ -158,7 +159,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
           after your access is confirmed.
         </p>
       ) : null}
-      {admin && !['home', 'products', 'branches'].includes(screen) && (
+      {admin && !['home', 'products', 'branches', 'stock'].includes(screen) && (
         <label>
           Branch
           <select
@@ -263,28 +264,20 @@ export function BranchOperationsPage({ screen = 'home' }) {
           )}
           {screen === 'stock' && (
             <>
-              {admin &&
-                selected.map((row) => (
-                  <section key={row.branch.id} className="space-y-2">
-                    <h2 className="text-xl">{row.branch.name}</h2>
-                    <ul>
-                      {row.products
-                        .filter((product) => product.catalog?.type !== 'Set')
-                        .map((product) => (
-                          <li key={product.id}>
-                            {product.name} · {product.stockQuantity} available ·{' '}
-                            {peso(product.unitPriceCentavos)}
-                          </li>
-                        ))}
-                    </ul>
-                    {row.conflicts.length > 0 && (
-                      <p role="alert">
-                        Negative stock requires reconciliation.
-                      </p>
-                    )}
-                  </section>
-                ))}
-              {!admin && <StaffInventory work={work} />}
+              {admin && (
+                <InventoryOverview
+                  overviews={branches}
+                  branchId={work.branchId}
+                  setBranchId={work.setBranchId}
+                  loading={work.isLoading}
+                />
+              )}
+              {!admin && (
+                <StaffInventory
+                  key={work.profile.id + ':' + work.branchId}
+                  work={work}
+                />
+              )}
             </>
           )}
           {['sales', 'analytics'].includes(screen) &&

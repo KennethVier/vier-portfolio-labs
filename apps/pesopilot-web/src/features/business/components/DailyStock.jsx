@@ -11,6 +11,7 @@ export function DailyStock({
   receiveStock,
   disabled,
   operational = false,
+  branchName,
 }) {
   const [amounts, setAmounts] = useState({})
   const [reason, setReason] = useState('')
@@ -53,7 +54,16 @@ export function DailyStock({
       rows.filter(
         (product) =>
           name.toLowerCase().includes(query) ||
-          product.inventoryPoolName.toLowerCase().includes(query),
+          [
+            product.inventoryPoolName,
+            product.name,
+            product.catalog?.scent,
+            product.catalog?.size,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(query),
       ),
     ])
     .filter(([, rows]) => rows.length > 0)
@@ -105,7 +115,7 @@ export function DailyStock({
             reason: review.reason,
             requestKey: requestKey.current,
           }),
-        'Stock received in your branch.',
+        'Delivery saved on this device. Other devices update after changes are shared.',
       )
     ) {
       setAmounts({})
@@ -116,10 +126,21 @@ export function DailyStock({
   }
 
   return (
-    <details className="mt-5">
-      <summary className="cursor-pointer font-semibold">
-        {operational ? 'Receive multiple scents or products' : 'Receive stock'}
-      </summary>
+    <details
+      className="mt-5"
+      open={operational || undefined}
+      data-business-operation-active={
+        operational && (entries.length > 0 || Boolean(review))
+          ? 'true'
+          : undefined
+      }
+    >
+      <summary className="cursor-pointer font-semibold">Receive stock</summary>
+      {branchName && (
+        <p className="text-sm">
+          Branch: <strong>{branchName}</strong>
+        </p>
+      )}
       <p className="my-2 text-sm text-content-muted">
         Enter units received for each item in the delivery.
       </p>
@@ -130,7 +151,10 @@ export function DailyStock({
         value={search}
         onChange={(event) => setSearch(event.target.value)}
       />
-      <form onSubmit={save}>
+      <form
+        onSubmit={save}
+        aria-label={operational ? 'Grouped stock delivery' : undefined}
+      >
         <fieldset
           disabled={disabled || action.saving || Boolean(review)}
           className="space-y-3"
@@ -192,6 +216,7 @@ export function DailyStock({
           )}
           {operational && (
             <Input
+              name="receiptReason"
               label="Receipt reason"
               required
               maxLength={240}
@@ -215,6 +240,11 @@ export function DailyStock({
           aria-label="Review delivery"
           className="space-y-3 rounded border border-outline-variant p-4"
         >
+          {branchName && (
+            <p>
+              Branch: <strong>{branchName}</strong>
+            </p>
+          )}
           <ul>
             {review.entries.map((entry) => (
               <li key={entry.productId}>

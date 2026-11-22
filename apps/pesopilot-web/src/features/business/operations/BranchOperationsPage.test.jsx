@@ -97,7 +97,7 @@ it('requires a stock reason, clears success and preserves failed receipt inputs'
     .mockRejectedValueOnce(new Error('disk full'))
     .mockResolvedValueOnce({ duplicate: false })
   await render('stock')
-  const form = container.querySelector('form')
+  const form = container.querySelector('[aria-label="Stock correction"]')
   async function change(selector, value) {
     await act(async () => {
       const element = form.querySelector(selector)
@@ -133,13 +133,13 @@ it('requires a stock reason, clears success and preserves failed receipt inputs'
     ),
   )
   expect(work.service.adjustStock).not.toHaveBeenCalled()
-  await click('Confirm stock change')
+  await click('Confirm stock correction')
   expect(form.querySelector('[name=quantity]').value).toBe('10')
   expect(container.textContent).toContain('disk full')
-  await click('Confirm stock change')
+  await click('Confirm stock correction')
   expect(work.service.adjustStock.mock.calls[0][0].requestKey).toBe(
     work.service.adjustStock.mock.calls[1][0].requestKey,
   )
-  expect(form.querySelector('[name=quantity]').value).toBe('')
-  expect(container.textContent).toContain('Saved on this device')
+  expect(form.querySelector('[name=quantity]').value).toBe('1')
+  expect(container.textContent).toContain('saved on this device')
 })

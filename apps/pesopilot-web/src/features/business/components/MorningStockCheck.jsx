@@ -26,7 +26,9 @@ export function MorningStockCheck({ workspace } = {}) {
         document.hidden ||
         Date.now() < Date.parse(day + 'T07:00:00+08:00') ||
         localStorage.getItem(storageKey) === day ||
-        document.querySelector('[aria-modal="true"],dialog[open]')
+        document.querySelector(
+          '[aria-modal="true"],dialog[open],[data-business-operation-active="true"]',
+        )
       )
         return
       const source = repository ? await repository.source() : null
@@ -69,7 +71,9 @@ export function MorningStockCheck({ workspace } = {}) {
       if (
         active &&
         !document.hidden &&
-        !document.querySelector('[aria-modal="true"],dialog[open]') &&
+        !document.querySelector(
+          '[aria-modal="true"],dialog[open],[data-business-operation-active="true"]',
+        ) &&
         localStorage.getItem(storageKey) !== day
       )
         setReport({ day, low })

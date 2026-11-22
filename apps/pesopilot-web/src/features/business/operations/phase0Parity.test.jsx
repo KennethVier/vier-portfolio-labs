@@ -334,7 +334,7 @@ it('uses the grouped Branch Inventory delivery review and the same atomic receip
   await change('Eucalyptus · 0 on hand', '10')
   await change('Lavender · 0 on hand', '5')
   await change('Receipt reason', 'Grouped delivery checked')
-  const form = container.querySelector('details form')
+  const form = container.querySelector('[aria-label="Grouped stock delivery"]')
   await act(async () =>
     form.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
@@ -353,7 +353,7 @@ it('uses the grouped Branch Inventory delivery review and the same atomic receip
       (product) => product.id === 'Eucalyptus-Solo',
     ).stockQuantity,
   ).toBe(10)
-  expect(container.textContent).toContain('Stock received in your branch.')
+  expect(container.textContent).toContain('Delivery saved on this device.')
 })
 it('exposes Admin photo and cost/price management without a POS interface', async () => {
   await render('products', 'admin')

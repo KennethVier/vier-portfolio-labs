@@ -1,5 +1,7 @@
 # V2 Phase 0 baseline and branch parity audit
 
+**Current inventory follow-up:** [Exact original receiving composition, authorized one-time default catalog and Admin stock table](15-Inventory-Phase-0-Alignment.md) supersedes the earlier overlapping forms/manual-standard-setup descriptions below. Phase 0 remains the reference; original device import is still explicit.
+
 Owner authority: [PR #12 clarification, 2026-11-22](https://github.com/KennethVier/vier-portfolio-labs/pull/12#issuecomment-7074689081). Phase 0 is the approved V2 baseline, not a disposable prototype. The current role/branch work extends it. This decision supersedes any earlier wording suggesting the original operator experience may be discarded as legacy.
 
 Reference: `test/pesopilot-ipad-preview` at **ca3767d19c0b31c2ebf3fbec0062632d6291a7f2**. Before this correction, alignment HEAD was `0b7adf7456b3320232bb80ebf13539a17af5f249`. Git ancestry confirms the preview is already an ancestor: this was a wiring/capability regression, not a missing merge. Original components, service contracts, local data and tests remain present.

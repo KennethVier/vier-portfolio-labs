@@ -1,3 +1,4 @@
+import { useCatalogInitialization } from './useCatalogInitialization.js'
 import { uploadCatalogPhoto, saveCatalogPhoto } from './catalogMedia.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { liveQuery } from 'dexie'
@@ -136,9 +137,15 @@ export function useBranchWorkspace(database = db) {
     return task
   }, [database, context, accept, fail])
 
+  const catalogSetup = useCatalogInitialization(
+    database,
+    profile,
+    state.readStatus === 'ready',
+  )
   return {
     ...state,
     database,
+    catalogSetup,
     branchId,
     setBranchId,
     repo,

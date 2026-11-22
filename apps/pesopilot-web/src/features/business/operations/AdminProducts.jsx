@@ -97,6 +97,48 @@ export function AdminProducts({ work, busy, run, online }) {
     )
   return (
     <div className="space-y-5">
+      {work.catalogSetup && work.catalogSetup.phase !== 'ready' && (
+        <section
+          role="status"
+          className="rounded-lg border border-outline-variant p-4 space-y-2"
+        >
+          <p>
+            {
+              {
+                checking: 'Preparing your standard product choices…',
+                connection:
+                  'Products could not be checked for updates. Existing products are unchanged. Reconnect and try again.',
+                offline:
+                  'Connect once so the owner can finish product setup. Existing products remain available offline.',
+                owner:
+                  'The business owner needs to sign in once to finish standard product setup.',
+                waiting:
+                  'Product setup is already recorded. Receive the remaining product updates before continuing.',
+                review:
+                  'Product setup needs owner review. Existing products are preserved; no conflicting definition was replaced.',
+              }[work.catalogSetup.phase]
+            }
+          </p>
+          {work.catalogSetup.issues?.length > 0 && (
+            <ul className="list-disc pl-5">
+              {work.catalogSetup.issues.map((name) => (
+                <li key={name}>{name}: duplicate definitions need review.</li>
+              ))}
+            </ul>
+          )}
+          {['offline', 'waiting', 'review', 'connection'].includes(
+            work.catalogSetup.phase,
+          ) && (
+            <Button
+              variant="secondary"
+              disabled={!online}
+              onClick={work.catalogSetup.retry}
+            >
+              Check product setup again
+            </Button>
+          )}
+        </section>
+      )}
       <section className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4 space-y-3">
         <h2 className="font-heading text-xl">
           {work.catalog.length

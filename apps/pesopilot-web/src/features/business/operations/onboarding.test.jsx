@@ -221,7 +221,7 @@ it('keeps import failure actionable without a false completed message', async ()
 it('shows a helpful empty branch without a blank product selector', async () => {
   await render(<StaffInventory work={empty()} />)
   expect(container.textContent).toContain(
-    'Ask the owner to add products in Products',
+    'Connect to receive the shared product list',
   )
   expect(container.querySelector('form')).toBeNull()
   expect(container.querySelector('[name=productId]')).toBeNull()
@@ -255,8 +255,10 @@ it('searches specific scents, shows current branch quantity and preserves review
     {
       ...source,
       id: 'turmeric',
-      name: 'Hallelujah Inhaler',
-      catalog: { scent: 'Turmeric', type: 'Solo' },
+      name: 'Hallelujah Inhaler Turmeric',
+      inventoryPoolId: 'turmeric',
+      inventoryPoolName: 'Turmeric',
+      catalog: { ...source.catalog, scent: 'Turmeric', type: 'Solo' },
       stockQuantity: 5,
     },
   ]
@@ -281,33 +283,39 @@ it('searches specific scents, shows current branch quantity and preserves review
     })
   }
   await change('[type=search]', 'turmeric')
-  expect(container.querySelector('option[value=lavender]')).toBeNull()
+  expect(
+    container.querySelector('[aria-label="Grouped stock delivery"]')
+      .textContent,
+  ).toContain('Turmeric')
+  await change('[name=productId]', 'turmeric')
   expect(
     container.querySelector('option[value=turmeric]').textContent,
-  ).toContain('Turmeric · Solo · 5 in branch')
-  await change('[name=productId]', 'turmeric')
-  expect(container.textContent).toContain('Current branch stock: 5 units')
+  ).toContain('5 available')
   await change('[name=direction]', 'remove')
   await change('[name=quantity]', '2')
   await change('[name=reason]', 'Damaged packaging')
   await act(async () =>
     container
-      .querySelector('form')
+      .querySelector('[aria-label="Stock correction"]')
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
   )
   expect(
-    container.querySelector('[aria-label="Review stock change"]').textContent,
-  ).toContain('Remove 2 units')
+    container.querySelector('[aria-label="Review stock correction"]')
+      .textContent,
+  ).toContain('Remove 2')
   expect(work.service.adjustStock).not.toHaveBeenCalled()
-  await click('Back to edit')
+  await click('Back to correction')
   expect(container.querySelector('[name=quantity]').value).toBe('2')
   expect(container.querySelector('[name=reason]').value).toBe(
     'Damaged packaging',
   )
   await change('[type=search]', 'not a product')
   expect(container.textContent).toContain('No matching products')
-  await click('Clear search')
-  expect(container.querySelector('option[value=lavender]')).not.toBeNull()
+  await change('[type=search]', '')
+  expect(
+    container.querySelector('[aria-label="Grouped stock delivery"]')
+      .textContent,
+  ).toContain('Lavender')
 })
 
 it('keeps catalog loading distinct from an empty product list', async () => {

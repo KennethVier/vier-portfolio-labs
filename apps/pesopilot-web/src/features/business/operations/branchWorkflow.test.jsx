@@ -16,6 +16,9 @@ vi.mock('../cloud/client.ts', async () => {
   database.cloud.invites = new BehaviorSubject([])
   return { db: database }
 })
+vi.mock('../components/MorningStockCheck.jsx', () => ({
+  MorningStockCheck: () => null,
+}))
 vi.mock('../hooks/useAutomaticBusinessBackup.js', () => ({
   useAutomaticBusinessBackup() {},
 }))
@@ -69,7 +72,9 @@ it('uses the real operational hook and repository for Staff receive → POS sale
         container.querySelector('[name=productId] option[value=lavender]'),
       ).not.toBeNull(),
     )
-    const form = container.querySelector('form')
+    const form = container.querySelector(
+      '[aria-label="Grouped stock delivery"]',
+    )
     async function change(selector, value) {
       await act(async () => {
         const element = form.querySelector(selector)
@@ -88,16 +93,23 @@ it('uses the real operational hook and repository for Staff receive → POS sale
         )
       })
     }
-    await change('[name=productId]', 'lavender')
-    await change('[name=quantity]', '10')
-    await change('[name=reason]', 'Synthetic supplier receipt')
+    await change('[type=number]', '10')
+    await change('[name=receiptReason]', 'Synthetic supplier receipt')
     await act(async () =>
       form.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       ),
     )
-    await button('Confirm stock change')
-    await wait(() => expect(container.textContent).toContain('10 in branch'))
+    await wait(() => {
+      const n = [...container.querySelectorAll('button')].find(
+        (n) => n.textContent === 'Confirm delivery',
+      )
+      expect(n.disabled).toBe(false)
+    })
+    const addSpy = vi.spyOn(db.branchTransactions, 'add')
+    await button('Confirm delivery')
+    await wait(() => expect(addSpy).toHaveBeenCalled())
+    await wait(() => expect(container.textContent).toContain('10 available'))
     await render('staff', 'home')
     await wait(() =>
       expect(container.querySelector('[data-product-card]')).not.toBeNull(),
