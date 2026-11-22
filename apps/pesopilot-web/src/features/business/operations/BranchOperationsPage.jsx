@@ -4,8 +4,7 @@ import { BusinessSyncStatus } from './BusinessSyncStatus.jsx'
 import { useBusinessOnline } from './useBusinessOnline.js'
 import { AdminProducts } from './AdminProducts.jsx'
 import { StaffInventory } from './StaffInventory.jsx'
-import { prepareLegacyImport, importLegacy } from './legacyMigration.js'
-import { exportBranchBackup, downloadBranchBackup } from './branchBackup.js'
+import { BranchBackupPanel } from './BranchBackupPanel.jsx'
 import { useWorkspaceRoute } from '../hooks/useWorkspaceRoute.js'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -31,8 +30,6 @@ export function BranchOperationsPage({ screen = 'home' }) {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [migration, setMigration] = useState(null)
-  const [confirmed, setConfirmed] = useState(false)
   const branchKey = useRef(crypto.randomUUID())
   const online = useBusinessOnline()
   const [assignmentBranch, setAssignmentBranch] = useState('')
@@ -480,124 +477,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
                 ))}
             </ul>
           </section>
-          <details className="space-y-3 rounded-lg border border-outline-variant p-4">
-            <summary className="cursor-pointer min-h-11 font-semibold">
-              Advanced setup and backups
-            </summary>
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={() =>
-                run(
-                  async () =>
-                    downloadBranchBackup(
-                      await exportBranchBackup(db, work.profile.id),
-                    ),
-                  'Authorized branch backup downloaded. Store it privately; it is separate from the legacy device backup.',
-                )
-              }
-            >
-              Download branch operations backup
-            </Button>
-            <p>
-              Branch records in this client:{' '}
-              {(
-                new TextEncoder().encode(
-                  JSON.stringify({ catalog: work.catalog, branches }),
-                ).length / 1024
-              ).toFixed(1)}{' '}
-              KiB estimated. Check actual database quota in Dexie Cloud Manager.
-            </p>
-            <details className="space-y-3">
-              <summary className="cursor-pointer py-3">
-                Legacy default-branch migration · optional development import
-              </summary>
-              <p>
-                Export the original Business backup first. Stop legacy selling
-                and all branch devices during migration. This additive import
-                requires an empty selected branch and a backup no larger than 1
-                MiB; it never clears the original device data.
-              </p>
-              <form
-                className="space-y-3"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  const value = new FormData(event.currentTarget)
-                  const file = value.get('backup')
-                  run(async () => {
-                    const backup = JSON.parse(await file.text())
-                    const branchId = value.get('branch')
-                    const plan = prepareLegacyImport(backup, branchId)
-                    setMigration({ backup, branchId, counts: plan.counts })
-                    setConfirmed(false)
-                  }, 'Dry run validated. Review counts, branch and backup before importing.')
-                }}
-              >
-                <label>
-                  Default branch
-                  <select name="branch" className={selectClass} required>
-                    <option value="">Choose empty branch</option>
-                    {work.branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Input
-                  label="Original Business backup (JSON)"
-                  name="backup"
-                  type="file"
-                  accept="application/json,.json"
-                  required
-                />
-                <Button type="submit" disabled={busy}>
-                  Validate migration dry run
-                </Button>
-              </form>
-              {migration && (
-                <section className="space-y-3">
-                  <p>
-                    Target: {branchNames.get(migration.branchId)} · Products:{' '}
-                    {migration.counts.products} · Sales:{' '}
-                    {migration.counts.sales} · Movements:{' '}
-                    {migration.counts.movements}
-                  </p>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={confirmed}
-                      onChange={(event) => setConfirmed(event.target.checked)}
-                    />
-                    I saved the backup, stopped legacy/branch selling and
-                    verified the selected branch.
-                  </label>
-                  <Button
-                    disabled={busy || !confirmed}
-                    onClick={() =>
-                      run(
-                        () =>
-                          importLegacy(
-                            db,
-                            work.profile.id,
-                            migration.backup,
-                            migration.branchId,
-                            confirmed,
-                          ),
-                        'Legacy import recorded locally; verify synchronization and counts before selling.',
-                        () => {
-                          setMigration(null)
-                          setConfirmed(false)
-                        },
-                      )
-                    }
-                  >
-                    Import validated legacy ledger
-                  </Button>
-                </section>
-              )}
-            </details>
-          </details>
+          <BranchBackupPanel />
         </>
       )}
     </BusinessShell>

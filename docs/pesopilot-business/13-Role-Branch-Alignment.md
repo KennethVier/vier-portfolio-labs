@@ -202,3 +202,57 @@ Assign the existing registered Staff through the normal flow, accept the branch 
 **140 files / 1,427 tests passed**, including ten new regressions: the real-addon reproduction plus nine staged-reader/retry/privacy/cached-read tests. Coverage retains the full React/IndexedDB ten → two → eight flow, stable Muntinlupa branch creation, Staff isolation, original data/backup compatibility and rejected corrupt scope. The Muntinlupa fixture calls creation twice with one stable request key and verifies a single saved branch with correct realm ownership and Staff invitation; it does not create a hosted branch. Lint, cloud type checking and configured build passed.
 
 No authenticated hosted Muntinlupa creation or separate-client acceptance was performed by the agent. Management credentials and authenticated Chrome sessions remain owner-controlled. Keep Draft PR #12, Phase 1 PR #10 and live acceptance open until the owner verifies the real page and branch flow. No production deployment, merge, account deletion, hosted schema mutation or data reset occurred.
+
+## Persisted ledger ID round-trip blocker — 2026-11-22
+
+The uploaded `pesopilot-workspace-read.json` and [PR #12 evidence](https://github.com/KennethVier/vier-portfolio-labs/pull/12#issuecomment-7074449631) identify **BRANCH_EVENT_ID** at projection, not an index, ownership or failed-pull check. This guard rejects missing/empty/non-string envelope IDs. The report intentionally omits the actual ID type/value; it cannot by itself prove the affected row's type.
+
+### Reproduced cause and compatibility
+
+The previous writer used `JSON.stringify([branch, actor, requestKey])` as a scalar ID. Installed addon **4.4.16**, `applyServerChanges()` → `keyDecoder`, parses keys beginning `[` and ending `]` into arrays and assigns that decoded key to the inbound `id` property. `encodeIdsForServer()` serializes array keys to the same server string. The application ID therefore collides with the addon's compound-key encoding. A first local write passes the string guard, then a pull/another client can persist an array that fails it. No missing schema or changed membership is needed.
+
+`addonLedgerHarness.js` extracts and executes the actual installed encoder/receive functions at test runtime, with the real addon and synthetic IndexedDB. It does not implement a replacement decoder or network transport. Tests reproduce the array ID and matching array primary key, show the previous string predicate failing, and verify the corrected workspace reads without changing stored rows. The earlier real-addon fixture used `synthetic-receipt`, missing this receive-path behavior. The ownership correction fixed a separate demonstrated bug; plain Dexie fixtures and a plain string key were insufficient to catch this blocker.
+
+- **New writes:** prefix the stable tuple with `evt:` so the addon retains a scalar string. Branch/actor/request idempotency remains stable.
+- **Existing reads:** a pure adapter accepts only three nonempty string tuple parts matching the envelope branch and actor (legacy imports retain their fixed historical import identity). It projects the original JSON-string ID without writing a replacement. Nested sale/item/movement references, creator/owner metadata and raw backups stay unchanged. Other integrity/accounting checks remain active.
+- **Retries:** atomically check the new prefixed key, original string key and decoded array key. Previously completed receipts, sales and imports are recognized; changed input is rejected.
+- **Local aliases:** the old string and received array may coexist but encode to one server key. Only an identical pair differing solely in ID representation coalesces for reads/retry. Neither physical row is deleted. Divergent copies, malformed tuples, wrong scope or collisions between distinct prefixed/legacy server keys fail closed. No arbitrary string coercion, discarded events or substituted stock.
+- **Preservation:** no schema/DB version change, data rewrite, reset, cloud import, account/license/membership/realm change, provider patch, Supabase change or production operation. Existing keys remain in place; physical key cleanup would require a separate reviewed migration.
+
+### Backup and maintenance UI
+
+Normal Branches and Users shows **Business backup → Download backup** with a short description. Settings retains backups. Legacy-ledger dry run/import and provider/quota details are removed from ordinary management screens. The separate business-friendly **product-definition import** in Products remains; it neither receives stock nor migrates sales.
+
+The legacy cutover utility is isolated at `/business/maintenance`, with no normal navigation link. It requires Admin, **development mode**, and explicit `VITE_BUSINESS_OWNER_MAINTENANCE=true`. It is excluded from the production route/build and disabled by default. This repair does not authorize running an import.
+
+**Preview only (no changes)** validates a private backup without writing. The separate **Confirm migration (writes records)** requires an explicit checkbox, empty/quiescent branch, backup up to 1 MiB and stopped selling devices. Changing the preview clears the old confirmation. No import runs on load or preview. Production migration requires separate approval. Back up both databases first; no destructive undo/restore is provided. On an uncertain outcome, stop and review records/backups; do not delete records as rollback. A separately approved development rehearsal can enable the flag in the owner-operated terminal and restart Vite; remove the flag and restart afterwards.
+
+### Update and live verification — no schema repair command
+
+Stop Vite with Ctrl+C. Use the existing checkout below; change only `$repo` if it is stored elsewhere. Requires Node 24. This updates code/dependencies without touching browser storage.
+
+```powershell
+$branch = 'feature/pesopilot-business-v2-role-branch-alignment'
+$repo = Join-Path $env:USERPROFILE 'Projects\pesopilot-role-branch-alignment'
+Set-Location -LiteralPath $repo
+if ((git branch --show-current) -ne $branch) { throw 'Select the existing alignment checkout.' }
+if (git status --porcelain) { throw 'Save local changes before pulling.' }
+git pull --ff-only origin $branch
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+Set-Location '.\apps\pesopilot-web'
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Install failed.' }
+Remove-Item Env:VITE_BUSINESS_OWNER_MAINTENANCE -ErrorAction SilentlyContinue
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --force --port 5173 --strictPort
+```
+
+1. In the **existing** Admin Chrome profile, reload `http://localhost:5173/business/branches` without clearing IndexedDB. Verify actual existing branch names, stock history and accepted assignments. Business records must load independently of cloud `in-sync`; Create Branch enables only after the complete reader succeeds. Check whether Muntinlupa already exists before creating it once. No branch is created by this repair.
+2. If still blocked, expand **Developer read diagnostics**, click **Inspect ledger ID metadata**, then **Download read diagnostic**. Share only this generated JSON, never a backup or transaction/network dump. This single read-only procedure reports grouped ID/primary-key types, own-property/key equality, compatibility booleans, counts and branch ordinals. No IDs/emails/records/quantities/tokens are exported and no network/write is triggered. A shape outside the demonstrated tuple stays blocked for review.
+3. Verify **Download backup** is available and normal management contains no technical migration controls. Retain backups privately. Reload/retry must not duplicate branches or transactions.
+4. Complete the synthetic assigned-branch test: Staff receives 10 Lavender; POS shows 10; confirm a 2-unit Cash sale; POS/Sales/Daily Audit show 8/PHP 198.00. Verify successful authenticated pushes/pulls and identical records on a separate Admin browser. Only then validate independent Branch B. Use synthetic development records, preserving existing real stock/history.
+5. Verify offline reload/reconnect without duplicate sales, direct provider denial outside the assigned branch/on Admin records, revocation and physical iPad behavior. Preserve both Admins and realm ownership. Keep PR #12, PR #10 and Phase 1 open until live acceptance passes.
+
+From another PowerShell terminal in the app folder, run `npm.cmd test -- --maxWorkers=4`, `npm.cmd run lint`, `npm.cmd run typecheck`, and configured `npm.cmd run build`. Results are recorded in the PR update. The agent has no owner-authenticated browser here: recovery of the actual persisted row and two authenticated browser clients remains **unverified**. The report proves the failing guard/stage and pinned-addon tests prove the protocol collision; neither proves live success.
+
+Repository verification for this correction: **142 test files / 1,435 tests passed**, including five pinned-addon ID/round-trip/retry/accounting checks, read-only metadata redaction, preserved legacy sale/import identity, normal Admin page recovery and maintenance preview/confirmation gating. Lint, cloud type checking and configured production build passed. The built assets contain no owner-maintenance page or migration-confirmation UI. These results do not close the live acceptance gates above.

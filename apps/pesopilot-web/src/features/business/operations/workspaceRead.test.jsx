@@ -159,7 +159,7 @@ it('fails closed on scope corruption with one consistent failure and no fake pul
   )
   expect(createButton().disabled).toBe(true)
   expect(container.querySelectorAll('[role=alert]')).toHaveLength(1)
-  expect(container.textContent).toContain('BRANCH_SCOPE_MISMATCH')
+  expect(container.textContent).toContain('BRANCH_EVENT_ID_SCOPE')
   await retry()
   await wait(() =>
     expect(container.textContent).toContain(
@@ -287,4 +287,27 @@ it('preserves verified cached business reads when only the cloud pull fails', as
       .stockQuantity,
   ).toBe(10)
   expect(await db.branchTransactions.count()).toBe(1)
+})
+it('loads a legacy array-key receipt in the Admin page, retains branches and hides technical migration controls', async () => {
+  const entry = await receipt()
+  // Representative persisted receive shape, transport itself exercised in ledgerIdentity.test.
+  const legacyId = entry.id.slice('evt:'.length)
+  await db.branchTransactions.delete(entry.id)
+  await db.branchTransactions.add({ ...entry, id: JSON.parse(legacyId) })
+  const before = JSON.stringify(await db.branchTransactions.toArray())
+  await render()
+  await wait(() => expect(createButton().disabled).toBe(false))
+  expect(container.textContent).not.toContain(
+    'Business records could not be loaded',
+  )
+  for (const technical of [
+    'Legacy default-branch migration',
+    'Validate migration dry run',
+    'Advanced setup',
+    'Confirm migration',
+  ])
+    expect(container.textContent).not.toContain(technical)
+  expect(container.textContent).toContain('Download backup')
+  expect(await db.businessBranches.count()).toBe(2)
+  expect(JSON.stringify(await db.branchTransactions.toArray())).toBe(before)
 })

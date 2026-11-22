@@ -1,3 +1,4 @@
+import { previousEvent } from './ledgerIdentity.js'
 import { validateBusinessBackup } from '../services/businessBackupValidation.js'
 import {
   buildDailyAudit,
@@ -81,7 +82,12 @@ export async function importLegacy(database, uid, input, branchId, confirmed) {
         )
       )
         throw new Error('Authorized branch Admin required.')
-      const previous = await database.branchTransactions.get(id)
+      const previous = await previousEvent(
+        database.branchTransactions,
+        branchId,
+        'legacy:pesopilot-business',
+        'import-v1',
+      )
       if (previous) {
         if (JSON.stringify(previous.source) !== JSON.stringify(plan.source))
           throw new Error(

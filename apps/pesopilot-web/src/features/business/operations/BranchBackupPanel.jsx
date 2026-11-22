@@ -11,12 +11,12 @@ export function BranchBackupPanel() {
   if (access?.profile.role !== 'admin') return null
   return (
     <section className="space-y-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-5">
-      <h2 className="font-heading text-xl">Operational branch backup</h2>
+      <h2 className="font-heading text-xl">Business backup</h2>
       <p>
-        Export authorized branch records currently in this client. Synchronize
-        first to include other devices. This export is separate from the legacy
-        device backup below; it contains private business records and has no
-        automatic restore.
+        Save a private copy of the products, branches and transactions available
+        on this device. Connect and receive updates first to include other
+        devices’ latest work. Keep this file safe; restoring requires owner
+        review.
       </p>
       <Button
         disabled={busy}
@@ -37,7 +37,7 @@ export function BranchBackupPanel() {
           }
         }}
       >
-        Download operational branch backup
+        Download backup
       </Button>
       {message && <p role="status">{message}</p>}
     </section>

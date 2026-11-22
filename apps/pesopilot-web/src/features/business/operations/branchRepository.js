@@ -1,3 +1,10 @@
+import {
+  eventId,
+  previousEvent,
+  normalizeLedgerEvents,
+  ledgerIntegrity as integrity,
+} from './ledgerIdentity.js'
+export { eventId } from './ledgerIdentity.js'
 import { planConfirmedSale } from '../services/planConfirmedSale.js'
 import { findDuplicateProduct } from '../constants/productCatalog.js'
 
@@ -10,16 +17,6 @@ export const branchStores = {
 const accepted = (member) => member.accepted && !member.rejected
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const integer = (value) => Number.isSafeInteger(value)
-export function eventId(branch, actor, key) {
-  if (
-    ![branch, actor, key].every(
-      (value) =>
-        typeof value === 'string' && value.length > 0 && value.length <= 400,
-    )
-  )
-    throw new Error('A stable branch, actor and request key are required.')
-  return JSON.stringify([branch, actor, key])
-}
 const directRead = (_stage, action) => action()
 export async function businessAdmin(database, uid, read = directRead) {
   const realm = await read('authorization.admin.realm', () =>
@@ -90,19 +87,10 @@ export function projectBranch(catalog, events, branchId) {
     items = [],
     movements = [],
     auditEvents = []
-  const seen = new Set()
-  function integrity(condition, code) {
-    if (!condition)
-      throw Object.assign(
-        new Error(
-          'Branch ledger integrity check failed. No stock was replaced.',
-        ),
-        { code },
-      )
-  }
+  const normalized = normalizeLedgerEvents(events)
   // Owner is provider access metadata, not an accounting invariant. The pinned addon
   // replaces null with the writer; existing creator-owned records must remain readable.
-  for (const entry of events) {
+  for (const entry of normalized) {
     integrity(entry && typeof entry === 'object', 'BRANCH_RECORD_SHAPE')
     integrity(
       typeof entry.id === 'string' && Boolean(entry.id),
@@ -121,15 +109,13 @@ export function projectBranch(catalog, events, branchId) {
         (typeof entry.owner === 'string' && Boolean(entry.owner)),
       'BRANCH_OWNER_SHAPE',
     )
-    integrity(!seen.has(entry.id), 'BRANCH_EVENT_DUPLICATE')
     integrity(
       typeof entry.occurredAt === 'string' &&
         Number.isFinite(Date.parse(entry.occurredAt)),
       'BRANCH_TIME_INVALID',
     )
-    seen.add(entry.id)
   }
-  const ordered = [...events].sort(
+  const ordered = [...normalized].sort(
     (a, b) =>
       a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id),
   )
@@ -296,7 +282,12 @@ export function createBranchRepository(database, { userId, branchId }) {
     const id = eventId(branchId, userId, key)
     return database.transaction('rw', tables, async () => {
       await requireBranch(true)
-      const previous = await database.branchTransactions.get(id)
+      const previous = await previousEvent(
+        database.branchTransactions,
+        branchId,
+        userId,
+        key,
+      )
       if (previous) {
         if (!same(previous.input, input))
           throw new Error(

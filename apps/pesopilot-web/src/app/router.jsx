@@ -15,6 +15,9 @@ const BranchOperationsPage = lazy(() =>
     (module) => ({ default: module.BranchOperationsPage }),
   ),
 )
+const OwnerMaintenancePage = import.meta.env.DEV && import.meta.env.VITE_BUSINESS_OWNER_MAINTENANCE === 'true'
+  ? lazy(() => import('@/features/business/operations/OwnerMaintenancePage.jsx').then(module => ({ default: module.OwnerMaintenancePage })))
+  : null
 const UsersPage = lazy(() =>
   import('@/features/business/cloud/UsersPage.jsx').then((module) => ({
     default: module.UsersPage,
@@ -156,6 +159,9 @@ export const router = createBrowserRouter([
           'Loading role workspace',
         ),
       },
+      ...(import.meta.env.DEV && import.meta.env.VITE_BUSINESS_OWNER_MAINTENANCE === 'true'
+        ? [{ path: 'maintenance', element: wrapLazyRoute(<OwnerMaintenancePage />, 'Loading owner maintenance') }]
+        : []),
       { path: 'legacy-audit', element: wrapLazyRoute(<LegacyBusinessAuditPage />, 'Loading legacy device audit') },
       ...['stock', 'sales', 'analytics', 'audit', 'products', 'branches'].map(
         (screen) => ({
