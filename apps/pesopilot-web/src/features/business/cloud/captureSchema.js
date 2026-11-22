@@ -1,3 +1,4 @@
+import { pesoPilotSyncSchema } from '../../../../cloud/sync-wire-schema.mjs'
 import { schemaMetadata } from '../../../../cloud/schema-diagnostic.mjs'
 
 // Matches the installed addon's getSchema() metadata projection. Does not open
@@ -31,6 +32,7 @@ export async function readMergedSchema(database) {
     },
     evidence: 'persisted-getSchema-equivalent',
     merged: schemaMetadata(merged),
+    wireProjection: schemaMetadata(pesoPilotSyncSchema(merged)),
     declared: schemaMetadata(database.cloud.schema),
     persisted: schemaMetadata(persisted),
     localTables,

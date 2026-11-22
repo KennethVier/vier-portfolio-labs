@@ -262,3 +262,7 @@ The earlier four-table compatibility assertion did not cover the full persisted 
 ### Immediate persisted-schema diagnostic
 
 Replaced the timed fetch wrapper with a development-only button that immediately reads the already-open cloud database's merged persisted schema. It mirrors the pinned addon's getSchema primary-key projection and labels the evidence source explicitly. The tests verify no network request or persisted write. The page also reports worker-context booleans. Exact remaining mismatch and hosted success still require the affected browser's snapshot and authenticated export.
+
+### Evidence-supported sealed-schema transport correction
+
+Analyzed the owner's matching four-table hosted comparison. Local-only entries are now reported separately. Controlled real endpoint probes identified rejection of local metadata entries even when unmarked, and rejection when empty yProps arrays are omitted. Added a version-pinned, idempotent addon request-schema compatibility patch that filters local-only entries and normalizes yProps. The committed helper returned HTTP 200 in an empty-change unauthenticated probe. Persisted data, credentials and memberships remain intact. Authenticated business Admin and synthetic-stock acceptance are pending.

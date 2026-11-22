@@ -17,8 +17,8 @@ it('reports every transmitted declaration including persisted extra tables and l
   expect(report.rows.map((row) => [row.table, row.status])).toEqual([
     ['catalogStock', 'matches'],
     ['oldTable', 'missing-on-host'],
-    ['$logins', 'missing-on-host'],
   ])
+  expect(report.localOnly).toMatchObject([{ table: '$logins', status: 'local-only' }])
   expect(report.rows[1]).toMatchObject({ persisted: true, declared: false, synchronized: true })
 })
 it('preserves compound keys and generated-ID distinctions while ignoring secondary indexes', () => {
@@ -26,8 +26,8 @@ it('preserves compound keys and generated-ID distinctions while ignoring seconda
     {
       ...capture,
       transmitted: {
-        roles: { primaryKey: '[realmId+name]' },
-        stock: { primaryKey: 'id', generatedGlobalId: true },
+        roles: { primaryKey: '[realmId+name]', markedForSync: true },
+        stock: { primaryKey: 'id', generatedGlobalId: true, markedForSync: true },
       },
     },
     { schema: { roles: '[realmId+name]', stock: 'id,realmId' }, sealed: true },

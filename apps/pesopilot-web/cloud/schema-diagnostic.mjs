@@ -44,14 +44,17 @@ export function compareSchemas(capture, hosted) {
   const rows = Object.entries(transmitted).map(([table, definition]) => {
     const clientKey = keyOf(definition)
     const serverKey = remote[table] ? keyOf(remote[table]) : null
-    const status = !serverKey
-      ? 'missing-on-host'
-      : clientKey.primaryKey === null
-        ? 'client-primary-key-unknown'
-        : clientKey.primaryKey !== serverKey.primaryKey ||
-            clientKey.generatedGlobalId !== serverKey.generatedGlobalId
-          ? 'primary-key-mismatch'
-          : 'matches'
+    const status =
+      definition.markedForSync !== true
+        ? 'local-only'
+        : !serverKey
+          ? 'missing-on-host'
+          : clientKey.primaryKey === null
+            ? 'client-primary-key-unknown'
+            : clientKey.primaryKey !== serverKey.primaryKey ||
+                clientKey.generatedGlobalId !== serverKey.generatedGlobalId
+              ? 'primary-key-mismatch'
+              : 'matches'
     return {
       table,
       synchronized: definition.markedForSync ?? false,
@@ -69,7 +72,8 @@ export function compareSchemas(capture, hosted) {
     evidence: capture.transmitted ? 'serialized-request' : 'persisted-getSchema-equivalent',
     httpStatus: capture.httpStatus,
     sealed: hosted.sealed,
-    rows,
+    rows: rows.filter((row) => row.synchronized),
+    localOnly: rows.filter((row) => !row.synchronized),
     hostOnly: Object.keys(remote).filter((table) => !(table in transmitted)),
   }
 }

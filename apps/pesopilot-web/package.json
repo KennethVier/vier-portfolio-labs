@@ -13,13 +13,14 @@
     "test": "vitest run",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.cloud.json",
-    "migration:dry-run": "node scripts/cloud/dry-run.mjs"
+    "migration:dry-run": "node scripts/cloud/dry-run.mjs",
+    "postinstall": "node scripts/cloud/patch-dexie-wire.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "axios": "^1.20.0",
     "dexie": "^4.0.10",
-    "dexie-cloud-addon": "^4.4.16",
+    "dexie-cloud-addon": "4.4.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",

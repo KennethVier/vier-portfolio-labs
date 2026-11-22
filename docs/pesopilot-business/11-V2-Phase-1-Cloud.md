@@ -210,3 +210,51 @@ The script invokes only the official authenticated schema export and a local com
 For exact wire confirmation, Chrome DevTools Network can inspect the existing failed /sync request directly. In Payload, expand only the schema property. Compare table names, primaryKey and generatedGlobalId with the report. If they differ, copy only the schema property's value into a separate JSON file. Do not copy the entire request, export a HAR, use Copy as fetch, or include headers. Local snapshots may differ from an older in-flight payload, so note a difference before any repair.
 
 No additional schema migration is justified until this evidence identifies the remaining entry. Missing local-only metadata is a diagnostic difference, not an instruction to import it. Keep the development-only diagnostic idle after downloading. Remove the diagnostic entry point after hosted repair and live acceptance. A successful authenticated /sync status and verified Admin dashboard/Users access are still required. Both Admin memberships, realm ownership, POS IndexedDB and Supabase recovery stay outside this diagnostic.
+
+## Confirmed sealed-schema transport compatibility
+
+The owner's authenticated comparison shows matching members, roles, realms and catalogStock primary keys, no extra synchronized declarations and no host-only tables. The $jobs, $syncState, $baseRevs and $logins entries are local metadata. Their absence on the host is expected. The comparator now lists them separately as local-only and does not classify them as cloud defects.
+
+Controlled empty-change requests against the actual development /sync endpoint established these results:
+
+| Transport schema variant | HTTP status |
+| --- | --- |
+| Empty schema, no changes | 200 |
+| Schema returned by the server | 200 |
+| Server schema with markedForSync=true added | 200 |
+| Server schema with idPrefix omitted | 200 |
+| Server schema with yProps omitted | 422 |
+| Four matching synchronized tables with explicit yProps=[] | 200 |
+| Those four tables plus $jobs={} | 422 |
+| Those four tables plus $jobs markedForSync=false, yProps=[] | 422 |
+
+The committed transport helper was also replayed against the endpoint with an empty-change unauthenticated request and returned 200. These probes confirm endpoint compatibility behavior, not authenticated Admin visibility. No private data, auth token or management credential was used in them. Public-scope responses were discarded after reading the status.
+
+Addon 4.4.16 serializes the whole schema map at syncWithServer, including local metadata entries. It omits yProps on fresh tables without collaborative fields. This endpoint rejects both unknown local metadata entries and omission of the empty yProps array even though primary keys match. The earlier imports could not repair this wire representation and are unnecessary for the provided matching hosted schema. Provider investigation should determine whether the server should ignore unmarked local tables and normalize absent yProps to an empty array.
+
+### Narrow client compatibility correction
+
+The addon is pinned to 4.4.16. An idempotent postinstall script patches only its development and production request-schema expressions. The injected helper projects entries with markedForSync=true and defaults absent yProps to []. It preserves existing nonempty yProps, primary keys and other synchronized flags. It changes neither the persisted metadata map nor the changes payload, records, membership, authentication or realm ownership. It adds no custom synchronization process. The patch refuses unexpected versions or distribution text. Remove it when a reviewed upstream fix provides equivalent behavior. Review it before changing schema-deletion or collaborative-field behavior in future phases.
+
+The development metadata download includes wireProjection to show this helper's output alongside the untouched persisted map. It remains explicitly labeled a snapshot rather than a captured authenticated request. The diagnostic button is development-only and can remain idle during verification.
+
+### Apply locally and perform authenticated acceptance
+
+Stop Vite. In PowerShell:
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+Set-Location '.\apps\pesopilot-web'
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Installation or compatibility patch failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --force --port 5173 --strictPort
+```
+
+npm ci must print Verified Dexie 4.4.16 sealed-schema transport compatibility. The --force option refreshes Vite's dependency optimizer and leaves IndexedDB intact. No schema import or management operation is needed.
+
+Reload the existing Chrome profile and sign in as pesopilotbusiness@gmail.com. Confirm an authenticated /sync returns 200, then open the dashboard and Users page. Publish a synthetic stock snapshot and confirm an authenticated successful push and arrival in the shared stock view. Check the new network request rather than an earlier 422 retained in DevTools. Keep both Admin memberships. If this fails, inspect only the schema property of the new request and its status to verify the four-entry projection with explicit yProps arrays. Do not export headers or business payloads.
+
+Repository regression tests reproduce the two confirmed rejection shapes, verify schema projection without mutation and check both patched distribution artifacts. Clean npm ci applies the patch. Actual authenticated sync, Admin page access, synthetic stock and Staff enforcement remain owner-side acceptance gates. Phase 1 and PR #10 remain open.
