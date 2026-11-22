@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { businessService, parsePriceCentavos } from '../services/businessService.js'
 
-export function useSaleWorkflow(products, completeSale, initialProductId = '', onRecorded) {
+export function useSaleWorkflow(products, completeSale, initialProductId = '', onRecorded, { catalogPrices = false } = {}) {
   const [productId, setProductId] = useState(initialProductId)
   const [quantity, setQuantity] = useState('1')
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -22,7 +22,7 @@ export function useSaleWorkflow(products, completeSale, initialProductId = '', o
   let validation = ''
   try {
     const count = Number(quantity)
-    const unitPriceCentavos = agreedPrice.trim() ? parsePriceCentavos(agreedPrice) : isSet ? 15000 : product?.unitPriceCentavos
+    const unitPriceCentavos = agreedPrice.trim() ? parsePriceCentavos(agreedPrice) : isSet && !catalogPrices ? 15000 : product?.unitPriceCentavos
     if (isSet) {
       if (!Number.isSafeInteger(count) || count < 1 || pieceQuantity !== count * 5) throw new Error('Choose exactly five pieces per set.')
       const remaining = new Map()

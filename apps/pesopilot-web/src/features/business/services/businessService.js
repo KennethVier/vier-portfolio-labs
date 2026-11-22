@@ -28,7 +28,8 @@ export function parsePriceCentavos(input) {
   return centavos
 }
 
-export const businessService = {
+export function createBusinessService(businessRepository) {
+return {
   listProducts: () => businessRepository.listProducts(),
   listSales: () => businessRepository.listSales(),
   listSalesHistory: () => businessRepository.listSalesHistory(),
@@ -71,7 +72,7 @@ export const businessService = {
     return businessRepository.setUnitCost(productId, unitCostCentavos)
   },
 
-  adjustStock({ productId, quantity, direction, reason }) {
+  adjustStock({ productId, quantity, direction, reason, requestKey }) {
     assertQuantity(quantity)
     if (typeof productId !== 'string' || !productId.trim()) throw new Error('Product is required')
     if (!['add', 'remove'].includes(direction)) throw new Error('Choose add or remove stock')
@@ -81,6 +82,7 @@ export const businessService = {
     }
     return businessRepository.adjustStock({
       productId,
+      requestKey,
       delta: direction === 'add' ? quantity : -quantity,
       reason: cleanReason,
       occurredAt: new Date().toISOString(),
@@ -150,3 +152,6 @@ export const businessService = {
     }), { totalCentavos: 0, cashCentavos: 0, gcashCentavos: 0, coopCentavos: 0 })
   },
 }
+
+}
+export const businessService = createBusinessService(businessRepository)

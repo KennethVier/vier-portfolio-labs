@@ -5,25 +5,27 @@ import { App } from './App.jsx'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage.jsx'
 import { getActiveWorkspace } from '@/features/business/services/workspacePreference.js'
 
-const BusinessGate = lazy(() => import('@/features/business/cloud/BusinessGate.jsx').then(module => ({ default: module.BusinessGate })))
-const SharedStockPage = lazy(() => import('@/features/business/cloud/SharedStockPage.jsx').then(module => ({ default: module.SharedStockPage })))
-const UsersPage = lazy(() => import('@/features/business/cloud/UsersPage.jsx').then(module => ({ default: module.UsersPage })))
-const ReceiptsPage = lazy(() => import('@/features/business/cloud/ReceiptsPage.jsx').then(module => ({ default: module.ReceiptsPage })))
-
-const BusinessDashboardPage = lazy(() =>
-  import('@/features/business/pages/BusinessDashboardPage.jsx').then((module) => ({
-    default: module.BusinessDashboardPage,
+const BusinessGate = lazy(() =>
+  import('@/features/business/cloud/BusinessGate.jsx').then((module) => ({
+    default: module.BusinessGate,
   })),
 )
-
-const BusinessAuditPage = lazy(() =>
-  import('@/features/business/pages/BusinessAuditPage.jsx').then((module) => ({
-    default: module.BusinessAuditPage,
+const BranchOperationsPage = lazy(() =>
+  import('@/features/business/operations/BranchOperationsPage.jsx').then(
+    (module) => ({ default: module.BranchOperationsPage }),
+  ),
+)
+const UsersPage = lazy(() =>
+  import('@/features/business/cloud/UsersPage.jsx').then((module) => ({
+    default: module.UsersPage,
   })),
 )
+const LegacyBusinessAuditPage = lazy(() => import('@/features/business/pages/BusinessAuditPage.jsx').then(module => ({ default: module.BusinessAuditPage })))
 
 const BusinessAdminPage = lazy(() =>
-  import('@/features/business/pages/BusinessAdminPage.jsx').then((module) => ({ default: module.BusinessAdminPage })),
+  import('@/features/business/pages/BusinessAdminPage.jsx').then((module) => ({
+    default: module.BusinessAdminPage,
+  })),
 )
 
 const ExpensesPage = lazy(() =>
@@ -33,9 +35,11 @@ const ExpensesPage = lazy(() =>
 )
 
 const SalaryCutoffPage = lazy(() =>
-  import('@/features/salary-cutoff/pages/SalaryCutoffPage.jsx').then((module) => ({
-    default: module.SalaryCutoffPage,
-  })),
+  import('@/features/salary-cutoff/pages/SalaryCutoffPage.jsx').then(
+    (module) => ({
+      default: module.SalaryCutoffPage,
+    }),
+  ),
 )
 
 const IncomePage = lazy(() =>
@@ -57,21 +61,27 @@ const CashflowPage = lazy(() =>
 )
 
 const ManualAiExpensePage = lazy(() =>
-  import('@/features/manual-ai-expense/pages/ManualAiExpensePage.jsx').then((module) => ({
-    default: module.ManualAiExpensePage,
-  })),
+  import('@/features/manual-ai-expense/pages/ManualAiExpensePage.jsx').then(
+    (module) => ({
+      default: module.ManualAiExpensePage,
+    }),
+  ),
 )
 
 const MerchantRulesPage = lazy(() =>
-  import('@/features/merchant-rules/pages/MerchantRulesPage.jsx').then((module) => ({
-    default: module.MerchantRulesPage,
-  })),
+  import('@/features/merchant-rules/pages/MerchantRulesPage.jsx').then(
+    (module) => ({
+      default: module.MerchantRulesPage,
+    }),
+  ),
 )
 
 const ExpenseInboxPage = lazy(() =>
-  import('@/features/expense-inbox/pages/ExpenseInboxPage.jsx').then((module) => ({
-    default: module.ExpenseInboxPage,
-  })),
+  import('@/features/expense-inbox/pages/ExpenseInboxPage.jsx').then(
+    (module) => ({
+      default: module.ExpenseInboxPage,
+    }),
+  ),
 )
 
 const SettingsPage = lazy(() =>
@@ -130,19 +140,40 @@ const devRoutes = import.meta.env.DEV
 export const router = createBrowserRouter([
   {
     path: '/',
-    loader: () => redirect(getActiveWorkspace() === 'business' ? '/business' : '/dashboard'),
+    loader: () =>
+      redirect(
+        getActiveWorkspace() === 'business' ? '/business' : '/dashboard',
+      ),
   },
   {
     path: '/business',
     element: wrapLazyRoute(<BusinessGate />, 'Checking Business account'),
     children: [
-      { index: true, element: wrapLazyRoute(<BusinessDashboardPage />, 'Loading business workspace') },
-      { path: 'stock', element: wrapLazyRoute(<SharedStockPage />, 'Loading shared stock') },
-      { path: 'receipts', element: wrapLazyRoute(<ReceiptsPage />, 'Loading receipts') },
+      {
+        index: true,
+        element: wrapLazyRoute(
+          <BranchOperationsPage />,
+          'Loading role workspace',
+        ),
+      },
+      { path: 'legacy-audit', element: wrapLazyRoute(<LegacyBusinessAuditPage />, 'Loading legacy device audit') },
+      ...['stock', 'sales', 'analytics', 'audit', 'products', 'branches'].map(
+        (screen) => ({
+          path: screen,
+          element: wrapLazyRoute(
+            <BranchOperationsPage screen={screen} />,
+            'Loading branch operations',
+          ),
+        }),
+      ),
+      { path: 'receipts', loader: () => redirect('/business/sales') },
       { path: 'users', element: wrapLazyRoute(<UsersPage />, 'Loading users') },
-      { path: 'audit', element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit') },
-      ...['inventory', 'history', 'settings'].map(screen => ({
-        path: screen, element: wrapLazyRoute(<BusinessAdminPage screen={screen} />, 'Loading business workspace'),
+      ...['inventory', 'history', 'settings'].map((screen) => ({
+        path: screen,
+        element: wrapLazyRoute(
+          <BusinessAdminPage screen={screen} />,
+          'Loading legacy device tools',
+        ),
       })),
     ],
   },
@@ -181,7 +212,10 @@ export const router = createBrowserRouter([
       },
       {
         path: 'manual-ai-expense',
-        element: wrapLazyRoute(<ManualAiExpensePage />, 'Loading manual AI expense'),
+        element: wrapLazyRoute(
+          <ManualAiExpensePage />,
+          'Loading manual AI expense',
+        ),
       },
       {
         path: 'merchant-rules',

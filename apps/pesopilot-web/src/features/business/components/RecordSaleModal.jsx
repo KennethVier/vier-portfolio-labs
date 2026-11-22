@@ -10,11 +10,11 @@ import { peso, selectClass } from './businessPresentation.js'
 import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { PRODUCT_SCENTS } from '../constants/catalogMetadata.js'
 
-export function RecordSaleModal({ family, photo, products, receiveStock, onReceived, completeSale, disabled, onClose, onRecorded }) {
+export function RecordSaleModal({ catalogPrices = false, family, photo, products, receiveStock, onReceived, completeSale, disabled, onClose, onRecorded }) {
   const canManage = useBusinessAccess()?.profile.role !== 'staff'
   const variants = products.filter((product) => family.products.some((item) => item.id === product.id))
   const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.catalog?.type !== 'Set') ?? variants[0]
-  const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded)
+  const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded, { catalogPrices })
   const [received, setReceived] = useState('')
   const [restocking, setRestocking] = useState(false)
   const [stockSelection, setStockSelection] = useState(null)

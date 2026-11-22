@@ -10,7 +10,7 @@ import { productCreationService } from '../services/productCreationService.js'
 
 const emptySelection = { category: '', shawl: '', scent: '', size: '', name: '', price: '' }
 
-export function ProductForm({ addProduct, disabled, products = [] }) {
+export function ProductForm({ addProduct, disabled, products = [], catalogOnly = false }) {
   const [selection, setSelection] = useState(emptySelection)
   const [openingStock, setOpeningStock] = useState('0')
   const [poolId, setPoolId] = useState('')
@@ -33,9 +33,9 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
     event.preventDefault()
     if (disabled || action.saving || !preview.input || duplicate || staleSelection) return
     if (await action.run(() => addProduct({ ...preview.input,
-      openingStock: poolId ? 0 : openingStock.trim() === '' ? NaN : Number(openingStock),
+      openingStock: catalogOnly || poolId ? 0 : openingStock.trim() === '' ? NaN : Number(openingStock),
       ...(poolId ? { inventoryPoolId: poolId } : {}),
-    }), 'Product saved. Add an optional photo in Product photos below.')) {
+    }), catalogOnly ? 'Shared catalog product saved. Receive physical stock in Branch Inventory.' : 'Product saved. Add an optional photo in Product photos below.')) {
       setSelection(emptySelection)
       setOpeningStock('0')
       setPoolId('')
@@ -83,9 +83,9 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
               <Input label="Custom product name" required maxLength={120} value={selection.name} onChange={(event) => select('name', event.target.value)} />
               <Input label="Custom unit price (PHP)" required inputMode="decimal" placeholder="0.00" value={selection.price} onChange={(event) => select('price', event.target.value)} />
             </> : <Input label="Unit price (PHP)" readOnly value={preview.input?.pricePesos ?? ''} placeholder="Select your item first" />}
-            {!poolId ? <Input label="Opening Stock Quantity" required type="number" inputMode="numeric" min="0" step="1" value={openingStock} onChange={(event) => setOpeningStock(event.target.value)} /> : null}
+            {!catalogOnly && !poolId ? <Input label="Opening Stock Quantity" required type="number" inputMode="numeric" min="0" step="1" value={openingStock} onChange={(event) => setOpeningStock(event.target.value)} /> : null}
           </div>
-          {!poolId ? <p className="text-sm text-content-muted">Enter the quantity you have now. Stock is kept separately for this item. Add later deliveries using stock adjustment below.</p> : null}
+          {!catalogOnly && !poolId ? <p className="text-sm text-content-muted">Enter the quantity you have now. Stock is kept separately for this item. Add later deliveries using stock adjustment below.</p> : null}
           <details className="rounded-lg border border-outline-variant p-4">
             <summary className="flex cursor-pointer items-center text-sm font-semibold text-primary">Advanced · Shared stock{poolId ? ' selected' : ''}</summary>
             <div className="mt-3 space-y-3">
@@ -106,7 +106,7 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
               <p className="business-product-name">{preview.input.name}</p>
               <p className="text-sm text-content-muted">{category}</p>
               <p className="business-amount text-xl">{peso(preview.unitPriceCentavos)} <span className="text-sm font-normal text-content-muted">per item</span></p>
-              <p className="text-sm">{sharedStock ? `Uses existing stock: ${sharedStock.stockQuantity} available. No quantity added.` : `Opening stock: ${openingStock || '—'}. Kept separately.`}</p>
+              <p className="text-sm">{sharedStock ? `Uses existing stock: ${sharedStock.stockQuantity} available. No quantity added.` : `Opening stock: ${catalogOnly ? 0 : openingStock || '—'}. Kept separately.`}</p>
             </> : <p className="text-sm text-content-muted">{preview.error}</p>}
             {duplicate ? <p role="alert" className="text-sm text-error">This item is already in your inventory as “{duplicate.name}”. Use stock adjustment below to add more.</p> : null}
             {staleSelection ? <p role="alert" className="text-sm text-error">The selected shared stock is unavailable. Choose another option in Advanced.</p> : null}

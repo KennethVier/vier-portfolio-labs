@@ -16,10 +16,9 @@ import { useWorkspaceRoute } from '../hooks/useWorkspaceRoute.js'
 import { posCatalogService } from '../services/posCatalogService.js'
 import { CATALOG_CATEGORIES } from '../constants/catalogMetadata.js'
 
-export function BusinessDashboardPage() {
+export function BusinessPosPage({ workspace, operational = false, headerStatus }) {
   useWorkspaceRoute('business')
   const staff = useBusinessAccess()?.profile.role === 'staff'
-  const workspace = useBusinessWorkspace()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All Products')
   const [selected, setSelected] = useState(null)
@@ -32,9 +31,9 @@ export function BusinessDashboardPage() {
     return () => window.clearTimeout(timeout)
   }, [saleToast])
   const { isLoading, error } = workspace
-  const products = [...workspace.products, ...stockPresets.filter(preset => !findDuplicateProduct(workspace.products, preset))
+  const products = [...workspace.products, ...(operational ? [] : stockPresets.filter(preset => !findDuplicateProduct(workspace.products, preset))
     .map(preset => ({ ...preset, id: 'preset:' + preset.name, presetName: preset.name, stockQuantity: 0,
-      unitPriceCentavos: Math.round(Number(preset.pricePesos) * 100) }))]
+      unitPriceCentavos: Math.round(Number(preset.pricePesos) * 100) })))]
   const availableCategories = [...new Set(products.map((product) => product.catalog?.category ?? 'Other Products'))]
   const categories = ['All Products', ...CATALOG_CATEGORIES.filter((item) => availableCategories.includes(item)), ...availableCategories.filter((item) => !CATALOG_CATEGORIES.includes(item))]
   const families = posCatalogService.families(products, { search, category, groupShawls: true })
@@ -48,6 +47,7 @@ export function BusinessDashboardPage() {
     <div role="status" className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center sm:justify-end">
       {saleToast && <p className="rounded-lg border border-secondary bg-surface-container-lowest px-4 py-3 font-semibold text-secondary shadow-lg">{saleToast.message}</p>}
     </div>
+    {headerStatus}
     <WorkspaceStatus workspace={workspace} />
     <section aria-label="Product catalog" className="pos-catalog space-y-5">
       <div className="relative max-w-xl"><Input label="Search products" type="search" placeholder="Search a product, scent, or size…" value={search} onChange={(event) => setSearch(event.target.value)} className="min-h-12 pl-11" /><span className="pointer-events-none absolute bottom-3.5 left-3 text-content-muted"><BusinessIcon name="search" /></span></div>
@@ -62,6 +62,7 @@ export function BusinessDashboardPage() {
             const min = Math.min(...prices)
             const max = Math.max(...prices)
             const physicalVariants = family.products.filter(product => product.catalog?.type !== 'Set')
+            const availableUnits = [...new Map(physicalVariants.map(product => [product.inventoryPoolId, product.stockQuantity])).values()].reduce((sum, quantity) => sum + quantity, 0)
             const stocked = physicalVariants.filter(product => product.stockQuantity > 0)
             const inStock = stocked.length > 0
             const scents = new Set(physicalVariants.map(product => product.catalog?.scent).filter(Boolean)).size
@@ -73,6 +74,7 @@ export function BusinessDashboardPage() {
               <ProductVisual family={family} photo={workspace.photos.find((photo) => photo.familyId === family.id)} />
               <div className="product-card-body">
               <span className={`stock-label ${inStock ? '' : 'stock-label-empty'}`}>{inStock ? availability : 'Out of stock'}</span>
+              {operational && <span className="text-xs text-content-muted">{availableUnits} units available</span>}
               <span className="text-xs text-content-muted">{family.category}</span>
               <span className="business-product-name product-card-title mt-1 font-heading text-xl">{family.name}</span>
               <span className="business-amount mt-2 text-lg text-primary">{peso(min)}{max !== min ? ` – ${peso(max)}` : ''}</span>
@@ -84,6 +86,11 @@ export function BusinessDashboardPage() {
         </div> : <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-14 text-center"><BusinessIcon className="mx-auto mb-4 h-10 w-10 text-primary" name="inventory" /><h3 className="font-heading text-xl font-semibold">{products.length ? 'No matching products' : 'No products yet'}</h3><p className="mx-auto mt-2 max-w-md text-content-muted">{products.length ? 'Try a different search or category.' : 'Add your first product in Inventory to start recording sales.'}</p>{products.length ? <Button className="mt-5" variant="secondary" onClick={() => { setSearch(''); setCategory('All Products') }}>Clear filters</Button> : !staff && <Link to="/business/inventory" className="mt-5 inline-flex min-h-11 items-center rounded bg-primary px-5 font-semibold text-white">Open Inventory</Link>}</div>}
       </> : null}
     </section>
-    {selected ? <RecordSaleModal photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} receiveStock={workspace.receiveStock} onReceived={() => { setSelected(null); setNotice('Stock added. Select the product to record a sale.') }} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setSaleToast({ message }) }} /> : null}
+    {selected ? <RecordSaleModal catalogPrices={operational} photo={workspace.photos.find((photo) => photo.familyId === selected.id)} family={selected} products={products} receiveStock={workspace.receiveStock} onReceived={() => { setSelected(null); setNotice('Stock added. Select the product to record a sale.') }} completeSale={workspace.completeSale} disabled={disabled} onClose={() => setSelected(null)} onRecorded={(message) => { setSelected(null); setSaleToast({ message }) }} /> : null}
   </BusinessShell>
+}
+
+export function BusinessDashboardPage() {
+  const workspace = useBusinessWorkspace()
+  return <BusinessPosPage workspace={workspace} />
 }

@@ -7,7 +7,7 @@ import { BusinessGate } from './BusinessGate.jsx'
 import { useBusinessAccess } from './access.js'
 import { db, watchAccount } from './client.ts'
 vi.mock('./client.ts', () => ({
-  db: { cloud: { login: vi.fn(), logout: vi.fn() } },
+  db: { cloud: { login: vi.fn(), logout: vi.fn(), sync: vi.fn().mockResolvedValue(undefined) } },
   watchAccount: vi.fn(),
 }))
 let root, container, notify

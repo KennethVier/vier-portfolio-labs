@@ -223,8 +223,8 @@
 }
 
 .business-touch .business-account { color: var(--business-ivory); }
-.business-touch .business-account .business-signout { color: var(--business-navy); background: var(--business-ivory); border-color: var(--business-gold); }
+.business-touch .business-account .business-signout { color: var(--business-gold); background: transparent; border-color: #D8B45D80; }
 .business-touch .business-users-panel { color: var(--business-navy); background: var(--business-ivory); border-color: var(--business-gold-border); }
 
 .business-touch .business-account-trigger { color: var(--business-ivory); border-color: #D8B45D80; background: var(--business-navy-raised); }
-.business-touch .business-account-panel { color: var(--business-navy); background: var(--business-ivory); border-color: var(--business-gold-border); }
+.business-touch .business-account-panel { color: var(--business-ivory); background: var(--business-navy-raised); border-color: #D8B45D80; }

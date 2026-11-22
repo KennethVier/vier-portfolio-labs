@@ -16,9 +16,15 @@ type Stock = {
 type CloudDb = Dexie & { catalogStock: Table<Stock, string> }
 export function createCloudDb(url: string) {
   if (url !== devUrl) throw new Error('Expected the PesoPilot development database.')
-  // Logout may clear a cloud cache. The original POS ledger stays in its own Dexie database.
-  const db = new Dexie('pesopilot-business-cloud-dev', { addons: [dexieCloud] }) as CloudDb
+  // Separate alignment cache: preserve both the Phase 1 cache and original offline POS ledger.
+  // The hosted database and restricted OTP/application users are unchanged.
+  const db = new Dexie('pesopilot-business-operations-dev', { addons: [dexieCloud] }) as CloudDb
   db.version(1).stores({ catalogStock: 'id,realmId' })
+  db.version(2).stores({
+    branchCatalog: 'id,realmId,inventoryPoolId,name',
+    businessBranches: 'id,realmId',
+    branchTransactions: 'id,realmId,occurredAt',
+  })
   db.cloud.configure({ databaseUrl: url, requireAuth: false, socialAuth: false })
   return db
 }
@@ -117,6 +123,9 @@ export function watchAccount(database: CloudDb, update: (state: object) => void)
 export async function changeStaff(database: CloudDb, change: { email: string } | { id: string }) {
   if (!navigator.onLine) throw new Error('Connect to the internet to manage access.')
   await database.cloud.sync({ purpose: 'pull', wait: true })
+  const branchIds = new Set(database.tables.some(table => table.name === 'businessBranches')
+    ? (await database.table('businessBranches').where('realmId').equals(realmId).toArray()).map(row => row.id)
+    : [])
   await database.transaction('rw', database.realms, database.members, async () => {
     const uid = database.cloud.currentUserId
     const realm = await database.realms.get(realmId)
@@ -138,7 +147,10 @@ export async function changeStaff(database: CloudDb, change: { email: string } |
       const member = members.find((m) => m.id === change.id)
       if (!member || member.userId === realm.owner || member.roles?.join() !== 'staff')
         throw new Error('Choose a Staff membership.')
-      await database.members.delete(member.id)
+      const assignments = (await database.members.toArray()).filter(row => branchIds.has(row.realmId) &&
+        row.roles?.join() === 'staff' && ((member.userId && row.userId === member.userId) ||
+        (member.email && row.email?.toLowerCase() === member.email.toLowerCase())))
+      await database.members.bulkDelete([member.id, ...assignments.map(row => row.id)])
     }
   })
   await database.cloud.sync({ purpose: 'push', wait: true })
