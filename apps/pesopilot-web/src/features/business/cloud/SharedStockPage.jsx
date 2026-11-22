@@ -11,14 +11,14 @@ export function SharedStockPage() {
   const admin = useBusinessAccess().profile.role === 'admin'
   const [rows, setRows] = useState([])
   const [products, setProducts] = useState([])
-  const [sync, setSync] = useState('initial')
+  const [sync, setSync] = useState({ phase: 'initial' })
   const [message, setMessage] = useState('')
   useEffect(() => {
     const sub = liveQuery(() => db.catalogStock.where('realmId').equals(realmId).toArray()).subscribe({
       next: setRows,
       error: () => setMessage('Could not read shared stock.'),
     })
-    const status = db.cloud.syncState.subscribe((state) => setSync(state.phase))
+    const status = db.cloud.syncState.subscribe((state) => setSync(state))
     const local =
       admin &&
       liveQuery(() => businessRepository.listProducts()).subscribe({
@@ -52,8 +52,19 @@ export function SharedStockPage() {
   const estimatedBytes = new TextEncoder().encode(JSON.stringify(rows)).length
   return (
     <BusinessShell>
-      <h1 className="font-heading text-3xl">Shared stock snapshots</h1>
-      <p>Dexie Cloud sync status · {sync}</p>
+      <h1 className="font-heading text-3xl">Shared stock preview</h1>
+      <p>Development reference snapshots. POS availability uses this device’s inventory ledger.</p>
+      <p role="status">
+        {{
+          initial: 'Waiting for cloud synchronization.',
+          'not-in-sync': 'Snapshot changes are pending synchronization.',
+          pushing: 'Sending snapshot changes to the cloud.',
+          pulling: 'Receiving cloud snapshot changes.',
+          'in-sync': 'Last cloud synchronization completed.',
+          offline: 'Offline. Pending snapshot changes will retry on reconnect.',
+          error: 'Snapshot synchronization failed. Check your connection and retry.',
+        }[sync.phase] ?? 'Checking snapshot synchronization.'}
+      </p>
       {admin && (
         <>
           <form onSubmit={publish} className="flex flex-wrap items-end gap-3">

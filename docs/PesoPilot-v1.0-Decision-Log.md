@@ -408,3 +408,11 @@ It should be assumed unofficial.
 ## Business V2 ADR — one realm and a server-only recovery copy
 
 Accepted for isolated Business V2 development. Use Dexie Cloud Free for authentication, membership and primary synchronization. Keep the existing v3 POS database intact while testing a shared stock projection in a separate addon-enabled cache. Supabase Free receives server-validated recovery observations. Full ledger sync and recovery orchestration belong to Phase 2. See the [Business V2 Phase 1 runbook](pesopilot-business/11-V2-Phase-1-Cloud.md).
+
+## Business V2 ADR — branch operations and two role workspaces
+
+Accepted product direction, 2026-11-22 (Asia/Manila), per the [owner's PR #10 review](https://github.com/KennethVier/vier-portfolio-labs/pull/10#issuecomment-7073020171). One business has multiple branch stock locations and exactly Admin/Staff roles. Admin supervises all branches from Business Overview; Staff operates one assigned branch's POS, receipts/adjustments, sales, daily audit and analytics. Catalog/price management stays Admin-only. Several Staff may share a branch.
+
+Phase 2 separates the global catalog from branch balances/movements, attributes records to stable branch/actor identities and enforces scoping through Dexie-supported server authorization. Preserve offline atomic/idempotent sales, historical data and pool/set semantics; add visible conflict reconciliation and a tested legacy default-branch migration with backup/rollback. Supabase remains secondary recovery. Current shared snapshots are reference projections and must not be copied into POS as operational stock.
+
+Phase 1 implements only the compact account disclosure and clearer snapshot/sync UI, preserving its existing navigation and data sources. The expanded workspaces, operational ledger and branch policies remain Phase 2 work, gated on Phase 1 live acceptance and review. Any destructive migration needs separate owner approval. See [approved requirements and acceptance](pesopilot-business/12-V2-Phase-2-Branch-Requirements.md).

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/Button.jsx'
+import { BusinessAccountMenu } from './BusinessAccountMenu.jsx'
 import { useBusinessAccess } from '../cloud/access.js'
 import { useAutomaticBusinessBackup } from '../hooks/useAutomaticBusinessBackup.js'
 import { MorningStockCheck } from './MorningStockCheck.jsx'
@@ -28,22 +28,23 @@ export function BusinessShell({ children }) {
     <div className="business-touch min-h-screen">
       {!isStaff && <MorningStockCheck />}
       <header className="border-b border-outline-variant bg-surface-container-lowest">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-4 sm:px-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-4 sm:px-8">
           <Link
             to="/business"
-            className="business-brand flex min-h-11 items-center gap-3 rounded focus-visible:outline-primary"
+            className="business-brand flex min-h-11 min-w-0 items-center gap-3 rounded focus-visible:outline-primary"
           >
             <span className="business-brand-mark flex h-11 w-11 items-center justify-center rounded-lg">
               <BusinessIcon name="pos" />
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="business-wordmark block text-xl">
                 PesoPilot <span className="text-primary">Business</span>
               </span>
               <span className="block text-xs text-content-muted">Your daily sales workspace</span>
             </span>
           </Link>
-          <nav aria-label="Business navigation" className="flex w-full gap-1 overflow-x-auto xl:w-auto">
+          {access && <BusinessAccountMenu profile={access.profile} logout={access.logout} />}
+          <nav aria-label="Business navigation" className="col-span-2 flex w-full gap-1 overflow-x-auto">
             {navigation.map(([path, label, icon]) => (
               <NavLink
                 key={path}
@@ -58,21 +59,6 @@ export function BusinessShell({ children }) {
               </NavLink>
             ))}
           </nav>
-          {access && (
-            <div className="business-account flex w-full flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm">
-              <div className="min-w-0">
-                <p className="break-all font-semibold">{access.profile.email || access.profile.id}</p>
-                <p className="capitalize">{access.profile.role}</p>
-              </div>
-              <Button
-                variant="secondary"
-                className="business-signout min-h-11 shrink-0"
-                onClick={access.logout}
-              >
-                Sign out
-              </Button>
-            </div>
-          )}
         </div>
       </header>
       <main id="business-main" className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">

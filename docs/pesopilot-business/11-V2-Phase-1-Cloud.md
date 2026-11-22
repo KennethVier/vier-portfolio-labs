@@ -313,3 +313,35 @@ This verifies business realm ownership, an active business application user and 
 6. Review the owner audit and provider seat allocation, then decide whether to execute the optional developer-membership removal. Recheck business Admin access afterward.
 
 Live Staff OTP, direct server write rejection, revocation and actual current licensing cannot be claimed from repository tests. Keep Phase 1 and PR #10 open until those checks are recorded.
+
+## Current acceptance record and account dropdown
+
+2026-11-22 (Asia/Manila). This section updates earlier pending-status entries above. The [owner's latest review](https://github.com/KennethVier/vier-portfolio-labs/pull/10#issuecomment-7073020171) confirms successful Staff and business Admin login. That is owner-reported evidence; it does not certify all synchronization, permission or recovery cases.
+
+The signed-in account is now a compact upper-right disclosure beside the brand, with email, role and Sign out inside. It supports native keyboard activation, Escape with focus return, outside click/focus dismissal and 44px controls. Navigation occupies the next row and scrolls horizontally when needed. The existing role-based navigation remains intact. Physical iPad/narrow-screen visual acceptance is still required.
+
+Shared stock is labeled a development reference preview and explicitly identifies the device inventory ledger as POS's quantity source. Supported Dexie sync phases distinguish pending, pushing, pulling, completed, offline and error states. Saving a snapshot still reports local save separately from cloud completion. This UI does not wire snapshots into POS.
+
+| Acceptance check | Current evidence / remaining gate |
+| --- | --- |
+| Admin and Staff OTP/login | Owner reports both successful; preserve working auth and both Admin accounts |
+| Business Admin dashboard and Users | Owner previously confirmed dashboard/Users access; no new authenticated browser execution in this review |
+| Offline POS, sales, audit, backup and compatibility | Automated regression suite passes; physical-device offline/reload and existing-data checks remain |
+| Account UI and snapshot state reporting | Component regressions pass; verify touch, keyboard, narrow/mobile and iPad presentation live |
+| Admin publish → Staff snapshot visibility | Pending a newly identified synthetic snapshot and successful authenticated push/pull on separate profiles/devices; do not infer completion from an older snapshot |
+| Staff access enforcement | Automated role/route tests pass; live direct server write rejection and post-removal revocation remain pending |
+| Supabase staging boundary | Live read-only privilege check: `anon` and `authenticated` lack recovery schema usage; `authenticated` cannot execute the observation RPC; `service_role` can. No data/schema changed |
+| Recovery path | Automated schema/RPC tests cover the minimal path; authenticated end-to-end recovery/replication check remains pending |
+| License and seat audit | Owner-only registry/Manager check above remains pending; memberships do not establish license type or allocated seats |
+
+Executed from `apps/pesopilot-web`: `npm test -- --maxWorkers=4` passed **132 files / 1,386 tests**; `npm run lint`, `npm run typecheck` and `VITE_BUSINESS_DEXIE_URL=https://z5jxogiwe.dexie.cloud npm run build` passed. Coverage includes the account disclosure interactions, snapshot phase messages and Staff read-only preview, plus existing authorization, transport, provisioning, local POS/migration, sales, audit and backup tests. These results do not replace authenticated provider/device acceptance. No browser reset, account mutation, hosted schema change or production deployment was performed for this UI update.
+
+### Finish live Phase 1 acceptance
+
+1. Update the existing development worktree using the PowerShell procedure above, run `npm.cmd ci`, then restart Vite with the documented development URL. Keep the existing browser data.
+2. On Admin and Staff profiles, check Account at desktop, phone width and physical iPad: email/role and Sign out appear only when expanded; keyboard Tab/Enter/Escape and outside dismissal work; navigation and controls remain usable without overlap.
+3. As Admin, publish a clearly named synthetic development snapshot. Record the successful authenticated push and completed state. Pull as Staff and verify the same snapshot, quantity and successful request. Confirm Staff POS quantity is unchanged by the reference snapshot.
+4. Complete the Staff live acceptance steps above: own local sale/receipt, direct Admin-route denial, provider-enforced write rejection, cancel/confirm removal and fresh-pull revocation. Use an intentionally disposable Staff invitation only when ready to revoke; re-provision through the documented workflow if continued testing is needed. Retain both Admin accounts.
+5. On the test device, verify existing local sales/audit/backup, offline sale/reload and reconnect. Record the server-only recovery path result and owner license audit. Share only sanitized pass/fail evidence; no OTP, keys, auth headers or business payloads.
+
+Live acceptance is blocked here by lack of an authenticated owner device/session, owner management credentials and physical iPad. Credentials should remain with the owner. Phase 1 and Draft PR #10 stay open. The [approved Phase 2 branch requirements](12-V2-Phase-2-Branch-Requirements.md) are ready for review and milestone design; their operational ledger, branch authorization and new role workspaces are not implemented in this PR.
