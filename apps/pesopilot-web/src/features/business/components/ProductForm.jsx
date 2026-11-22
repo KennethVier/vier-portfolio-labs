@@ -35,7 +35,7 @@ export function ProductForm({ addProduct, disabled, products = [], catalogOnly =
     if (await action.run(() => addProduct({ ...preview.input,
       openingStock: catalogOnly || poolId ? 0 : openingStock.trim() === '' ? NaN : Number(openingStock),
       ...(poolId ? { inventoryPoolId: poolId } : {}),
-    }), catalogOnly ? 'Shared catalog product saved. Receive physical stock in Branch Inventory.' : 'Product saved. Add an optional photo in Product photos below.')) {
+    }), catalogOnly ? 'Product saved on this device. Once shared, Staff can receive its physical stock in Branch Inventory.' : 'Product saved. Add an optional photo in Product photos below.')) {
       setSelection(emptySelection)
       setOpeningStock('0')
       setPoolId('')
@@ -93,10 +93,10 @@ export function ProductForm({ addProduct, disabled, products = [], catalogOnly =
               <label className="block text-sm font-semibold">Use existing stock group
                 <select className={selectClass} value={poolId} onChange={(event) => setPoolId(event.target.value)}>
                   <option value="">Keep separate stock (recommended)</option>
-                  {pools.map((product) => <option key={product.inventoryPoolId} value={product.inventoryPoolId}>{product.inventoryPoolName} · {product.stockQuantity} available</option>)}
+                  {pools.map((product) => <option key={product.inventoryPoolId} value={product.inventoryPoolId}>{product.inventoryPoolName}{!catalogOnly && ` · ${product.stockQuantity} available`}</option>)}
                 </select>
               </label>
-              {sharedStock ? <p className="rounded-lg bg-surface-container-low p-3 text-sm">This product will use the current quantity of <strong>{sharedStock.stockQuantity}</strong> in “{sharedStock.inventoryPoolName}”. No opening stock will be added. Sales and stock adjustments affect every item sharing this stock.</p> : null}
+              {sharedStock && !catalogOnly ? <p className="rounded-lg bg-surface-container-low p-3 text-sm">This product will use the current quantity of <strong>{sharedStock.stockQuantity}</strong> in “{sharedStock.inventoryPoolName}”. No opening stock will be added. Sales and stock adjustments affect every item sharing this stock.</p> : null}
               {pools.length === 0 ? <p className="text-sm text-content-muted">No existing stock is available to share yet.</p> : null}
             </div>
           </details>
@@ -106,12 +106,12 @@ export function ProductForm({ addProduct, disabled, products = [], catalogOnly =
               <p className="business-product-name">{preview.input.name}</p>
               <p className="text-sm text-content-muted">{category}</p>
               <p className="business-amount text-xl">{peso(preview.unitPriceCentavos)} <span className="text-sm font-normal text-content-muted">per item</span></p>
-              <p className="text-sm">{sharedStock ? `Uses existing stock: ${sharedStock.stockQuantity} available. No quantity added.` : `Opening stock: ${catalogOnly ? 0 : openingStock || '—'}. Kept separately.`}</p>
+              <p className="text-sm">{catalogOnly ? 'Product details only. Staff receives stock separately in each branch.' : sharedStock ? `Uses existing stock: ${sharedStock.stockQuantity} available. No quantity added.` : `Opening stock: ${openingStock || '—'}. Kept separately.`}</p>
             </> : <p className="text-sm text-content-muted">{preview.error}</p>}
-            {duplicate ? <p role="alert" className="text-sm text-error">This item is already in your inventory as “{duplicate.name}”. Use stock adjustment below to add more.</p> : null}
+            {duplicate ? <p role="alert" className="text-sm text-error">{catalogOnly ? `This product is already in the list as “${duplicate.name}”. Staff can receive more stock in Branch Inventory.` : `This item is already in your inventory as “${duplicate.name}”. Use stock adjustment below to add more.`}</p> : null}
             {staleSelection ? <p role="alert" className="text-sm text-error">The selected shared stock is unavailable. Choose another option in Advanced.</p> : null}
           </section>
-          <p className="text-sm text-content-muted">Photos are optional. After saving, add or replace a photo in <a className="font-semibold text-primary underline underline-offset-4" href="#product-photos">Product photos below</a>.</p>
+          {!catalogOnly && <p className="text-sm text-content-muted">Photos are optional. After saving, add or replace a photo in <a className="font-semibold text-primary underline underline-offset-4" href="#product-photos">Product photos below</a>.</p>}
           <Button type="submit" className="min-h-12 w-full sm:w-auto" disabled={!preview.input || Boolean(duplicate) || staleSelection}>{action.saving ? 'Saving…' : 'Save Product'}</Button>
         </> : null}
       </fieldset>

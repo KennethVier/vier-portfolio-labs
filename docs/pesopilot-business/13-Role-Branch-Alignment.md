@@ -108,3 +108,45 @@ Repository tests exercise real fake-indexedDB-backed repositories and the actual
 Live acceptance is **not complete**. The agent has no owner-held Dexie management session or OTP-authenticated browser clients, so the additive hosted import and authenticated receiving/sale/pull/permission checks have not been executed here. A local Chromium launch was blocked by the execution environment's socket restrictions; no desktop/iPad screenshot or physical-device pass is claimed. Keep Issue #11, the alignment draft PR and Phase 1 PR #10 open. No production deployment, merge, account/ownership change, database reset or live record import was performed.
 
 Final repository verification on 2026-11-22: `npm test -- --maxWorkers=4` **PASS — 137 files / 1,406 tests**; `npm run lint` **PASS**; `npm run typecheck` **PASS**; configured `npm run build` **PASS**. The browser socket restriction and missing owner-authenticated hosted verification remain as described above. Tests do not close the live acceptance gates.
+
+## Admin onboarding and inventory UX follow-up — 2026-11-22
+
+Implemented from the [owner's Issue #11 feedback](https://github.com/KennethVier/vier-portfolio-labs/issues/11#issuecomment-7073840338), on the same alignment branch and Draft PR #12. The owner reports that publishing existing products made them selectable by Staff; this is evidence of that product-list path, not completion of the live 10 → 2 → 8/provider-permission acceptance gates.
+
+### Business workflow
+
+1. **Business Overview → Business Setup:** a compact checklist derives progress from saved products, branch records, accepted Staff branch invitations and actual positive stock movements. It guides Products → Branches → Staff assignment → Staff receives opening stock. Pending invitations and reference snapshots do not mark those steps complete. Every authorized branch must have accepted Staff and recorded stock before those steps complete; selling the stock later does not reset the opening-stock step. The checklist collapses to “Setup saved” when complete. This describes saved state in this client; connection status separately indicates sharing. Loading/error states do not invent progress.
+2. **Products → Add product:** create names/scents/sizes and prices directly in the business product list. No second publishing step is required for newly added products. Stock is received separately. Catalog-only forms omit irrelevant photo links and physical opening quantities. Existing saved products have concise expandable price editing, plus a next-step link to Branches and Users.
+3. **Products → Import existing products from this device:** a clearly explained, expandable migration option for an owner who already entered products on this browser. It reads the original local catalog only when Preview is clicked. Review names, variants, prices, counts and conflicts; confirm before importing. The preview is read-only, and import never runs automatically or for Staff. Existing IDs/prices are kept, conflicts stop the operation, and changed source/shared definitions invalidate the preview. Import is transactional and retry-safe; a failed cloud push can leave zero-stock definitions saved locally, so review again and use the contextual retry action after reconnecting. No completion message appears until the push succeeds.
+4. **Branches and Users:** grouped Create a branch and Assign Staff sections explain the next step. Creating a branch selects it for assignment. A business invitation alone does not register a restricted-admission application user: the owner still completes private account setup, Staff signs in/accepts business access, then Admin assigns a branch and Staff accepts that separate invitation. Privileged registration remains in the existing owner-operated workflow. Advanced migrations, provider quota information and backup tools are collapsed beneath normal setup.
+5. **Staff → Branch Inventory:** an empty catalog explains that the owner must add products in Products; there is no useless blank selector. Missing assignment points the owner to Branches and Users. With products present, Staff searches by name/scent/variant/size, selects the exact item with its current branch quantity, chooses Receive stock or Remove stock, enters quantity/reason and reviews the change inline before confirming. Failed saves keep the selected product and entered values/request key. Success explains local save and links to POS; other devices see it after sharing completes.
+6. **Connection feedback:** normal pages show brief business wording for pending/offline/failure states. Healthy operation does not present an always-visible manual synchronization button. Check for updates is under Connection details; errors expose a contextual Try again action. Offline stock/sales still use the existing durable branch ledger. Product import/branch administration require connection, while a product-import preview remains available offline.
+
+Imports copy only explicit product-definition fields: names/prices/scents/variant/pool references and existing creation/cost metadata required by the domain. They do not import quantities, photos, sales, stock receipts or audit records, and do not overwrite stock already recorded in branches. No schema, realm, role, permission, ledger-accounting or production change was made in this follow-up.
+
+### Update locally (no schema import needed for this UX update)
+
+Stop Vite with Ctrl+C and run:
+
+```powershell
+Set-Location (Join-Path $env:USERPROFILE 'Projects\pesopilot-role-branch-alignment')
+$branch = 'feature/pesopilot-business-v2-role-branch-alignment'
+if ((git branch --show-current) -ne $branch) { throw 'Open the alignment branch checkout first.' }
+if (git status --porcelain) { throw 'Save local changes before pulling.' }
+git pull --ff-only origin $branch
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+Set-Location '.\apps\pesopilot-web'
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Installation failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --force --port 5173 --strictPort
+```
+
+Existing development schema setup is still required for a brand-new installation, as documented above; do not repeat the schema import merely for this UI change. Keep existing browser data. No owner key or OTP is requested in chat.
+
+### Focused acceptance and results
+
+- **Admin:** check real checklist progress, Add product → next action, empty-product guidance, branch creation/assignment instructions and the collapsed advanced tools. Preview an existing local catalog without importing: verify counts, zero writes and an explicit confirmation. Repeat an already completed import: existing prices/quantities must remain. Offline preview must work while import is disabled. A conflicting or stale preview must stop without overwriting records.
+- **Staff:** before catalog setup, see the helpful empty state. After adding/sharing products, search Lavender, receive ten with a reason, verify the inline confirmation, then check POS ten → sale two → eight and matching audit/Admin values. Try a failed save and confirm entries are retained. Recheck existing offline/reconnect and branch-isolation acceptance; their accounting and permission paths are unchanged.
+- Executed: **138 files / 1,417 tests passed**, including **11 new onboarding tests**, the updated real React/IndexedDB receipt/POS/audit flow and existing business/Personal regressions. Lint, cloud TypeScript checking and configured production build passed. This supersedes the earlier repository test count, not the live acceptance status.
+- No new signed-in browser screenshot, live provider authorization test or physical-iPad pass is claimed. Browser execution in this environment remains restricted as recorded above. Owner-side desktop/iPad review and the outstanding live acceptance gates remain open. No production deployment or merge occurred.

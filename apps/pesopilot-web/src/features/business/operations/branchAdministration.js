@@ -1,3 +1,4 @@
+import { catalogImportPlan } from './catalogImport.js'
 import {
   BUSINESS_REALM,
   authorizedBranches,
@@ -39,7 +40,7 @@ export async function createBranch(database, userId, name, requestKey) {
       const business = await database.realms.get(BUSINESS_REALM)
       // Canonical owner creates branches; the other Admin remains invited for oversight.
       if (business.owner !== userId)
-        throw new Error('The business owner creates branch realms.')
+        throw new Error('Only the business owner can create branch locations.')
       await database.realms.add({ realmId: id, owner: userId, name: clean })
       await database.businessBranches.add({
         id,
@@ -100,7 +101,7 @@ export async function assignStaff(database, userId, branchId, email) {
       )
       if (!staff)
         throw new Error(
-          'First complete restricted Staff registration and business invitation acceptance in Users.',
+          'Finish Staff account setup and ask them to accept the business invitation before assigning a branch.',
         )
       const branchIds = new Set(
         (
@@ -144,7 +145,12 @@ export async function assignStaff(database, userId, branchId, email) {
   await database.cloud.sync({ purpose: 'push', wait: true })
 }
 
-export async function publishCatalog(database, userId, products) {
+export async function publishCatalog(
+  database,
+  userId,
+  products,
+  expectedSnapshot,
+) {
   await database.transaction(
     'rw',
     database.branchCatalog,
@@ -153,25 +159,22 @@ export async function publishCatalog(database, userId, products) {
     async () => {
       if (!(await businessAdmin(database, userId)))
         throw new Error('Admin membership required.')
-      for (const product of products) {
-        if (product.catalog?.sampleKey || product.inventoryUnitsPerSale !== 1)
-          throw new Error(
-            'Review archived samples or unsupported consumption before publishing.',
-          )
-        const existing = await database.branchCatalog.get(product.id)
-        if (existing) {
-          if (
-            existing.realmId !== BUSINESS_REALM ||
-            existing.inventoryPoolId !== product.inventoryPoolId ||
-            existing.name !== product.name
-          )
-            throw new Error(
-              'Existing catalog definition differs. No catalog was overwritten.',
-            )
-          continue // Publish never resets a price edited in the shared catalog.
-        }
+      const catalog = await database.branchCatalog
+        .where('realmId')
+        .equals(BUSINESS_REALM)
+        .toArray()
+      const plan = catalogImportPlan(products, catalog)
+      if (expectedSnapshot !== undefined && expectedSnapshot !== plan.snapshot)
+        throw new Error(
+          'Products changed since the preview. Review the import again before continuing.',
+        )
+      if (plan.conflicts)
+        throw new Error(
+          'Some products need review. No products were imported or overwritten.',
+        )
+      for (const row of plan.rows.filter((row) => row.status === 'new')) {
         await database.branchCatalog.add({
-          ...product,
+          ...row.product,
           stockQuantity: 0,
           realmId: BUSINESS_REALM,
           owner: null,

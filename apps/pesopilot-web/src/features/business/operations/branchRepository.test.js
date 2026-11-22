@@ -274,6 +274,8 @@ it('publishes definitions at zero, preserves edited shared prices and refuses St
   const source = {
     ...(await db.branchCatalog.get('lavender')),
     id: 'local-new',
+    name: 'Other scent',
+    catalog: { category: 'Other Products', family: 'Other scent' },
     inventoryPoolId: 'local-new',
     stockQuantity: 99,
   }

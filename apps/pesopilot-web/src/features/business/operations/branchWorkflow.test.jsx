@@ -70,15 +70,34 @@ it('uses the real operational hook and repository for Staff receive → POS sale
       ).not.toBeNull(),
     )
     const form = container.querySelector('form')
-    form.querySelector('[name=productId]').value = 'lavender'
-    form.querySelector('[name=quantity]').value = '10'
-    form.querySelector('[name=reason]').value = 'Synthetic supplier receipt'
+    async function change(selector, value) {
+      await act(async () => {
+        const element = form.querySelector(selector)
+        const prototype =
+          element.tagName === 'SELECT'
+            ? window.HTMLSelectElement.prototype
+            : window.HTMLInputElement.prototype
+        Object.getOwnPropertyDescriptor(prototype, 'value').set.call(
+          element,
+          value,
+        )
+        element.dispatchEvent(
+          new Event(element.tagName === 'SELECT' ? 'change' : 'input', {
+            bubbles: true,
+          }),
+        )
+      })
+    }
+    await change('[name=productId]', 'lavender')
+    await change('[name=quantity]', '10')
+    await change('[name=reason]', 'Synthetic supplier receipt')
     await act(async () =>
       form.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       ),
     )
-    await wait(() => expect(container.textContent).toContain('10 available'))
+    await button('Confirm stock change')
+    await wait(() => expect(container.textContent).toContain('10 in branch'))
     await render('staff', 'home')
     await wait(() =>
       expect(container.querySelector('[data-product-card]')).not.toBeNull(),

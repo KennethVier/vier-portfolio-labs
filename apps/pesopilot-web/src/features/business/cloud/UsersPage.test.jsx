@@ -67,7 +67,7 @@ it('clears email after synchronized invitation and explains registration is sepa
   await submit()
   expect(changeStaff).toHaveBeenCalledWith(expect.anything(), { email: 'new@example.test' })
   expect(container.querySelector('[name=email]').value).toBe('')
-  expect(container.textContent).toContain('Complete owner-side account registration')
+  expect(container.textContent).toContain('owner must finish account setup')
   expect(container.textContent).toContain('Owner verification required')
   expect(container.textContent).not.toContain('Active')
 })

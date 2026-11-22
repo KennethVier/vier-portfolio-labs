@@ -60,9 +60,7 @@ async function render(screen = 'home') {
 it('lands Admin on honest Overview with no POS and provides owner navigation', async () => {
   await render()
   expect(container.textContent).toContain('Business Overview')
-  expect(container.textContent).toContain(
-    'No authorized operational branches yet',
-  )
+  expect(container.textContent).toContain('No branches yet')
   expect(container.textContent).not.toContain('Branch POS')
   const links = [...container.querySelectorAll('nav a')].map(
     (a) => a.textContent,
@@ -74,7 +72,7 @@ it('lands Admin on honest Overview with no POS and provides owner navigation', a
 it('gates Staff before branch acceptance and opens branch POS with operational stock afterward', async () => {
   work.profile = { id: 'staff', role: 'staff' }
   await render()
-  expect(container.textContent).toContain('assign exactly one branch')
+  expect(container.textContent).toContain('assign you to one branch')
   expect(container.textContent).not.toContain('Branch POS:')
   work.branchId = 'A'
   work.branches = [{ id: 'A', name: 'Branch A' }]
@@ -100,25 +98,48 @@ it('requires a stock reason, clears success and preserves failed receipt inputs'
     .mockResolvedValueOnce({ duplicate: false })
   await render('stock')
   const form = container.querySelector('form')
-  form.querySelector('[name=productId]').value = 'lavender'
-  form.querySelector('[name=quantity]').value = '10'
-  form.querySelector('[name=reason]').value = 'Checked receipt'
+  async function change(selector, value) {
+    await act(async () => {
+      const element = form.querySelector(selector)
+      const prototype =
+        element.tagName === 'SELECT'
+          ? window.HTMLSelectElement.prototype
+          : window.HTMLInputElement.prototype
+      Object.getOwnPropertyDescriptor(prototype, 'value').set.call(
+        element,
+        value,
+      )
+      element.dispatchEvent(
+        new Event(element.tagName === 'SELECT' ? 'change' : 'input', {
+          bubbles: true,
+        }),
+      )
+    })
+  }
+  async function click(label) {
+    await act(async () =>
+      [...container.querySelectorAll('button')]
+        .find((button) => button.textContent === label)
+        .click(),
+    )
+  }
+  await change('[name=productId]', 'lavender')
+  await change('[name=quantity]', '10')
+  await change('[name=reason]', 'Checked receipt')
   expect(form.querySelector('[name=reason]').required).toBe(true)
   await act(async () =>
     form.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     ),
   )
+  expect(work.service.adjustStock).not.toHaveBeenCalled()
+  await click('Confirm stock change')
   expect(form.querySelector('[name=quantity]').value).toBe('10')
   expect(container.textContent).toContain('disk full')
-  await act(async () =>
-    form.dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    ),
-  )
+  await click('Confirm stock change')
   expect(work.service.adjustStock.mock.calls[0][0].requestKey).toBe(
     work.service.adjustStock.mock.calls[1][0].requestKey,
   )
   expect(form.querySelector('[name=quantity]').value).toBe('')
-  expect(container.textContent).toContain('recorded on this device')
+  expect(container.textContent).toContain('Saved on this device')
 })
