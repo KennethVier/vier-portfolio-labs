@@ -48,7 +48,7 @@ Both were open, draft, and reported mergeable at the original review. The revisi
 | Phase 0 sale UI restored, product catalog, grouped receiving and Admin Inventory Overview | **PASS** | Owner confirmed the Phase 0 POS, Staff Branch Inventory, catalog and sales on the protected physical tablet/iPad preview. React tests compare receiving controls for every product group with the Phase 0 reference and exercise sale, payment, Set, tawad, grouped receipt and inventory filtering. |
 | Catalog initialization, custom fields preserved, stable IDs and no physical stock from definitions | **PASS** | Synthetic IndexedDB fixtures exercise first pull, one-time setup, concurrent connections, rollback, partial cache, retained prices/costs/photos and no receipt. |
 | Actual owner startup/push and Staff catalog on a second authenticated device | **NOT VERIFIED** | Admin and Staff operators. Verify existing customization and unchanged stock/movement counts, observe authorized Staff receiving the catalog, and verify a later owner login adds no duplicates. |
-| Admin/Staff branch invitations and live branch access | **NOT VERIFIED** | Admin and Staff operators. Check Staff sees one assigned branch and an authorized Admin sees the expected branches. A secondary Admin may need to accept branch Admin invitations. |
+| Admin/Staff branch invitations and live branch access | **PASS** | Owner confirmed disposable Staff registration, OTP, Staff role, branch invitation acceptance, Staff POS and Admin readback of the accepted assignment on the tested development branch. The direct Admin route redirected to Staff POS. Extra branch visibility and provider denial remain separate. [Owner route check](https://github.com/KennethVier/vier-portfolio-labs/pull/12#issuecomment-7104307452) · [Admin assignment readback](https://github.com/KennethVier/vier-portfolio-labs/pull/12#issuecomment-7104375326) |
 | Staff sale and cross-device Admin stock readback on the physical tablet/iPad | **PASS** | Owner observed 8 remaining on the Admin dashboard after the Staff sale. Repository tests cover the 10 → 2 → 8 fixture. The owner report establishes the stock readback. It does not separately document the payment, sale/audit and actor fields. See [owner evidence](https://github.com/KennethVier/vier-portfolio-labs/pull/12#issuecomment-7097236793). |
 | Server branch isolation, global records read-only for Staff, protected transaction mutation denied | **NOT VERIFIED** | Development QA operator. Verify Staff A receives no Branch B ledger rows and provider rejects unauthorized writes and update/deletion of a new owner-owned envelope. Shared branch-directory visibility is expected. |
 | Cascaded business and branch revocation, queued offline outcome | **NOT VERIFIED** | Admin and disposable Staff operator. Confirm fresh-pull denial and account for any rejected queued entries; retain original local data. |
@@ -73,11 +73,32 @@ Four focused suites passed, 25 tests total. They covered the recovery client, St
 
 ### Staff revocation preflight
 
-Authorization received on 2026-11-23. Execution is **NOT VERIFIED**. This environment has no authenticated owner operator session or local Dexie development operator configuration. No identity was provisioned or verified and no hosted action was taken. There are no verified membership IDs, assigned branch or affected-record counts to report.
+Authorization received on 2026-11-23. Execution is **NOT VERIFIED**. This environment has no authenticated owner operator session or local Dexie development operator configuration. Owner subsequently confirmed the disposable identity and accepted assignment through the app. The full provider membership set, exact IDs and affected count still require private read-back. No hosted mutation was performed in this pass.
 
 In the private operator session, refresh the development membership view. Record and report the disposable identity, its exact business and branch membership IDs, the assigned branch and total row count before proceeding. Verify that each matched row belongs to the new test identity and that no matching row is an existing Admin or active Staff membership. The removal code matches Staff branch assignments by user ID or normalized email, so review the entire matching set, including pending assignments. Stop if any row or branch is unexpected.
 
 First complete the provider permission and branch-isolation checks using synthetic records. Cancel Remove Staff and confirm the account still has access after a pull. Recheck the removal set, then confirm the supported Remove Staff action only if the set matches the private report. Record successful sync, loss of access after fresh pull and denial from a new authenticated session. Verify the disposable user record, license and unrelated memberships are still present. Keep exact identity details in the private evidence and publish only sanitized results.
+
+### Private membership read-back
+
+From the alignment checkout's app directory, with the existing private Dexie development CLI files in place:
+
+```powershell
+$preflight = (Resolve-Path '.\cloud\staff-preflight.mjs').Path
+$email = Read-Host 'Disposable Staff email'
+$branchId = Read-Host 'Expected development branch ID, not its label'
+Push-Location "$env:USERPROFILE\DexieCloud\pesopilot-business-v2-dev"
+try {
+    node $preflight $email $branchId
+    if ($LASTEXITCODE -ne 0) { throw 'Preflight stopped. Review private output.' }
+} finally { Pop-Location }
+```
+
+The script uses read-only management scopes against the fixed development URL. It enumerates matches by user ID or lowercased email, including unaccepted assignments. A ready report expects exactly one accepted business Staff membership and one accepted Staff assignment in the specified branch. Extra, pending, rejected, conflicting and privileged matches block readiness. Compare exact rows privately with the disposable identity created by the owner. Share only the outcome and counts. Three synthetic cases passed locally: expected pair, additional pending branch assignment, and unrelated Admin match.
+
+For the provider test, use the disposable Staff session on the development preview. Use a synthetic ledger record in the assigned branch as the positive read control and have Admin independently verify a synthetic ledger record exists in Branch B. After a confirmed Staff sync, record whether Staff receives that Branch B ledger record. Shared branch-directory visibility is outside this check. In the approved provider test session, test that Staff can persist an allowed synthetic event in the assigned branch and that the provider rejects unauthorized changes to synthetic Admin-owned catalog or membership targets and unauthorized Branch B writes. Record the actual provider decision and independent Admin read-back of unchanged targets. A UI redirect, client validation message or network error leaves this check NOT VERIFIED. The management session used for preflight is unsuitable for the Staff permission test.
+
+Revocation and cancellation are outside the current execution scope. Leave memberships, licenses and accounts in place.
 
 ### Private recovery execution
 
