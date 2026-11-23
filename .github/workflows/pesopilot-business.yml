@@ -3,6 +3,8 @@ name: PesoPilot Business Prototype
 on:
   pull_request:
     branches:
+      - test/pesopilot-ipad-preview
+      - feature/pesopilot-business-v2-phase-1-cloud-auth
       - pesopilot-dev
       - feature/pesopilot-business-foundation
       - feature/pesopilot-business-workflows
@@ -35,5 +37,6 @@ jobs:
       - run: npm ci
       - run: npm run test
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm run build
       - run: npm audit --audit-level=high
