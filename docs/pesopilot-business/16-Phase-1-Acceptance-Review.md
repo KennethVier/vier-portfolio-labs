@@ -104,12 +104,14 @@ For the provider test, use the disposable Staff session on the development previ
 | --- | --- | --- |
 | Live read-only membership preflight | **PASS** | Owner reported READY_FOR_OWNER_REVIEW, two matching and two affected, both accepted, no extra rows. |
 | Allowed assigned-branch Staff transaction | **NOT VERIFIED** | Disposable Staff submits a uniquely labeled synthetic transaction in the assigned branch. A separate Admin session pulls and confirms the same record. |
-| Staff read isolation | **NOT VERIFIED** | Admin verifies a synthetic protected transaction exists in the other branch. A successful Staff pull shows the assigned-branch positive control and excludes that exact protected transaction from the synchronized Staff dataset. Shared branch-directory visibility is irrelevant. |
+| Staff synchronized-cache read isolation | **PASS** | Owner observed one authorized Kenneth QA transaction and zero protected Clara QA transactions in the disposable Staff IndexedDB cache after Check for updates, on the protected development preview. Scoped to those fixtures and that session. |
 | Other-branch Staff write denial | **NOT VERIFIED** | Provider permission rejection for the disposable Staff operation against a synthetic target, with Admin readback. |
 | Synthetic Admin catalog and membership write denial | **NOT VERIFIED** | A provider permission rejection for each protected synthetic target, with Admin readback. Fixtures must have no operational role or permission changes. |
 | Independent protected-record readback | **NOT VERIFIED** | Admin compares all synthetic targets to the before-state after an independent fresh pull. |
 
 Use isolated browser profiles for the existing development Admin and disposable Staff accounts. Keep only time, fixture labels, outcome, and sanitized provider error details in the evidence. An app route restriction, local validation, offline failure, or a successful HTTP transport response without an operation result is inconclusive. Record FAIL if the provider delivers the protected record or persists a prohibited change. If the normal app prevents the request from reaching the provider and there is no approved provider-side authorization test facility, leave that check NOT VERIFIED.
+
+Step 8E is blocked: the membership preflight uses read-only management scopes, and the development app and local test tooling do not provide a verified Staff-scoped provider test for the three protected writes against isolated fixtures. No protected writes or post-attempt Admin readback were performed. Clara branch writes, synthetic Admin catalog changes, and synthetic membership changes remain NOT VERIFIED.
 
 Revocation and cancellation are outside the current execution scope. Leave memberships, licenses and accounts in place.
 
