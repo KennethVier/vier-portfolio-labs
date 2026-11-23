@@ -53,6 +53,8 @@ it('configures the actual addon only for the specified development endpoint', ()
   const cloud = createCloudDb('https://z5jxogiwe.dexie.cloud')
   expect(cloud.cloud.options.databaseUrl).toBe('https://z5jxogiwe.dexie.cloud')
   expect(cloud.catalogStock.schema.primKey.name).toBe('id')
+  expect(cloud.name).toMatch(/^pesopilot-business-operations-dev(?:-|$)/)
+  expect(cloud.name).not.toContain('pesopilot-business-cloud-dev')
   expect(cloud.name).not.toBe('pesopilot-business')
   cloud.close()
 })
@@ -133,7 +135,7 @@ it('restores cached Admin access offline without waiting for the network', async
 })
 
 it('matches the pinned addon synchronized tables and primary keys to the sealed import manifest', async () => {
-  const { businessSchema } = await import('../../../../cloud/schema.mjs')
+  const { operationalSchema: businessSchema } = await import('../../../../cloud/branch-schema.mjs')
   const cloud = createCloudDb('https://z5jxogiwe.dexie.cloud')
   const syncTables = Object.entries(cloud.cloud.schema).filter(([, spec]) => spec.markedForSync)
   expect(syncTables.map(([name]) => name).sort()).toEqual(Object.keys(businessSchema).sort())

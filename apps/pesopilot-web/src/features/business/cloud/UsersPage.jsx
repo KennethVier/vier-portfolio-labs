@@ -53,7 +53,7 @@ export function UsersPage() {
             event.preventDefault()
             change(
               { email: email.trim().toLowerCase() },
-              'Invitation synchronized. Complete owner-side account registration before Staff signs in.',
+              'Invitation sent. The owner must finish account setup before Staff signs in. Next, assign their branch in Branches and Users.',
             )
           }}
         >
@@ -71,11 +71,10 @@ export function UsersPage() {
           </Button>
         </form>
         <p className="text-sm">
-          An invitation grants business membership. Under restricted admission, the owner must also
-          register the Staff application account using the setup script.
+          Inviting Staff starts account setup. The owner must finish the private setup step before Staff can sign in; an invitation alone does not complete it.
         </p>
         <p className="text-sm">
-          Registration and licenses are unverified here. Run the owner-side account audit to check them.
+          Account setup needs owner verification. After Staff signs in and accepts the business invitation, assign their branch in Branches and Users.
         </p>
         {message && <p role="status">{message}</p>}
         {failure && (
@@ -105,7 +104,7 @@ export function UsersPage() {
                       : 'Invitation pending'}
                 </p>
                 {user.roles?.join() === 'staff' && (
-                  <p className="text-sm">Account registration · Owner verification required</p>
+                  <p className="text-sm">Account setup · Owner verification required</p>
                 )}
               </div>
               {user.roles?.join() === 'staff' && (

@@ -46,7 +46,7 @@ function addPayment(target, method, quantity, centavos) {
   target[method].centavos = add(target[method].centavos, centavos)
 }
 
-function validateHistoryThrough(end, { pools, products, sales, items, movements }) {
+function validateHistoryThrough(end, { pools, products, sales, items, movements }, allowNegativeStock = false) {
   const poolIds = new Set(pools.map((pool) => pool.id))
   const productMap = new Map(products.map((product) => [product.id, product]))
   const saleMap = new Map(sales.filter((sale) => timestamp(sale.confirmedAt) < end).map((sale) => [sale.id, sale]))
@@ -74,8 +74,8 @@ function validateHistoryThrough(end, { pools, products, sales, items, movements 
   const balances = new Map()
   for (const movement of [...movements].sort((left, right) => left.id - right.id)) {
     if (timestamp(movement.occurredAt) >= end) continue
-    const before = integer(movement.beforeQuantity)
-    const after = integer(movement.afterQuantity)
+    const before = integer(movement.beforeQuantity, allowNegativeStock)
+    const after = integer(movement.afterQuantity, allowNegativeStock)
     const delta = integer(movement.delta, true)
     if (!poolIds.has(movement.inventoryPoolId) || productMap.get(movement.productId)?.inventoryPoolId !== movement.inventoryPoolId ||
         before !== (balances.get(movement.inventoryPoolId) ?? 0) ||
@@ -100,11 +100,11 @@ function validateHistoryThrough(end, { pools, products, sales, items, movements 
 }
 
 // Pure projection of recorded history. No current price/stock is used to recalculate sales.
-export function buildDailyAudit(date, { products, pools, sales, items, movements }) {
+export function buildDailyAudit(date, { products, pools, sales, items, movements }, { allowNegativeStock = false } = {}) {
   const { start, end } = dateRange(date)
   // Opening stock depends on earlier history too. Refuse corrupt prior-day
   // movements instead of rolling their deltas into a plausible opening balance.
-  validateHistoryThrough(end, { products, pools, sales, items, movements })
+  validateHistoryThrough(end, { products, pools, sales, items, movements }, allowNegativeStock)
   const groups = new Map()
   for (const pool of pools) {
     if (timestamp(pool.createdAt) >= end) continue
@@ -208,9 +208,9 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
     remainingQuantity: 0, totalSold: 0, totalCentavos: 0, payments: emptyPayments(),
   }
   for (const group of groups.values()) {
-    integer(group.openingQuantity)
+    integer(group.openingQuantity, allowNegativeStock)
     group.availableQuantity = add(group.openingQuantity, group.addedQuantity)
-    group.remainingQuantity = integer(group.availableQuantity - group.consumedQuantity - group.removedQuantity)
+    group.remainingQuantity = integer(group.availableQuantity - group.consumedQuantity - group.removedQuantity, allowNegativeStock)
     for (const field of ['openingQuantity', 'addedQuantity', 'removedQuantity', 'availableQuantity', 'remainingQuantity', 'totalSold']) {
       summary[field] = add(summary[field], group[field])
     }

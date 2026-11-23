@@ -1,3 +1,5 @@
+import { BranchBackupPanel } from '../operations/BranchBackupPanel.jsx'
+import { Link } from 'react-router-dom'
 import { AutomaticBusinessBackup } from '../components/AutomaticBusinessBackup.jsx'
 import { DailyStock } from '../components/DailyStock.jsx'
 import { ProductPhotoManager } from '../components/ProductPhotoManager.jsx'
@@ -36,6 +38,10 @@ export function BusinessAdminPage({ screen }) {
     </> : null}
     {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} /> : null}
     {screen === 'settings' ? <>
+      <BranchBackupPanel />
+      <p>Legacy device tools below apply only to this browser’s original POS ledger. Operational branch records use the separate export above.</p>
+      <Link to="/business/history" className="inline-flex min-h-11 items-center underline">Legacy device sales archive</Link>
+      <Link to="/business/legacy-audit" className="inline-flex min-h-11 items-center underline">Legacy device daily audits</Link>
       <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. Protect this device and its browser profile. Business records are local until sync is configured.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>
       <BusinessBackupPanel refresh={workspace.refresh} disabled={workspace.isLoading} />
       <AutomaticBusinessBackup />
