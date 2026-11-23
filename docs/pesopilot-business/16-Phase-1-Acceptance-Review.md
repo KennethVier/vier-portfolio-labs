@@ -113,6 +113,14 @@ Use isolated browser profiles for the existing development Admin and disposable 
 
 Step 8E is blocked: the membership preflight uses read-only management scopes, and the development app and local test tooling do not provide a verified Staff-scoped provider test for the three protected writes against isolated fixtures. No protected writes or post-attempt Admin readback were performed. Clara branch writes, synthetic Admin catalog changes, and synthetic membership changes remain NOT VERIFIED.
 
+#### Step 8E isolation decision
+
+Dexie Cloud documents email OTP for end users and an explicit sync API that waits for synchronization to finish. The sync method returns `Promise<void>`. Its documented contract does not provide a dry-run write, a rollback boundary, or a success receipt for each individual mutation. A resolved sync alone is insufficient evidence for the protected write cases. See [authentication](https://dexie.org/docs/cloud/authentication), [sync](https://dexie.org/docs/cloud/db.cloud.sync%28%29), and [consistency](https://dexie.org/docs/cloud/consistency).
+
+A fresh browser profile separates local IndexedDB state. It does not isolate shared server records if a provider incorrectly accepts a write. The existing development database contains shared business records and no provider-confirmed, non-mutating authorization test facility has been identified. No live protected write was attempted. All three provider write-denial checks and post-attempt Admin readback remain NOT VERIFIED. Owner-confirmed UI, authorized receipt and Staff synchronized-cache read isolation evidence is retained.
+
+For an owner-run verification, first obtain from Dexie Cloud a supported policy-evaluation facility that reports an explicit result per operation without committing writes, or approve a separate disposable Dexie Cloud database containing synthetic fixtures and equivalent roles and realm ownership. Keep it isolated from the normal Staff origin and IndexedDB ledger. Use normal OTP as Staff, record one explicit provider result per case, then independently compare each synthetic target to its baseline through Admin. Results from a separate database apply to that environment only. An accepted prohibited operation is FAIL. An ambiguous, queued or transport-only outcome is NOT VERIFIED.
+
 Revocation and cancellation are outside the current execution scope. Leave memberships, licenses and accounts in place.
 
 ### Private recovery execution
