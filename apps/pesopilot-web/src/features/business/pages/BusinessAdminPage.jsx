@@ -36,7 +36,7 @@ export function BusinessAdminPage({ screen }) {
     </> : null}
     {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} /> : null}
     {screen === 'settings' ? <>
-      <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. There is no authentication or device sync.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>
+      <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. Protect this device and its browser profile. Business records are local until sync is configured.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>
       <BusinessBackupPanel refresh={workspace.refresh} disabled={workspace.isLoading} />
       <AutomaticBusinessBackup />
       <Card className="p-5"><h2 className="font-heading text-lg font-semibold">Internal Activity History</h2><p className="mb-3 text-sm text-content-muted">Recent 15 events; not a tamper-proof audit log.</p>

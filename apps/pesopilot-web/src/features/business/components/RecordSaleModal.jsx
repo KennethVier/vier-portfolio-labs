@@ -1,3 +1,4 @@
+import { useBusinessAccess } from '../cloud/access.js'
 import { useState } from 'react'
 import { useBusinessAction } from '../hooks/useBusinessAction.js'
 import { ProductVisual } from './ProductVisual.jsx'
@@ -10,6 +11,7 @@ import { BUSINESS_PAYMENT_LABELS, BUSINESS_PAYMENT_METHODS } from '../constants/
 import { PRODUCT_SCENTS } from '../constants/catalogMetadata.js'
 
 export function RecordSaleModal({ family, photo, products, receiveStock, onReceived, completeSale, disabled, onClose, onRecorded }) {
+  const canManage = useBusinessAccess()?.profile.role !== 'staff'
   const variants = products.filter((product) => family.products.some((item) => item.id === product.id))
   const initial = variants.find((product) => product.stockQuantity > 0 && product.catalog?.type !== 'Set') ?? variants.find((product) => product.catalog?.type !== 'Set') ?? variants[0]
   const sale = useSaleWorkflow(variants, completeSale, initial?.id, onRecorded)
@@ -18,7 +20,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
   const [stockSelection, setStockSelection] = useState(null)
   const receipt = useBusinessAction()
   const needsStock = !sale.isSet && sale.product?.stockQuantity === 0
-  const addingStock = restocking || needsStock
+  const addingStock = canManage && (restocking || needsStock)
   const scentVariants = variants.filter(product => product.catalog?.scent && product.catalog.type !== 'Set')
   const defaultStockIds = sale.isSet ? scentVariants.map(product => product.id) : [sale.product?.id]
   const selectedStockIds = stockSelection ?? defaultStockIds
@@ -30,7 +32,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
 
   async function saveStock(event) {
     event.preventDefault()
-    if (!canSaveStock || disabled) return
+    if (!canManage || !canSaveStock || disabled) return
     const entries = stockGroups.map(product => ({
       productId: product.id, presetName: product.presetName, quantity: quantityReceived,
     }))
@@ -63,7 +65,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
       </div>
       <p className="text-sm text-content-muted">By confirming, you verify this sale is complete. Stock will be deducted once. Payment is recorded manually; no external payment is verified.</p>
       <div className="flex flex-col gap-3 sm:flex-row-reverse">
-        <Button className="min-h-12 flex-1" disabled={sale.saving || (disabled && sale.canEdit)} onClick={sale.confirmSale}>{sale.saving ? 'Recording…' : sale.error ? 'Retry Confirmed Sale' : 'Owner: Confirm Completed Sale'}</Button>
+        <Button className="min-h-12 flex-1" disabled={sale.saving || (disabled && sale.canEdit)} onClick={sale.confirmSale}>{sale.saving ? 'Recording…' : sale.error ? 'Retry Confirmed Sale' : canManage ? 'Owner: Confirm Completed Sale' : 'Confirm Completed Sale'}</Button>
         <Button variant="secondary" disabled={!sale.canEdit} onClick={sale.editSale}>Back to Edit</Button>
       </div>
     </section> : <form onSubmit={addingStock ? saveStock : sale.reviewSale}>
@@ -107,7 +109,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
             {!needsStock && <Button variant="secondary" onClick={() => setRestocking(false)}>Back to sale</Button>}
           </div>
           {receipt.error && <p role="alert">{receipt.error}</p>}
-        </section> : <><Button variant="secondary" onClick={() => { setRestocking(true); setStockSelection(null) }}>Receive stock</Button><div className="rounded-lg bg-surface-container-low p-4">
+        </section> : <>{canManage && <Button variant="secondary" onClick={() => { setRestocking(true); setStockSelection(null) }}>Receive stock</Button>}<div className="rounded-lg bg-surface-container-low p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label htmlFor="sale-quantity" className="text-sm font-semibold">{sale.isSet ? 'Number of sets' : 'Sale quantity'}<span className="mt-1 block font-normal text-content-muted">{sale.isSet ? '5 pieces per set' : (sale.product?.stockQuantity ?? 0) + ' available'}</span></label>
             <div className="flex items-center gap-2">
@@ -123,9 +125,9 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
             type="number" min="0" step="1" inputMode="numeric" value={sale.mix?.[item.id] ?? sale.quantity}
             onChange={event => sale.setMix({ ...sale.mix, [item.id]: event.target.value })} />)}
         </fieldset>}
-        <Input label="Agreed price per piece (₱) · Optional tawad" inputMode="decimal" value={sale.agreedPrice}
+        {canManage && <Input label="Agreed price per piece (₱) · Optional tawad" inputMode="decimal" value={sale.agreedPrice}
           placeholder={sale.isSet ? '150.00' : (sale.product.unitPriceCentavos / 100).toFixed(2)}
-          onChange={event => sale.setAgreedPrice(event.target.value)} />
+          onChange={event => sale.setAgreedPrice(event.target.value)} />}
         <fieldset><legend className="mb-2 text-sm font-semibold">Method of Payment</legend><div className="payment-options grid grid-cols-2 gap-2">
           {BUSINESS_PAYMENT_METHODS.filter(method => method !== 'coop').map((method) => <Button key={method} aria-pressed={sale.paymentMethod === method} variant={sale.paymentMethod === method ? 'primary' : 'secondary'} onClick={() => sale.setPaymentMethod(method)}>{BUSINESS_PAYMENT_LABELS[method]}</Button>)}
         </div><details className="mt-2" open={sale.paymentMethod === 'coop' || undefined}><summary className="cursor-pointer text-sm">More payment methods</summary><Button aria-pressed={sale.paymentMethod === 'coop'} onClick={() => sale.setPaymentMethod('coop')}>Coop Pay</Button></details></fieldset>

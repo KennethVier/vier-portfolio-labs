@@ -1,9 +1,13 @@
+import { receiptPrefix } from '../cloud/receiptOwner.js'
+import { useBusinessAccess } from '../cloud/access.js'
 import { productPhotoService } from '../services/productPhotoService.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { receiveDailyStock } from '../services/stockPresets.js'
 import { businessService } from '../services/businessService.js'
 
 export function useBusinessWorkspace() {
+  const account = useBusinessAccess()?.profile
+  const staff = account?.role === 'staff'
   const [products, setProducts] = useState([])
   const [photos, setPhotos] = useState([])
   const [sales, setSales] = useState([])
@@ -19,8 +23,8 @@ export function useBusinessWorkspace() {
     try {
       const [nextProducts, nextSales, nextEvents, nextPhotos] = await Promise.all([
         businessService.listProducts(),
-        businessService.listSalesHistory(),
-        businessService.listAuditEvents(),
+        staff ? [] : businessService.listSalesHistory(),
+        staff ? [] : businessService.listAuditEvents(),
         productPhotoService.list(),
       ])
       if (!mounted.current || current !== sequence.current) return
@@ -36,7 +40,7 @@ export function useBusinessWorkspace() {
     } finally {
       if (mounted.current && current === sequence.current) setIsLoading(false)
     }
-  }, [])
+  }, [staff])
 
   useEffect(() => {
     mounted.current = true
@@ -71,6 +75,9 @@ export function useBusinessWorkspace() {
     receiveStock: (entries) => mutate(() => receiveDailyStock(entries)),
     setUnitCost: (id, cost) => mutate(() => businessService.setUnitCost(id, cost)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
-    completeSale: (value) => mutate(() => businessService.completeSale(value)),
+    completeSale: (value) => mutate(async () => {
+      const requestKey = account ? (await receiptPrefix(account.id)) + value.requestKey : value.requestKey
+      return businessService.completeSale({ ...value, requestKey })
+    }),
   }
 }

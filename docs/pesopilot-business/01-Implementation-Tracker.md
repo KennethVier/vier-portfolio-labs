@@ -238,3 +238,43 @@ Applied presentation/documentation differences:
 - No calculation, schema, transaction, dependency or Personal Finance change was required. Existing provisional Reload Qty/consumption assumptions and access/privacy/backup/browser QA gates remain. No acceptance status is marked complete.
 - Follow-up validation executed: `npm run test` PASS (106 files / 1,122 tests, zero failures), `npm run lint` PASS (zero errors / warnings), `npm run build` PASS (921 modules). Existing non-failing React Router/useLayoutEffect notices remain. Real-browser scenarios remain unverified; the earlier browser-host/native-approval blocker was not retested for these copy changes.
 - Follow-up changed-surface security review considered OWASP Top 10:2025 and applicable ASVS 5.0 output-encoding/integrity controls. Text changes preserve React escaping and introduce no persistence, authorization or dependency change; no new finding identified. Dependency scan remains unrun (`npm audit --audit-level=high`).
+
+## Business V2 Phase 1 — development review
+
+Dexie Cloud owns OTP and shared-realm synchronization. Supabase is a server-only recovery target. The existing POS ledger stays local through Phase 1. The repository implementation and staging SQL checks are ready for review. Owner-side realm bootstrap and live two-account acceptance are pending. See [Phase 1 setup, migration and verification](11-V2-Phase-1-Cloud.md).
+
+### Controlled Admin identity transfer
+
+Added an operator-only transfer from the existing developer Admin to the approved business email. User and membership provisioning precede the realm owner write. Repeated execution preserves licenses and existing records. Read-back checks, resumable failure handling and rollback retain developer access. Hosted execution and business OTP are pending.
+
+### First-login authorization race
+
+The account observer now waits for the initial online cloud pull before deciding realm access. Loading, inactive license, access denial and synchronization failure have distinct states. Read-only session diagnostics and retry support live verification. Regression coverage includes transferred Admin login with delayed realm arrival, failed pull, logout during pull and cached offline Admin access. Live business authorization remains pending.
+
+### Sealed schema rejection and stalled initial pull
+
+Added a schema-only owner-side export/compare/import/read-back procedure that retains sealing and existing definitions. Bootstrap now emits schema even when existing identity records need no update. Actual development endpoint reproduced HTTP 422 with an empty-change sync probe. Addon sync-state errors now reach the gate with sanitized diagnostics and a bounded pending-pull wait. Exact hosted table difference and successful authenticated sync require owner-side execution. Both Admin memberships and business realm ownership remain outside this repair.
+
+### Full transport schema diagnostics
+
+The earlier four-table compatibility assertion did not cover the full persisted schema serialized by the addon. Added opt-in development capture of the actual request's schema metadata and a read-only authenticated hosted export comparator. The comparator reports every transmitted entry and can compare prior repair exports. No further schema or membership mutation is proposed until the affected browser capture identifies the difference. Live 422 and Admin access remain blocked.
+
+### Immediate persisted-schema diagnostic
+
+Replaced the timed fetch wrapper with a development-only button that immediately reads the already-open cloud database's merged persisted schema. It mirrors the pinned addon's getSchema primary-key projection and labels the evidence source explicitly. The tests verify no network request or persisted write. The page also reports worker-context booleans. Exact remaining mismatch and hosted success still require the affected browser's snapshot and authenticated export.
+
+### Evidence-supported sealed-schema transport correction
+
+Analyzed the owner's matching four-table hosted comparison. Local-only entries are now reported separately. Controlled real endpoint probes identified rejection of local metadata entries even when unmarked, and rejection when empty yProps arrays are omitted. Added a version-pinned, idempotent addon request-schema compatibility patch that filters local-only entries and normalizes yProps. The committed helper returned HTTP 200 in an empty-change unauthenticated probe. Persisted data, credentials and memberships remain intact. Authenticated business Admin and synthetic-stock acceptance are pending.
+
+### Staff application-user registration and account UI
+
+User confirmed Admin dashboard access. Staff invitation still lacked the independent restricted-admission application-user record. Added idempotent owner-side Staff registration with read-back, preserved licenses and a paginated read-only license audit. Users distinguishes membership and unverified registration, clears successful invitation inputs, preserves failed input, confirms Remove Staff and uses responsive panels. The account header has explicit contrasting styles. Optional owner-side developer-membership removal retains its application user/private data and checks business Admin continuity. No live account mutation or audit was executed from the agent runtime.
+
+### Owner direction and Phase 1 account dropdown — 2026-11-22
+
+The owner now reports successful business Admin and Staff login. Implemented a compact upper-right Account disclosure containing identity, role and Sign out, with keyboard/outside dismissal and touch targets. Shared stock is explicitly a development reference preview with pending/push/pull/completed/offline/error status. Existing Phase 1 navigation and the independent offline POS ledger are preserved.
+
+Verification: **132 files / 1,386 tests**, lint, cloud type checking and configured build pass. Live Supabase staging read-only privilege checks confirm browser roles lack recovery schema/RPC access while `service_role` can execute the observation RPC. Physical-device layout/offline tests, new authenticated Admin-to-Staff snapshot transfer, direct server denial/revocation, end-to-end recovery and owner license audit remain open in the [current acceptance record](11-V2-Phase-1-Cloud.md#current-acceptance-record-and-account-dropdown). No claim that Phase 1 is complete.
+
+Approved Phase 2 direction is recorded in [Branch requirements](12-V2-Phase-2-Branch-Requirements.md): one business/multiple branches, two roles, Admin all-branch supervision, Staff assigned-branch operations, global catalog separated from branch stock/movements, stable branch/actor attribution, server-enforced scoping and non-destructive legacy mapping. Ready for reviewed milestone design after Phase 1 acceptance; no branch ledger, new Staff operational permissions or snapshot-to-POS bridge is implemented. Keep PR #10 draft; no merge or production change.

@@ -1,0 +1,347 @@
+# Business V2 Phase 1 development runbook
+
+The isolated iPad demo baseline is `test/pesopilot-ipad-preview` at `ca3767d`. The repository default is `master`. The Phase 1 feature branch targets the demo branch for review. Its Vercel feature-branch deployment rule is disabled. Use a separate browser profile and synthetic stock for development.
+
+## Development architecture
+
+The existing `pesopilot-business` Dexie database owns the local POS transaction. Dexie Cloud handles OTP, session restoration, realm membership, and synchronization of a narrow stock projection in a separate Dexie database. A login or logout cannot erase the original ledger. The dedicated database has one application realm, `rlm-pesopilot-business-dev`, plus the provider's internal realms. An Admin chooses a local product in **Shared stock** to publish its ID, name, selling price in centavos and current quantity. Members can read that snapshot. POS sales still commit locally during an outage. The addon retries pending cloud changes on reconnect. Full stock and sale replication is a Phase 2 gate.
+
+Supabase Free project `zamlyidelptkxouikwcj` in Singapore stores recovery data. Business browsers receive no Supabase key and have no database privileges. There is no alternate writable POS backend. The original staging-only Auth tables were retired after confirming they were empty. The retired Staff Edge Function returns 410 behind JWT verification. New Supabase staging Auth users are blocked.
+
+| Operation | Admin | Staff |
+| --- | --- | --- |
+| View local catalog and stock, record POS sales at displayed prices | Yes | Yes |
+| View receipts | All local history | Own V2 local receipts |
+| Inventory, prices, audit, analytics, backup/export | Yes | No |
+| Publish shared stock, invite or remove Staff | Yes | No |
+| Read shared stock | Yes | Yes |
+| Write recovery data from browser | No | No |
+
+Dexie realm membership grants read access to shared objects. The Staff role has no realm mutation permissions. Keep costs, sales analytics and private receipts out of this realm's shared stock table. An Admin has realm management permission. Routes, menus, sale controls and cached membership implement UI restrictions. Dexie Cloud enforces permissions on synchronized changes. Offline membership can remain stale until reconnect. A browser operator with filesystem or developer-tools access can inspect or alter local IndexedDB. Use trusted devices and browser profiles. Account disabling removes realm membership on sync. Existing local receipts carry an account-derived request-key prefix. Legacy receipts have no reliable actor identity and stay in Admin history.
+
+## Owner setup on Windows
+
+The browser deliberately uses OTP with login-only intent. Dexie rejects an unknown application user before the client reads realm membership. The original bootstrap only imported realm data. A verified database owner or an imported member may therefore still receive “This user is not registered.” An incomplete realm import can independently deny Business access after authentication.
+
+In Dexie Cloud Manager confirm this development database uses the **Email** identity strategy, email OTP and restricted user admission. Stop if it uses another identity strategy. Do not switch the strategy on an established database. Run these commands with Node 24 in PowerShell from a checkout of the updated Phase 1 branch:
+
+```powershell
+$app = (Resolve-Path .\apps\pesopilot-web).Path
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+$ownerEmail = Read-Host 'Verified development owner email'
+& "$app\cloud\setup-first-admin.ps1" -Email $ownerEmail -OperatorDirectory $operator
+
+Push-Location $operator
+try {
+    npx.cmd --yes dexie-cloud@3.0.7 whitelist http://localhost:5173
+    if ($LASTEXITCODE -ne 0) { throw 'Development origin configuration failed.' }
+} finally { Pop-Location }
+
+Set-Location $app
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+The setup script checks the URL from the operator directory, exchanges the local CLI credential at the fixed development endpoint, and checks the exact application user, realm and stable membership ID before writing. It registers a missing user through the supported POST /users API with a development evaluation license. Existing users keep their license and evaluation time. An incompatible identity, inactive license or conflicting realm owner/member stops the procedure. A partial import generates a fresh temporary manifest for the missing records and uses the official CLI import. A successful rerun performs reads only against the user and realm data. The previous local JSON manifest is ignored. Registration and import are separate provider operations, so repeat the same command after a partial failure. Run one owner bootstrap at a time.
+
+Use the same command with `-VerifyOnly` for read-only diagnostics. It reports whether the application user already exists, the realm owner matches, and the Admin membership is accepted. A 401/403 requires checking the existing local operator authorization. Do not share the local key, access tokens or email codes. Under restricted admission, an invited Staff tester also needs an approved application user via the database manager. Assign only Staff membership for that person.
+
+Open `http://localhost:5173/business` in a separate development browser profile, enter the verified owner email and finish OTP in Dexie's dialog. Confirm **Users** is accessible. A successful bootstrap read-back proves the three provider records exist; it does not prove live OTP or server enforcement.
+
+Provider references: [Dexie application-user management](https://dexie.org/docs/cloud/rest-api#users-endpoint), [identity strategies](https://dexie.org/docs/cloud/authentication), [realm access control](https://dexie.org/docs/cloud/access-control).
+
+## Controlled development Admin transfer
+
+The approved primary application Admin is now `pesopilotbusiness@gmail.com`. The existing developer application user and accepted Admin membership remain available until the business account completes live verification. Use the dedicated transfer command after the original bootstrap has succeeded. The original first-Admin command deliberately continues to reject conflicting owners. After transfer, use the transfer verifier for the business identity.
+
+From the updated feature worktree in Windows PowerShell:
+
+```powershell
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+& "$app\cloud\transfer-admin.ps1" -Mode transfer -OperatorDirectory $operator
+& "$app\cloud\transfer-admin.ps1" -Mode verify -OperatorDirectory $operator
+```
+
+The operator script uses only the existing development CLI credential locally. It validates the original developer user and Admin membership, then registers the business application user with an evaluation license if missing. It preserves an existing active license. It creates the business account's accepted Admin membership under a separate stable ID, reads it back, and only then replaces the existing realm object with a copy whose owner is the business email. It checks realm metadata and both memberships afterward. Run one transfer at a time and pause other membership changes during execution. The REST API offers object replacement rather than a compare-and-swap transaction, so a concurrent operator must coordinate with this procedure.
+
+If a step fails, already completed steps persist. Re-run the same transfer command after addressing the diagnostic. A user or membership created before failure is reused, and an already transferred owner is verified without another write. Unexpected owners, conflicting memberships and inactive users require inspection. No automatic license reset or deletion occurs.
+
+To return application realm ownership to the developer account:
+
+```powershell
+& "$app\cloud\transfer-admin.ps1" -Mode rollback -OperatorDirectory $operator
+```
+
+Rollback retains both users, both Admin memberships, all stock snapshots and current realm metadata. It restores only the realm owner after confirming developer Admin access. A repeated rollback is safe. Run transfer again when ready to retry. Keep developer Admin access until business OTP, session restoration and authorized stock/user operations pass in a separate browser profile. Removing developer access is a later explicit action.
+
+This transfer changes the application's shared realm `owner` property. It does not transfer the Dexie Cloud database creator, API clients or management authorization. Neither stock object owners nor private realms are rewritten. Realm ownership gives access to manage realm objects, while the accepted membership supplies visibility. The Supabase recovery configuration is outside this operation.
+
+These local script read-backs cannot establish that OTP was completed. Live acceptance still requires the business email to sign in, reach Users, publish a synthetic snapshot, restore a session, and retain access after the developer signs out. Verify Staff rejection and revocation separately before closing Phase 1.
+
+## Hosted acceptance
+
+1. Sign in as Admin, create synthetic local stock and publish a shared snapshot. Wait for the sync status to reach in-sync.
+2. Sign in as invited Staff in a second profile. Confirm the snapshot arrives. Confirm Admin URLs redirect to POS and a direct Staff-authenticated Dexie update to the Admin-owned snapshot or membership table is rejected on sync. Reload both clients and verify the Admin-owned values remain.
+3. Disconnect the Staff device with a restored session and record a local sale. Check My sales, local stock deduction and prior set/solo semantics. Reconnect and check sync status. Phase 1 intentionally publishes only explicitly selected stock snapshots.
+4. Remove Staff while online. Confirm subsequent realm pulls lose shared access. Check logout and restoration after a browser restart in each profile.
+5. With a read-only service credential, run the one-record recovery check below against the synchronized synthetic stock ID. Check the staging observation and retry once.
+
+## Recovery and migration
+
+The versioned migration `supabase/migrations/202611210002_recovery.sql` creates a private recovery schema for categories, pools, products, sales, sale items, movements, events and catalog observations. Future marketplace order linkage belongs in a later migration. Only the server role can call the recovery RPC. Acknowledged duplicate observations are deduplicated by source ID and content. Observations are samples, not an ordered stock ledger. Repeated returns to a previous quantity cannot be replayed as distinct events.
+
+The server-side smoke script performs a fixed-origin Dexie REST read of a single catalog row. It validates the realm, ID and fields before calling the staging RPC. For local operator use, inject a short-lived Dexie token with ACCESS_DB and GLOBAL_READ on this dev database and a staging Supabase server key via a secret manager into the process environment. Run `node scripts/cloud/recover-stock.mjs <shared-product-id>` from the app. Environment names are `DEXIE_READ_TOKEN` and `SUPABASE_SERVER_KEY`. Neither belongs in Vite. Schedule no worker in Phase 1. For Phase 2, treat webhooks as asynchronous change notifications, reread trusted source data using server credentials, and design durable retries and reconciliation before enabling them.
+
+Before any future import, stop selling on the source device, export a complete Business backup from Settings, and retain the original file separately. Run `npm run migration:dry-run -- <backup.json>`. It opens a disposable PostgreSQL-compatible database, applies the migration, invokes the existing backup validator, inserts normalized rows in dependency order, and compares counts. Invalid duplicates, relationships or stock history abort the transaction. A failure requires correcting the source or selecting another verified backup, then starting a new dry run. No production import or destructive restore command is included.
+
+| IndexedDB source | Recovery mapping |
+| --- | --- |
+| products, inventoryPools | Stable IDs and pool references. Category comes from catalog metadata. Price remains integer centavos. Original product JSON retains family, size, scent and set type. |
+| sales | Original sale ID, unique request key, payment, confirmation time and total. Unknown actors remain unassigned. |
+| saleItems | Original numeric line ID, sale/product/pool links, quantity and full line snapshot including sale format. |
+| inventoryMovements, auditEvents | Numeric IDs, links and original payloads. |
+| productPhotos | Retained in the original backup. Excluded from Phase 1 cloud and reported separately. |
+
+Dexie Cloud does not provide a collision-free mapping for independent devices' existing auto-incremented line, event and movement IDs. Keep the v3 stores intact. Define stable device-qualified IDs, references, data ownership and legacy reconciliation before enabling ledger sync.
+
+## Quotas and operations
+
+Dexie Free includes three production seats, 10 concurrent clients and 100 MB total storage split into 25 MB object data and 75 MB blobs, with 1,000 blob writes/month. The Free pricing page lists 50 syncs per five minutes per user. Shared stock displays a UTF-8 payload estimate and flags 20 MB. It excludes server overhead and other tables. Check actual account usage in Dexie Cloud Manager. Supabase Free includes 500 MB database per project, 1 GB file storage and 5 GB egress. Free projects may pause after inactivity. Run `scripts/cloud/quota.sql` in the staging SQL Editor to measure the entire PostgreSQL database and flag 80% usage. The provider dashboards remain authoritative for billed usage.
+
+Sources: [Dexie pricing](https://dexie.org/pricing), [access control](https://dexie.org/docs/cloud/access-control), [CLI](https://dexie.org/docs/cloud/cli), [REST](https://dexie.org/docs/cloud/rest-api), [webhooks](https://dexie.org/docs/cloud/web-hooks), [Supabase pricing](https://supabase.com/pricing).
+
+## Verification and Phase 2 gates
+
+Hosted development checks confirmed Dexie OTP enabled, anonymous membership GET rejected with 401, and Supabase RPC privileges denied to both browser roles. Two service-role calls in a rolled-back staging transaction produced one observation. Staging used 11,703,987 bytes (2.34% of the 500 MB allowance). Automated tests cover routing, membership, addon configuration, Staff controls, the one-way HTTP contract, database privileges and migration of a nonempty set-format fixture alongside existing business regressions. The CLI dry run also completed for an empty backup. Live OTP, owner import, cross-device role enforcement, offline/reconnect behavior on a physical iPad and authenticated end-to-end recovery remain acceptance checks.
+
+Before Phase 2, complete hosted acceptance, reconcile a representative non-production backup and agree conflict rules for shared pools and sets. Define stable IDs and idempotency across devices, authorize actor attribution, restrict financial records, establish replication checkpoints, updates and tombstones, then test quota exhaustion, restore drills and recovery lag. Continue recording locally through provider outages. Promotion and production cutover require separate approval.
+
+## Initial authorization synchronization
+
+A fresh OTP session previously queried local realm and membership records immediately. A fresh cloud cache could therefore deny access before the addon downloaded those records. The account observer now waits for a completed pull with `purpose: 'pull', wait: true` on an online session before observing membership. Logout or an account switch cancels the old observer so a delayed pull cannot restore the previous account. Subsequent membership changes remain reactive.
+
+The gate displays Synchronizing Business access while waiting. Failed pulls show a synchronization error with Retry access check and Sign out. A completed pull with no visible authorized realm produces access denied. An inactive or expired license has its own explanation. A restored offline session can use its existing synchronized membership; a cache without membership requires a connection. No tables are cleared or upgraded.
+
+For live diagnosis, expand Access diagnostics on a blocked screen. Check userId against `pesopilotbusiness@gmail.com`, the actual license status, realm ID, visible realm owner, accepted membership count and role list. These values come from the current session and its local synchronized scope. They contain no tokens. Use the owner-side `transfer-admin.ps1 -Mode verify` to independently verify the application users, realm owner and both Admin memberships in the hosted database. A missing realm after a successful pull indicates a visibility or identity issue requiring owner inspection.
+
+The screenshot alone does not expose the authenticated user ID, license or server membership. Hosted business OTP was reported successful by the user, while authorization is still pending. After updating, reload the development app with its existing browser profile, sign in, wait for the initial pull, and confirm Admin navigation and an authorized synthetic stock operation. If it fails, report the Access diagnostics and whether it shows a sync error or access denied. Retain both Admin memberships throughout acceptance.
+
+## Sealed schema HTTP 422 repair
+
+The initial bootstrap returned early when the developer realm and accepted Admin membership existed. That path skipped the schema manifest entirely. Provisioning a missing application user fixed OTP but could leave catalogStock absent from a sealed database. The ownership transfer does not write schema. Waiting for the first pull cannot repair a rejected schema, and the addon's sync promise can remain pending while its worker retries.
+
+The pinned addon 4.4.16 declares four synchronized tables. The application matches its actual generated schema against this import contract in a regression test.
+
+| Synchronized table | Primary key declaration |
+| --- | --- |
+| members | @id |
+| roles | [realmId+name] |
+| realms | @realmId |
+| catalogStock | id |
+
+The addon also maintains local $jobs, $syncState, $baseRevs, $logins and mutation-log tables. They are outside the synchronized table set. Secondary indexes are local query details and do not explain an absent cloud table. The schema-only repair preserves existing hosted table declarations and refuses primary-key changes.
+
+Run from the updated Phase 1 worktree, using the existing operator directory:
+
+```powershell
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\\pesopilot-business-v2-dev'
+& "$app\\cloud\\update-schema.ps1" -OperatorDirectory $operator
+```
+
+This command checks the operator database URL, exports the hosted schema through the official CLI, prints the missing synchronized tables, and imports a schema-only additive manifest with sealed=true. It exports again and checks required keys, preservation of every previous declaration and sealing. Before/patch/after files have unique names and remain locally for inspection. No user, member, role definition or realm record appears in the import. A second run is safe. If interrupted, retain the exports and rerun. A primary-key conflict requires inspection before continuing. Do not import the old bootstrap to repair the transferred business Admin.
+
+After schema verification, stop the local development server and restart from the app directory:
+
+```powershell
+Set-Location $app
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+Use Retry access check or reload with the existing browser profile. A new HTTP 422 becomes an actionable sealed-schema error from the supported cloud.syncState observable. A silent pull is bounded at 30 seconds. Raw provider messages are not shown. A retry starts a new pull despite a stale error state. Authorization still requires a successful pull and legitimate realm visibility/membership.
+
+Live investigation reproduced the reported development /sync HTTP 422 using application/tson and an empty changes array. Individual schema probes also received the generic sealed-schema rejection, which does not name the missing table. An authenticated hosted schema export is still required to identify the exact hosted difference; catalogStock is the verified application table susceptible to the skipped-bootstrap path. No management credential is available in the agent runtime. Consequently this repository fix and representative sealed-schema tests do not establish successful hosted synchronization. Record the missing-table output and complete the actual business Admin login, dashboard, Users page and authorized synthetic snapshot operation after repair. Keep PR #10 and Phase 1 open until these pass.
+
+Reference: [Dexie Cloud sealed schema updates and primary keys](https://dexie.org/docs/cloud/cli).
+
+## Persistent 422 evidence collection
+
+The timed window.fetch observer was removed after it failed in the affected browser. The installed 4.4.16 modern and minified sources do not cache a fetch reference at module initialization. The observer watched only an exact URL in the page's window during a 60-second window. A different context, existing in-flight request or worker retry/backoff could evade it, but the affected browser's exact cause has not been established. A timeout was not evidence that no network request occurred.
+
+Use **Download schema metadata** on the blocked development access screen. This button reads the already-open cloud database's persisted $syncState schema in a read-only transaction and applies the addon's getSchema() primary-key projection from current table definitions. It preserves every entry, including previously persisted declarations and addon metadata. It opens no database and triggers no sync. The download excludes users, tokens, headers, revisions, changes and business records. It includes only schema definitions, local table/index metadata and booleans identifying service-worker configuration. No fetch wrapper, timer or console instrumentation is installed.
+
+The report explicitly labels this evidence persisted-getSchema-equivalent. It is a read-time snapshot of the source the addon uses, not a claim that an exact failed request was intercepted. The authenticated hosted comparison prints every entry, including those without markedForSync=true, and optional before/after schema exports can establish what the previous repair changed.
+
+### One owner-side procedure
+
+1. Update and launch the existing development worktree in PowerShell.
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+Set-Location $app
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+2. Reload the same affected Chrome profile, wait for the synchronization error and click **Download schema metadata**. The download is pesopilot-sync-schema.json. No manually timed Console command is required.
+
+3. Open a second PowerShell and run the read-only hosted comparison.
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+& "$app\cloud\diagnose-schema.ps1" -CapturePath (Join-Path $env:USERPROFILE 'Downloads\pesopilot-sync-schema.json') -OperatorDirectory $operator
+```
+
+The script invokes only the official authenticated schema export and a local comparison. It prints and saves schema-comparison-<guid>.json in the operator directory. Share that report. Optional -RepairBeforePath and -RepairAfterPath accept the exact exports retained by the previous repair and compare both to the current local schema.
+
+For exact wire confirmation, Chrome DevTools Network can inspect the existing failed /sync request directly. In Payload, expand only the schema property. Compare table names, primaryKey and generatedGlobalId with the report. If they differ, copy only the schema property's value into a separate JSON file. Do not copy the entire request, export a HAR, use Copy as fetch, or include headers. Local snapshots may differ from an older in-flight payload, so note a difference before any repair.
+
+No additional schema migration is justified until this evidence identifies the remaining entry. Missing local-only metadata is a diagnostic difference, not an instruction to import it. Keep the development-only diagnostic idle after downloading. Remove the diagnostic entry point after hosted repair and live acceptance. A successful authenticated /sync status and verified Admin dashboard/Users access are still required. Both Admin memberships, realm ownership, POS IndexedDB and Supabase recovery stay outside this diagnostic.
+
+## Confirmed sealed-schema transport compatibility
+
+The owner's authenticated comparison shows matching members, roles, realms and catalogStock primary keys, no extra synchronized declarations and no host-only tables. The $jobs, $syncState, $baseRevs and $logins entries are local metadata. Their absence on the host is expected. The comparator now lists them separately as local-only and does not classify them as cloud defects.
+
+Controlled empty-change requests against the actual development /sync endpoint established these results:
+
+| Transport schema variant | HTTP status |
+| --- | --- |
+| Empty schema, no changes | 200 |
+| Schema returned by the server | 200 |
+| Server schema with markedForSync=true added | 200 |
+| Server schema with idPrefix omitted | 200 |
+| Server schema with yProps omitted | 422 |
+| Four matching synchronized tables with explicit yProps=[] | 200 |
+| Those four tables plus $jobs={} | 422 |
+| Those four tables plus $jobs markedForSync=false, yProps=[] | 422 |
+
+The committed transport helper was also replayed against the endpoint with an empty-change unauthenticated request and returned 200. These probes confirm endpoint compatibility behavior, not authenticated Admin visibility. No private data, auth token or management credential was used in them. Public-scope responses were discarded after reading the status.
+
+Addon 4.4.16 serializes the whole schema map at syncWithServer, including local metadata entries. It omits yProps on fresh tables without collaborative fields. This endpoint rejects both unknown local metadata entries and omission of the empty yProps array even though primary keys match. The earlier imports could not repair this wire representation and are unnecessary for the provided matching hosted schema. Provider investigation should determine whether the server should ignore unmarked local tables and normalize absent yProps to an empty array.
+
+### Narrow client compatibility correction
+
+The addon is pinned to 4.4.16. An idempotent postinstall script patches only its development and production request-schema expressions. The injected helper projects entries with markedForSync=true and defaults absent yProps to []. It preserves existing nonempty yProps, primary keys and other synchronized flags. It changes neither the persisted metadata map nor the changes payload, records, membership, authentication or realm ownership. It adds no custom synchronization process. The patch refuses unexpected versions or distribution text. Remove it when a reviewed upstream fix provides equivalent behavior. Review it before changing schema-deletion or collaborative-field behavior in future phases.
+
+The development metadata download includes wireProjection to show this helper's output alongside the untouched persisted map. It remains explicitly labeled a snapshot rather than a captured authenticated request. The diagnostic button is development-only and can remain idle during verification.
+
+### Apply locally and perform authenticated acceptance
+
+Stop Vite. In PowerShell:
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+Set-Location '.\apps\pesopilot-web'
+npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw 'Installation or compatibility patch failed.' }
+$env:VITE_BUSINESS_DEXIE_URL = 'https://z5jxogiwe.dexie.cloud'
+npm.cmd run dev -- --force --port 5173 --strictPort
+```
+
+npm ci must print Verified Dexie 4.4.16 sealed-schema transport compatibility. The --force option refreshes Vite's dependency optimizer and leaves IndexedDB intact. No schema import or management operation is needed.
+
+Reload the existing Chrome profile and sign in as pesopilotbusiness@gmail.com. Confirm an authenticated /sync returns 200, then open the dashboard and Users page. Publish a synthetic stock snapshot and confirm an authenticated successful push and arrival in the shared stock view. Check the new network request rather than an earlier 422 retained in DevTools. Keep both Admin memberships. If this fails, inspect only the schema property of the new request and its status to verify the four-entry projection with explicit yProps arrays. Do not export headers or business payloads.
+
+Repository regression tests reproduce the two confirmed rejection shapes, verify schema projection without mutation and check both patched distribution artifacts. Clean npm ci applies the patch. Actual authenticated sync, Admin page access, synthetic stock and Staff enforcement remain owner-side acceptance gates. Phase 1 and PR #10 remain open.
+
+## Restricted Staff onboarding and license audit
+
+The user confirmed live business Admin dashboard access after the transport fix. A subsequent Staff invitation appeared in Users but OTP rejected the email as unregistered. The browser's invitation writes a members row; restricted login independently requires an application-user record. Accepted membership alone cannot establish registration or license status.
+
+Phase 1 uses an owner-operated registry step instead of adding a privileged provisioning service. The Users page labels the invitation separately from registration and says Owner verification required for Staff accounts. It cannot query the management-only user registry. The owner script verifies an existing, unambiguous Staff invitation before registering a missing user. It assigns an evaluation license only on initial creation, reads the user and membership back, and preserves existing licenses, membership and invitation acceptance. An inactive or exhausted evaluation is reported for review. A completed registration survives subsequent failure and is reused on retry.
+
+### Register the affected Staff account
+
+From PowerShell, update the existing worktree and run the operator script:
+
+```powershell
+Set-Location 'C:\Users\Kenneth\Projects\pesopilot-phase1-verify'
+git pull --ff-only origin feature/pesopilot-business-v2-phase-1-cloud-auth
+if ($LASTEXITCODE -ne 0) { throw 'Git update failed.' }
+$app = Join-Path (git rev-parse --show-toplevel) 'apps\pesopilot-web'
+$operator = Join-Path $env:USERPROFILE 'DexieCloud\pesopilot-business-v2-dev'
+
+& "$app\cloud\staff-accounts.ps1" -Mode audit -OperatorDirectory $operator
+& "$app\cloud\staff-accounts.ps1" -Mode provision -Email 'kennethcerrado18@gmail.com' -OperatorDirectory $operator
+& "$app\cloud\staff-accounts.ps1" -Mode audit -OperatorDirectory $operator
+```
+
+This uses the existing local management credential against the fixed development database. Registration sends no OTP and creates no new invitation. The Staff user requests an email code in the app. If the first read-back failed, repeat provision with the same email. If the invitation has been removed, resolve that membership in Users first. Do not rerun first-Admin bootstrap for a Staff account.
+
+For a new Staff account, first submit its invitation in Users, then run provision for that exact email, then let Staff sign in. The email input clears only when invitation synchronization succeeds and remains populated on failure. A failure after a local invitation was recorded can leave it pending sync. Check the membership list and connection before resubmitting.
+
+### Actual license verification
+
+Audit pages through the managed /users registry and prints counts by license type, total production-user records, and the type, evaluation days, expiry, deactivation and last-login fields for the two known Admin emails and affected Staff email. It performs no writes. A realm membership is not a production seat. Only a prod application-user license occupies a production seat; eval and demo accounts do not. The Free plan includes three production seats. The report labels production records rather than claiming the provider's allocated-seat billing state. Confirm current seat allocation in Dexie Cloud Manager. No authenticated registry credential is available in the agent runtime, so actual current counts remain owner-verified through this command.
+
+Removing a realm membership does not change its application user's license. Do not delete application users to manage seats because private data can be deleted with them. This implementation does not promote, downgrade, reset or extend existing evaluations.
+
+References: [managed application users](https://dexie.org/docs/cloud/rest-api#users-endpoint), [license types and seats](https://dexie.org/pricing).
+
+### Optional developer membership removal
+
+The default Staff workflow leaves both Admin memberships untouched. Once the business account completes OTP, opens Users and successfully writes a synthetic shared-stock snapshot, the owner can apply the separately requested developer membership removal:
+
+```powershell
+& "$app\cloud\staff-accounts.ps1" -Mode remove-developer -BusinessAdminVerified -OperatorDirectory $operator
+```
+
+This verifies business realm ownership, an active business application user and accepted business Admin membership before deleting only mmb-pesopilot-dev-admin. It checks that the developer membership is absent afterward and can be retried safely. It retains kennethcerrado23@gmail.com's application user, license, private data and database management access. Consequently this removes the developer from the application's Admin list but does not release a prod license. Current transfer/rollback scripts expect the original developer membership; after intentional removal, use the business Admin and operator management access for any later access restoration. The agent has not executed removal.
+
+### Staff live acceptance
+
+1. Restart the updated development app and sign in as the business Admin. Confirm its account email and Sign out control are readable at desktop and narrow widths.
+2. After provision succeeds, open a separate browser profile and sign in as kennethcerrado18@gmail.com. Enter OTP privately and accept the business invitation if offered. An already accepted invitation need not be accepted again.
+3. Confirm POS, My sales and Shared stock are accessible. Record a synthetic local Cash sale on a test device/profile with test stock and confirm its own receipt. Existing local sales/audit data must remain available to Admin.
+4. Navigate directly to /business/users, /business/inventory, /business/audit and /business/history as Staff. Confirm redirect to POS. Check Admin-owned shared stock is readable and a Staff direct cloud write to a dedicated synthetic test snapshot is rejected by Dexie, not merely hidden by UI.
+5. As Admin, click Remove Staff, cancel once and verify access remains, then confirm removal. Wait for successful synchronization and verify Staff loses realm access on a fresh pull. Offline cached access and local records are not remotely erased. User-management success is shown only after push completes.
+6. Review the owner audit and provider seat allocation, then decide whether to execute the optional developer-membership removal. Recheck business Admin access afterward.
+
+Live Staff OTP, direct server write rejection, revocation and actual current licensing cannot be claimed from repository tests. Keep Phase 1 and PR #10 open until those checks are recorded.
+
+## Current acceptance record and account dropdown
+
+2026-11-22 (Asia/Manila). This section updates earlier pending-status entries above. The [owner's latest review](https://github.com/KennethVier/vier-portfolio-labs/pull/10#issuecomment-7073020171) confirms successful Staff and business Admin login. That is owner-reported evidence; it does not certify all synchronization, permission or recovery cases.
+
+The signed-in account is now a compact upper-right disclosure beside the brand, with email, role and Sign out inside. It supports native keyboard activation, Escape with focus return, outside click/focus dismissal and 44px controls. Navigation occupies the next row and scrolls horizontally when needed. The existing role-based navigation remains intact. Physical iPad/narrow-screen visual acceptance is still required.
+
+Shared stock is labeled a development reference preview and explicitly identifies the device inventory ledger as POS's quantity source. Supported Dexie sync phases distinguish pending, pushing, pulling, completed, offline and error states. Saving a snapshot still reports local save separately from cloud completion. This UI does not wire snapshots into POS.
+
+| Acceptance check | Current evidence / remaining gate |
+| --- | --- |
+| Admin and Staff OTP/login | Owner reports both successful; preserve working auth and both Admin accounts |
+| Business Admin dashboard and Users | Owner previously confirmed dashboard/Users access; no new authenticated browser execution in this review |
+| Offline POS, sales, audit, backup and compatibility | Automated regression suite passes; physical-device offline/reload and existing-data checks remain |
+| Account UI and snapshot state reporting | Component regressions pass; verify touch, keyboard, narrow/mobile and iPad presentation live |
+| Admin publish → Staff snapshot visibility | Pending a newly identified synthetic snapshot and successful authenticated push/pull on separate profiles/devices; do not infer completion from an older snapshot |
+| Staff access enforcement | Automated role/route tests pass; live direct server write rejection and post-removal revocation remain pending |
+| Supabase staging boundary | Live read-only privilege check: `anon` and `authenticated` lack recovery schema usage; `authenticated` cannot execute the observation RPC; `service_role` can. No data/schema changed |
+| Recovery path | Automated schema/RPC tests cover the minimal path; authenticated end-to-end recovery/replication check remains pending |
+| License and seat audit | Owner-only registry/Manager check above remains pending; memberships do not establish license type or allocated seats |
+
+Executed from `apps/pesopilot-web`: `npm test -- --maxWorkers=4` passed **132 files / 1,386 tests**; `npm run lint`, `npm run typecheck` and `VITE_BUSINESS_DEXIE_URL=https://z5jxogiwe.dexie.cloud npm run build` passed. Coverage includes the account disclosure interactions, snapshot phase messages and Staff read-only preview, plus existing authorization, transport, provisioning, local POS/migration, sales, audit and backup tests. These results do not replace authenticated provider/device acceptance. No browser reset, account mutation, hosted schema change or production deployment was performed for this UI update.
+
+### Finish live Phase 1 acceptance
+
+1. Update the existing development worktree using the PowerShell procedure above, run `npm.cmd ci`, then restart Vite with the documented development URL. Keep the existing browser data.
+2. On Admin and Staff profiles, check Account at desktop, phone width and physical iPad: email/role and Sign out appear only when expanded; keyboard Tab/Enter/Escape and outside dismissal work; navigation and controls remain usable without overlap.
+3. As Admin, publish a clearly named synthetic development snapshot. Record the successful authenticated push and completed state. Pull as Staff and verify the same snapshot, quantity and successful request. Confirm Staff POS quantity is unchanged by the reference snapshot.
+4. Complete the Staff live acceptance steps above: own local sale/receipt, direct Admin-route denial, provider-enforced write rejection, cancel/confirm removal and fresh-pull revocation. Use an intentionally disposable Staff invitation only when ready to revoke; re-provision through the documented workflow if continued testing is needed. Retain both Admin accounts.
+5. On the test device, verify existing local sales/audit/backup, offline sale/reload and reconnect. Record the server-only recovery path result and owner license audit. Share only sanitized pass/fail evidence; no OTP, keys, auth headers or business payloads.
+
+Live acceptance is blocked here by lack of an authenticated owner device/session, owner management credentials and physical iPad. Credentials should remain with the owner. Phase 1 and Draft PR #10 stay open. The [approved Phase 2 branch requirements](12-V2-Phase-2-Branch-Requirements.md) are ready for review and milestone design; their operational ledger, branch authorization and new role workspaces are not implemented in this PR.

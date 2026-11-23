@@ -15,6 +15,15 @@ vi.mock('@/features/dashboard/pages/DashboardPage.jsx', () => ({
   DashboardPage: () => <p>Personal dashboard test content</p>,
 }))
 
+// Exercise the same navigation scenarios with a restored Admin session.
+vi.mock('./cloud/client.ts', () => ({
+  db: { cloud: {} },
+  watchAccount: (_db, update) => {
+    update({profile:{id:'navigation-admin',role:'admin',enabled:true}})
+    return () => {}
+  }
+}))
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 let root
 let container
