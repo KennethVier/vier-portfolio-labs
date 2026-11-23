@@ -39,7 +39,7 @@ Both were open, draft, and reported mergeable at the original review. The revisi
 | Final exact-head repository regression, lint, types, build and dependency audit | **PASS** | PR #10 had 132 files / 1,386 passing tests. PR #12 had 150 files / 1,460. Both passed lint, cloud type checking and the development-configured production build on Node 24. On Nov 23 PR #12 initially had two failures under default parallelism (Phase 0 parity and Settings import). Both passed together in isolation (23 tests), and the complete rerun with two workers passed (1,460 tests). The identical app lockfiles had zero findings in the npm audit report. |
 | Credential boundaries in source and compiled client | **PASS** | The staging recovery script uses server-only environment variables and fixed origins. No recovery credential identifiers or Supabase secret-key prefix found in either compiled browser bundle. Hosted Staff policy still requires direct provider verification. |
 | PR stack and separation of scope | **PASS** | Both GitHub base references match Git ancestry. Phase 1 approval covers PR #10. Alignment and release approval are separate. |
-| Automatic GitHub Business checks attached to these PR heads | **PASS** | Added both existing PR base branches and the typecheck step. GitHub started Business validation automatically for [PR #10](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/45155305719) and [PR #12](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/45155318418). This row verifies triggering. See the run links for job conclusions. |
+| Automatic GitHub Business checks attached to these PR heads | **PASS** | Added both existing PR base branches and the typecheck step. GitHub started Business validation automatically for [PR #10](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/45155305719) and [PR #12](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/45155318418). Both jobs completed successfully, as did the [matrix-only follow-up](https://github.com/KennethVier/vier-portfolio-labs/actions/runs/45155570245). |
 
 ## Additional PR #12 alignment gates
 
@@ -64,6 +64,26 @@ Both were open, draft, and reported mergeable at the original review. The revisi
 | Cold offline browser launch and iPad app-shell behavior | **NOT VERIFIED** | Device QA verifies suspended tabs, reload and cold launch independently of data persistence. Engineering review found no application-shell service worker registration or offline cache strategy in these heads. A durable IndexedDB sale can still exist when the browser cannot reload the page. |
 | Operational branch-envelope offsite replication, distributed restore and reconciliation drill | **FAIL** | Engineering and recovery owner. The current Phase 1 staging contract handles a single reference-stock observation. A branch export exists, and the operational branch restore and offsite-replication extension are not implemented. This does not block Phase 1's narrower contract on its own. |
 | Production credentials, migration/cutover, rollback, licensing and release sign-off | **NOT VERIFIED** | Business owner and release operator. Separate approval and rehearsal are required. |
+
+## Controlled drill status, 2026-11-23
+
+The owner authorized one disposable Staff identity and synthetic records in the existing development and staging services. The approval reserves hosted deletions and irreversible operations for separate approval. The current Remove Staff action calls `members.bulkDelete` for the selected Staff member and matching branch assignments. Obtain separate approval limited to the disposable identity’s membership rows before using that action. Do not delete the identity or test records as cleanup.
+
+Four focused suites passed, 25 tests total. They covered the recovery client, Staff provisioning, Users removal confirmation, and the branch repository. A fresh read-only staging query returned zero recovery observations. The operator environment has no Dexie read token, Supabase server key or Dexie CLI development management registration. No authenticated negative authorization test, Staff provisioning, membership deletion, or recovery write was performed in this pass. The owner-approved physical device evidence and the 37-criterion totals are unchanged.
+
+### Private recovery execution
+
+Use one synthetic development `catalogStock` row in the business realm. Record its ID, quantity and price privately. In the existing private operator process with the scoped Dexie read token and the staging server key already injected, run from `apps/pesopilot-web`:
+
+```powershell
+$snapshotId = Read-Host 'Synthetic Dexie snapshot ID'
+node .\scripts\cloud\recover-stock.mjs $snapshotId
+if ($LASTEXITCODE -ne 0) { throw 'First staging copy failed' }
+node .\scripts\cloud\recover-stock.mjs $snapshotId
+if ($LASTEXITCODE -ne 0) { throw 'Second staging copy failed' }
+```
+
+Confirm the matching staging count is zero before the writes, one after each copy, and that the final quantity and price match the Dexie source. Share only outcome, counts and whether the fields matched. Keep credentials, raw responses and real customer data private.
 
 ## Owner evidence procedure
 
