@@ -86,15 +86,15 @@ From the alignment checkout's app directory, with the existing private Dexie dev
 ```powershell
 $preflight = (Resolve-Path '.\cloud\staff-preflight.mjs').Path
 $email = Read-Host 'Disposable Staff email'
-$branchId = Read-Host 'Expected development branch ID, not its label'
+$branchName = Read-Host 'Exact development branch name shown in the app'
 Push-Location "$env:USERPROFILE\DexieCloud\pesopilot-business-v2-dev"
 try {
-    node $preflight $email $branchId
+    node $preflight $email $branchName --branch-name
     if ($LASTEXITCODE -ne 0) { throw 'Preflight stopped. Review private output.' }
 } finally { Pop-Location }
 ```
 
-The script uses read-only management scopes against the fixed development URL. It enumerates matches by user ID or lowercased email, including unaccepted assignments. A ready report expects exactly one accepted business Staff membership and one accepted Staff assignment in the specified branch. Extra, pending, rejected, conflicting and privileged matches block readiness. Compare exact rows privately with the disposable identity created by the owner. Share only the outcome and counts. Three synthetic cases passed locally: expected pair, additional pending branch assignment, and unrelated Admin match.
+The script uses read-only management scopes against the fixed development URL. It enumerates matches by user ID or lowercased email, including unaccepted assignments. A ready report expects exactly one accepted business Staff membership and one accepted Staff assignment in the specified branch. The business membership must have no direct grants, and the branch assignment must have exactly `{ add: ['branchTransactions'] }`. Extra, pending, rejected, conflicting and privileged matches block readiness. Branch lookup requires one exact name match, ignoring case, and reports the resolved ID. Compare exact rows privately with the disposable identity created by the owner. Share only the outcome and counts. The focused preflight and Staff account suites passed (17 tests), including app-shaped memberships, unexpected grants, pending assignments, and missing or ambiguous branch names. Live verification remains pending.
 
 For the provider test, use the disposable Staff session on the development preview. Use a synthetic ledger record in the assigned branch as the positive read control and have Admin independently verify a synthetic ledger record exists in Branch B. After a confirmed Staff sync, record whether Staff receives that Branch B ledger record. Shared branch-directory visibility is outside this check. In the approved provider test session, test that Staff can persist an allowed synthetic event in the assigned branch and that the provider rejects unauthorized changes to synthetic Admin-owned catalog or membership targets and unauthorized Branch B writes. Record the actual provider decision and independent Admin read-back of unchanged targets. A UI redirect, client validation message or network error leaves this check NOT VERIFIED. The management session used for preflight is unsuitable for the Staff permission test.
 
