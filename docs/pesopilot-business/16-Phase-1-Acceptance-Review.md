@@ -67,9 +67,17 @@ Both were open, draft, and reported mergeable at the original review. The revisi
 
 ## Controlled drill status, 2026-11-23
 
-The owner authorized one disposable Staff identity and synthetic records in the existing development and staging services. The approval reserves hosted deletions and irreversible operations for separate approval. The current Remove Staff action calls `members.bulkDelete` for the selected Staff member and matching branch assignments. Obtain separate approval limited to the disposable identity’s membership rows before using that action. Do not delete the identity or test records as cleanup.
+The owner authorized one disposable Staff identity and synthetic records in the existing development and staging services. The approval reserves hosted deletions and irreversible operations for separate approval. The current Remove Staff action calls `members.bulkDelete` for the selected Staff member and matching branch assignments. Separate approval has now been granted for the verified development business and branch membership rows of one newly created disposable Staff identity, subject to the preflight below. Do not delete the identity or test records as cleanup.
 
 Four focused suites passed, 25 tests total. They covered the recovery client, Staff provisioning, Users removal confirmation, and the branch repository. A fresh read-only staging query returned zero recovery observations. The operator environment has no Dexie read token, Supabase server key or Dexie CLI development management registration. No authenticated negative authorization test, Staff provisioning, membership deletion, or recovery write was performed in this pass. The owner-approved physical device evidence and the 37-criterion totals are unchanged.
+
+### Staff revocation preflight
+
+Authorization received on 2026-11-23. Execution is **NOT VERIFIED**. This environment has no authenticated owner operator session or local Dexie development operator configuration. No identity was provisioned or verified and no hosted action was taken. There are no verified membership IDs, assigned branch or affected-record counts to report.
+
+In the private operator session, refresh the development membership view. Record and report the disposable identity, its exact business and branch membership IDs, the assigned branch and total row count before proceeding. Verify that each matched row belongs to the new test identity and that no matching row is an existing Admin or active Staff membership. The removal code matches Staff branch assignments by user ID or normalized email, so review the entire matching set, including pending assignments. Stop if any row or branch is unexpected.
+
+First complete the provider permission and branch-isolation checks using synthetic records. Cancel Remove Staff and confirm the account still has access after a pull. Recheck the removal set, then confirm the supported Remove Staff action only if the set matches the private report. Record successful sync, loss of access after fresh pull and denial from a new authenticated session. Verify the disposable user record, license and unrelated memberships are still present. Keep exact identity details in the private evidence and publish only sanitized results.
 
 ### Private recovery execution
 
