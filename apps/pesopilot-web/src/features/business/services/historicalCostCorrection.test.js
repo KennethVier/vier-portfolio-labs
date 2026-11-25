@@ -100,12 +100,12 @@ describe('historical cost corrections', () => {
     const { item } = await fixture()
     const before = await businessDb.auditEvents.count()
     for (const correctedCost of ['', '-1', '1.234', '50']) {
-      await expect(businessService.correctHistoricalCost({
+      await expect(async () => businessService.correctHistoricalCost({
         saleItemId: item.id, expectedCostCentavos: 5000,
         correctedCost, reason: 'Price entry correction',
       })).rejects.toThrow()
     }
-    await expect(businessService.correctHistoricalCost({
+    await expect(async () => businessService.correctHistoricalCost({
       saleItemId: item.id, expectedCostCentavos: 5000,
       correctedCost: '60', reason: 'x',
     })).rejects.toThrow('reason')
