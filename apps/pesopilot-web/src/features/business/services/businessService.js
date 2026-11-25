@@ -28,6 +28,11 @@ export function parsePriceCentavos(input) {
   return centavos
 }
 
+function parseUnitCost(value) {
+  const cost = String(value).trim()
+  return cost === '' ? undefined : /^0(?:\.0{1,2})?$/.test(cost) ? 0 : parsePriceCentavos(cost)
+}
+
 export const businessService = {
   listProducts: () => businessRepository.listProducts(),
   listSales: () => businessRepository.listSales(),
@@ -66,9 +71,14 @@ export const businessService = {
   },
 
   setUnitCost(productId, value) {
-    const cost = String(value).trim()
-    const unitCostCentavos = cost === '' ? undefined : /^0(?:\.0{1,2})?$/.test(cost) ? 0 : parsePriceCentavos(cost)
-    return businessRepository.setUnitCost(productId, unitCostCentavos)
+    return businessRepository.setUnitCost(productId, parseUnitCost(value))
+  },
+
+  updatePricing(productId, expected, { price, cost }) {
+    const amounts = { unitPriceCentavos: parsePriceCentavos(price) }
+    // A Set uses the actual costs of the physical pieces selected at sale time.
+    if (cost !== undefined) amounts.unitCostCentavos = parseUnitCost(cost)
+    return businessRepository.updatePricing(productId, expected, amounts)
   },
 
   adjustStock({ productId, quantity, direction, reason }) {

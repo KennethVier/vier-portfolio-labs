@@ -124,7 +124,7 @@ export function RecordSaleModal({ family, photo, products, receiveStock, onRecei
             onChange={event => sale.setMix({ ...sale.mix, [item.id]: event.target.value })} />)}
         </fieldset>}
         <Input label="Agreed price per piece (₱) · Optional tawad" inputMode="decimal" value={sale.agreedPrice}
-          placeholder={sale.isSet ? '150.00' : (sale.product.unitPriceCentavos / 100).toFixed(2)}
+          placeholder={(sale.product.unitPriceCentavos / 100).toFixed(2)}
           onChange={event => sale.setAgreedPrice(event.target.value)} />
         <fieldset><legend className="mb-2 text-sm font-semibold">Method of Payment</legend><div className="payment-options grid grid-cols-2 gap-2">
           {BUSINESS_PAYMENT_METHODS.filter(method => method !== 'coop').map((method) => <Button key={method} aria-pressed={sale.paymentMethod === method} variant={sale.paymentMethod === method ? 'primary' : 'secondary'} onClick={() => sale.setPaymentMethod(method)}>{BUSINESS_PAYMENT_LABELS[method]}</Button>)}

@@ -71,6 +71,7 @@ describe('actual workspace routes and first-use selection', () => {
     await settle(() => expect(container.textContent).toContain('Record Sales'))
     for (const [label, path, content] of [
       ['Inventory', '/business/inventory', 'Correct stock'],
+      ['Pricing', '/business/pricing', 'Find products'],
       ['Daily Audit', '/business/audit', 'Audit date (Philippines)'],
       ['Sales Analytics', '/business/history', 'No completed sales yet'],
       ['Settings / Backup', '/business/settings', 'Download Business Backup'],

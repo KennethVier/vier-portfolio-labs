@@ -4,6 +4,7 @@ import { ProductPhotoManager } from '../components/ProductPhotoManager.jsx'
 import { BusinessShell } from '../components/BusinessShell.jsx'
 import { WorkspaceStatus } from '../components/WorkspaceStatus.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
+import { ProductPricing } from '../components/ProductPricing.jsx'
 import { InventoryPanel } from '../components/InventoryPanel.jsx'
 import { SalesHistory } from '../components/SalesHistory.jsx'
 import { BusinessBackupPanel } from '../components/BusinessBackupPanel.jsx'
@@ -14,6 +15,7 @@ import { useWorkspaceRoute } from '../hooks/useWorkspaceRoute.js'
 
 const headings = {
   inventory: ['Inventory', 'Manage products, receive stock, and record adjustments.'],
+  pricing: ['Pricing', 'Manage selling prices and purchase costs on this device.'],
   history: ['Sales Analytics', 'Track revenue and best sellers.'],
   settings: ['Settings / Backup', 'Keep your Business records safe on this device.'],
 }
@@ -26,7 +28,7 @@ export function BusinessAdminPage({ screen }) {
     <div className="business-page-heading"><h1 className="font-heading text-3xl font-semibold">{headings[screen][0]}</h1><p className="mt-2 text-content-muted">{headings[screen][1]}</p></div>
     <WorkspaceStatus workspace={workspace} />
     {screen === 'inventory' ? <>
-      <InventoryPanel products={workspace.products} adjustStock={workspace.adjustStock} setUnitCost={workspace.setUnitCost} disabled={disabled}>
+      <InventoryPanel products={workspace.products} adjustStock={workspace.adjustStock} disabled={disabled}>
         <DailyStock products={workspace.products} receiveStock={workspace.receiveStock} disabled={disabled} />
       </InventoryPanel>
       <ProductForm products={workspace.products} addProduct={workspace.addProduct} disabled={disabled} />
@@ -34,6 +36,7 @@ export function BusinessAdminPage({ screen }) {
       <ProductPhotoManager products={workspace.products} photos={workspace.photos} uploadPhoto={workspace.uploadPhoto} removePhoto={workspace.removePhoto} disabled={disabled} />
       </details>
     </> : null}
+    {screen === 'pricing' ? <ProductPricing disabled={disabled} products={workspace.products} updatePricing={workspace.updatePricing} /> : null}
     {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} /> : null}
     {screen === 'settings' ? <>
       <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. There is no authentication or device sync.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>

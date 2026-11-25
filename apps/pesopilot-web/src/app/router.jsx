@@ -135,7 +135,7 @@ export const router = createBrowserRouter([
     path: '/business/audit',
     element: wrapLazyRoute(<BusinessAuditPage />, 'Loading daily audit'),
   },
-  ...['inventory', 'history', 'settings'].map((screen) => ({
+  ...['inventory', 'pricing', 'history', 'settings'].map((screen) => ({
     path: `/business/${screen}`,
     element: wrapLazyRoute(<BusinessAdminPage screen={screen} />, `Loading business ${screen}`),
   })),

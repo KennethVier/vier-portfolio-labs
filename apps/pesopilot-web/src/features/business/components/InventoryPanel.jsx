@@ -5,10 +5,7 @@ import { Input } from '@/components/ui/Input.jsx'
 import { useBusinessAction } from '../hooks/useBusinessAction.js'
 import { selectClass } from './businessPresentation.js'
 
-export function InventoryPanel({ products, adjustStock, setUnitCost, disabled, children }) {
-  const [costProductId, setCostProductId] = useState('')
-  const [cost, setCost] = useState('')
-  const costAction = useBusinessAction()
+export function InventoryPanel({ products, adjustStock, disabled, children }) {
   const [productId, setProductId] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [direction, setDirection] = useState('add')
@@ -36,29 +33,6 @@ export function InventoryPanel({ products, adjustStock, setUnitCost, disabled, c
         </div>)}
       </div>
       {children}
-      <details className="mt-5"><summary className="cursor-pointer font-semibold">Set unit costs</summary>
-        <p className="my-2 text-sm">Enter what you paid per piece. This applies to future sales. Leave blank if unknown.</p>
-        <form onSubmit={event => {
-          event.preventDefault()
-          costAction.run(() => setUnitCost(costProductId, cost), 'Unit cost saved.')
-        }}>
-          <fieldset disabled={disabled || costAction.saving} className="grid items-end gap-3 sm:grid-cols-3">
-            <label>Product<select required className={selectClass} value={costProductId} onChange={event => {
-              const id = event.target.value
-              const cents = products.find(item => item.id === id)?.unitCostCentavos
-              setCostProductId(id)
-              setCost(cents === undefined ? '' : (cents / 100).toFixed(2))
-            }}>
-              <option value="">Select product</option>
-              {products.filter(item => item.catalog?.type !== 'Set').map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select></label>
-            <Input label="Purchase cost per piece (₱)" inputMode="decimal" value={cost} onChange={event => setCost(event.target.value)} />
-            <Button type="submit" disabled={!costProductId}>Save unit cost</Button>
-          </fieldset>
-        </form>
-        {costAction.error && <p role="alert">{costAction.error}</p>}
-        {costAction.notice && <p role="status">{costAction.notice}</p>}
-      </details>
       <details className="mt-5"><summary className="cursor-pointer font-semibold">Correct stock</summary>
       <form onSubmit={submit}>
         <fieldset disabled={disabled || action.saving || products.length === 0} className="grid items-end gap-3 sm:grid-cols-2">

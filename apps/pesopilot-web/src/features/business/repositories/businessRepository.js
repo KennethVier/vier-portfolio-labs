@@ -102,6 +102,18 @@ export function createBusinessRepository(businessDb) {
     return product
   },
 
+  updatePricing(productId, expected, amounts) {
+    return businessDb.transaction('rw', businessDb.products, async () => {
+      const product = await businessDb.products.get(productId)
+      if (!product) throw new Error('Product not found')
+      if (product.unitPriceCentavos !== expected.unitPriceCentavos ||
+          product.unitCostCentavos !== expected.unitCostCentavos) {
+        throw new Error('Pricing changed. Cancel and reopen to edit the latest amounts.')
+      }
+      await businessDb.products.update(productId, amounts)
+    })
+  },
+
   async setUnitCost(productId, unitCostCentavos) {
     const count = await businessDb.products.update(productId, { unitCostCentavos })
     if (count !== 1) throw new Error('Product not found')

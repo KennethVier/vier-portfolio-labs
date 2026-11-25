@@ -6,6 +6,7 @@ import '../business.css'
 
 const links = [
   ['/business', 'POS', 'pos'], ['/business/inventory', 'Inventory', 'inventory'],
+  ['/business/pricing', 'Pricing', 'inventory'],
   ['/business/audit', 'Daily Audit', 'audit'], ['/business/history', 'Sales Analytics', 'history'],
   ['/business/settings', 'Settings / Backup', 'settings'],
 ]

@@ -8,7 +8,7 @@ import { PRODUCT_CATEGORIES, PRODUCT_SCENTS, SHAWL_OPTIONS, PILLOW_OPTIONS,
   findDuplicateProduct, availableSharedStock } from '../constants/productCatalog.js'
 import { productCreationService } from '../services/productCreationService.js'
 
-const emptySelection = { category: '', shawl: '', scent: '', size: '', name: '', price: '' }
+const emptySelection = { category: '', shawl: '', scent: '', size: '', name: '', price: undefined }
 
 export function ProductForm({ addProduct, disabled, products = [] }) {
   const [selection, setSelection] = useState(emptySelection)
@@ -17,16 +17,18 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
   const action = useBusinessAction()
   const { category } = selection
   const hasScent = category && !['Shawls', 'Magic Pillows', 'Other product'].includes(category)
-  const preview = productCreationService.preview({
+  const details = {
     ...selection, type: hasScent && category !== 'Hallelujah Inhaler' ? 'Solo' : undefined,
-  })
+  }
+  const suggested = productCreationService.preview({ ...details, price: undefined })
+  const preview = selection.price === undefined ? suggested : productCreationService.preview(details)
   const duplicate = preview.input ? findDuplicateProduct(products, preview.input) : null
   const pools = availableSharedStock(products.filter(product => product.catalog?.type !== 'Set'))
   const sharedStock = pools.find((product) => product.inventoryPoolId === poolId)
   const staleSelection = Boolean(poolId && !sharedStock)
 
   function select(key, value) {
-    setSelection((current) => ({ ...current, [key]: value }))
+    setSelection((current) => ({ ...current, ...(key === 'price' ? {} : { price: undefined }), [key]: value }))
   }
 
   async function submit(event) {
@@ -81,8 +83,9 @@ export function ProductForm({ addProduct, disabled, products = [] }) {
             </label> : null}
             {category === 'Other product' ? <>
               <Input label="Custom product name" required maxLength={120} value={selection.name} onChange={(event) => select('name', event.target.value)} />
-              <Input label="Custom unit price (PHP)" required inputMode="decimal" placeholder="0.00" value={selection.price} onChange={(event) => select('price', event.target.value)} />
-            </> : <Input label="Unit price (PHP)" readOnly value={preview.input?.pricePesos ?? ''} placeholder="Select your item first" />}
+              <Input label="Custom unit price (PHP)" required inputMode="decimal" placeholder="0.00" value={selection.price ?? ''} onChange={(event) => select('price', event.target.value)} />
+            </> : <Input label="Unit price (PHP)" required inputMode="decimal" value={selection.price ?? suggested.input?.pricePesos ?? ''}
+              onChange={(event) => select('price', event.target.value)} placeholder="Select your item first" />}
             {!poolId ? <Input label="Opening Stock Quantity" required type="number" inputMode="numeric" min="0" step="1" value={openingStock} onChange={(event) => setOpeningStock(event.target.value)} /> : null}
           </div>
           {!poolId ? <p className="text-sm text-content-muted">Enter the quantity you have now. Stock is kept separately for this item. Add later deliveries using stock adjustment below.</p> : null}

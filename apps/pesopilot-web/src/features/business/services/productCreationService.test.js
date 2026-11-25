@@ -30,7 +30,7 @@ const cases = [
 ]
 
 it.each(cases)('derives exact details for %j and saves only on explicit request with zero opening stock', async (selection, name, price, catalog) => {
-  const preview = productCreationService.preview({ ...selection, name: 'ignored', price: '1', sampleKey: 'ignored' })
+  const preview = productCreationService.preview({ ...selection, name: 'ignored', sampleKey: 'ignored' })
   expect(preview).toEqual({ input: { name, pricePesos: price.toFixed(2), catalog }, unitPriceCentavos: price * 100 })
   expect(catalogMetadataSchema.safeParse(preview.input.catalog).success).toBe(true)
   expect(await businessDb.products.count()).toBe(0)
@@ -38,6 +38,11 @@ it.each(cases)('derives exact details for %j and saves only on explicit request 
   expect(saved).toMatchObject({ name, unitPriceCentavos: price * 100, catalog, stockQuantity: 0 })
   expect(saved.inventoryPoolId).toBe(saved.id)
   expect(await businessDb.inventoryMovements.count()).toBe(0)
+})
+
+it.each(cases)('accepts a custom PHP amount for standard selection %j', (selection) => {
+  expect(productCreationService.preview({ ...selection, price: '127.50' }).unitPriceCentavos).toBe(12750)
+  expect(productCreationService.preview({ ...selection, price: '127.505' }).error).toBeTruthy()
 })
 
 it.each([

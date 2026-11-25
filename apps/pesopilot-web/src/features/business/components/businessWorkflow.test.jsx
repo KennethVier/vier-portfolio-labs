@@ -59,7 +59,7 @@ async function choose(name) {
   await act(async () => container.querySelector(`[aria-label="Record sale: ${name}"]`).click())
 }
 async function render(screen = 'pos') {
-  await act(async () => { root.render(<MemoryRouter initialEntries={[screen === 'pos' ? '/business' : `/business/${screen}`]}><Routes><Route path='/business' element={<BusinessDashboardPage />} />{['inventory', 'history', 'settings'].map((screen) => <Route key={screen} path={`/business/${screen}`} element={<BusinessAdminPage screen={screen} />} />)}</Routes></MemoryRouter>) })
+  await act(async () => { root.render(<MemoryRouter initialEntries={[screen === 'pos' ? '/business' : `/business/${screen}`]}><Routes><Route path='/business' element={<BusinessDashboardPage />} />{['inventory', 'pricing', 'history', 'settings'].map((screen) => <Route key={screen} path={`/business/${screen}`} element={<BusinessAdminPage screen={screen} />} />)}</Routes></MemoryRouter>) })
   await waitFor(() => expect(container.textContent).not.toContain('Loading local business data'))
 }
 
@@ -144,6 +144,30 @@ describe('real Business UI and IndexedDB workflow', () => {
     expect(container.textContent).toContain('No matching products')
     await click('Clear filters')
     expect(container.querySelectorAll('[data-product-card]')).toHaveLength(7)
+  })
+
+  it('edits a saved Set price on Pricing and keeps its existing physical stock pool', async () => {
+    await populateCatalog()
+    await render('pricing')
+    await change('Find products', 'Hallelujah Rub Eucalyptus Set')
+    await click('Edit pricing')
+    await change('Selling price per piece', '0')
+    await click('Save')
+    expect(container.querySelector('[role="alert"]').textContent).toMatch(/greater than zero/)
+    await click('Cancel')
+    expect(container.textContent).toContain('150.00')
+    await click('Edit pricing')
+    await change('Selling price per piece', '175.50')
+    const before = await businessDb.inventoryPools.toArray()
+    await click('Save')
+    expect(container.textContent).toContain('Pricing saved on this device.')
+    expect(await businessDb.inventoryPools.toArray()).toEqual(before)
+    const set = (await businessService.listProducts()).find(item => item.catalog?.family === 'Hallelujah Rub' && item.catalog?.type === 'Set')
+    expect(set.unitPriceCentavos).toBe(17550)
+    await go('POS')
+    await choose('Hallelujah Rub')
+    await click('Set')
+    expect(container.textContent).toContain('877.50')
   })
 
   it('records a discounted five-piece set with a scent substitution', async () => {

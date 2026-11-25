@@ -38,6 +38,7 @@ export const productCreationService = {
         }
         productName = [category, scent, catalog.type].filter(Boolean).join(' · ')
       }
+      if (category !== 'Other product' && price !== undefined) unitPriceCentavos = parsePriceCentavos(price)
       return { unitPriceCentavos, input: { name: productName, pricePesos: (unitPriceCentavos / 100).toFixed(2),
         ...(catalog ? { catalog: catalogMetadataSchema.parse(catalog) } : {}) } }
     } catch (error) { return { error: error.message } }

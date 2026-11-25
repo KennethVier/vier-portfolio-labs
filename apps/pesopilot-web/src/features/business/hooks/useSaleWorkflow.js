@@ -22,7 +22,7 @@ export function useSaleWorkflow(products, completeSale, initialProductId = '', o
   let validation = ''
   try {
     const count = Number(quantity)
-    const unitPriceCentavos = agreedPrice.trim() ? parsePriceCentavos(agreedPrice) : isSet ? 15000 : product?.unitPriceCentavos
+    const unitPriceCentavos = agreedPrice.trim() ? parsePriceCentavos(agreedPrice) : product?.unitPriceCentavos
     if (isSet) {
       if (!Number.isSafeInteger(count) || count < 1 || pieceQuantity !== count * 5) throw new Error('Choose exactly five pieces per set.')
       const remaining = new Map()
