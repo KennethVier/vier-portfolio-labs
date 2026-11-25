@@ -1,5 +1,5 @@
 import { inferredSet, soldAs } from './salePresentation.js'
-import { summarizeProfit } from './salesProfit.js'
+import { applyHistoricalCostCorrections, summarizeProfit } from './salesProfit.js'
 import { BUSINESS_PAYMENT_METHODS } from '../constants/businessConstants.js'
 import { businessRepository } from '../repositories/businessRepository.js'
 
@@ -100,7 +100,7 @@ function validateHistoryThrough(end, { pools, products, sales, items, movements 
 }
 
 // Pure projection of recorded history. No current price/stock is used to recalculate sales.
-export function buildDailyAudit(date, { products, pools, sales, items, movements }) {
+export function buildDailyAudit(date, { products, pools, sales, items, movements, events = [] }) {
   const { start, end } = dateRange(date)
   // Opening stock depends on earlier history too. Refuse corrupt prior-day
   // movements instead of rolling their deltas into a plausible opening balance.
@@ -221,7 +221,7 @@ export function buildDailyAudit(date, { products, pools, sales, items, movements
     }
     group.rows.sort((left, right) => left.name.localeCompare(right.name) || (left.priceCentavos ?? 0) - (right.priceCentavos ?? 0))
   }
-  return { date, summary, profit: summarizeProfit(items.filter(item => daySales.has(item.saleId))), transactionCount: daySales.size, groups: [...groups.values()].sort((left, right) => left.name.localeCompare(right.name)) }
+  return { date, summary, profit: summarizeProfit(applyHistoricalCostCorrections(items.filter(item => daySales.has(item.saleId)), events)), transactionCount: daySales.size, groups: [...groups.values()].sort((left, right) => left.name.localeCompare(right.name)) }
 }
 
 export const dailyAuditService = {
@@ -241,6 +241,7 @@ export const dailyAuditService = {
       movements: source.movements.filter((row) => !archived.has(row.productId)),
       sales: source.sales.filter((row) => !archivedSales.has(row.id)),
       items: source.items.filter((row) => !archivedSales.has(row.saleId)),
+      events: source.events,
     })
     return { ...report, legacy: true }
   },

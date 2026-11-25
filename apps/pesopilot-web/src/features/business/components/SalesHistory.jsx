@@ -1,5 +1,5 @@
 import { inferredSet, productScentName, soldAs } from '../services/salePresentation.js'
-import { summarizeProfit } from '../services/salesProfit.js'
+import { applyHistoricalCostCorrections, summarizeProfit } from '../services/salesProfit.js'
 import { downloadCsv } from './downloadCsv.js'
 import { useState } from 'react'
 import { getManilaDate } from '../services/dailyAuditService.js'
@@ -27,7 +27,7 @@ function shiftDay(day, days) {
 const months = Array.from({ length: 12 }, (_, index) =>
   new Intl.DateTimeFormat('en-PH', { month: 'long', timeZone: 'UTC' }).format(Date.UTC(2020, index, 1)))
 
-export function SalesHistory({ sales: history }) {
+export function SalesHistory({ sales: history, corrections = [] }) {
   const [period, setPeriod] = useState('All time')
   const today = getManilaDate()
   const [date, setDate] = useState(today)
@@ -39,8 +39,11 @@ export function SalesHistory({ sales: history }) {
   const weekOptions = new Set([periodKey(today, 'Week'), week, ...datesOfSales.map(day => periodKey(day, 'Week'))])
   for (let offset = -4; offset <= 4; offset += 1) weekOptions.add(shiftDay(week, offset * 7))
   const selected = { Day: date, Week: week, Month: month, Year: year }[period]
-  const sales = period === 'All time' ? history : history.filter(sale =>
+  const matching = period === 'All time' ? history : history.filter(sale =>
     periodKey(getManilaDate(new Date(sale.confirmedAt)), period) === selected)
+  const sales = matching.map(sale => ({
+    ...sale, items: applyHistoricalCostCorrections(sale.items, corrections),
+  }))
   const profit = summarizeProfit(sales.flatMap(sale => sale.items))
   const units = sales.reduce((sum, sale) => sum + sale.items.reduce((count, item) => count + item.quantity, 0), 0)
   const byProduct = new Map()
@@ -93,11 +96,11 @@ export function SalesHistory({ sales: history }) {
           })}
         </div>
         <button className="my-4 text-primary underline" onClick={() => downloadCsv('sales-' + period.toLowerCase().replace(' ', '-'), [
-          ['Sale ID', 'Confirmed at', 'Product', 'Sold as', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Purchase cost per piece (PHP)', 'Gross profit (PHP)', 'Payment'],
+          ['Sale ID', 'Confirmed at', 'Product', 'Sold as', 'Quantity', 'Unit price (PHP)', 'Line total (PHP)', 'Effective purchase cost per piece (PHP)', 'Gross profit (PHP)', 'Payment', 'Cost corrected'],
           ...sales.flatMap(sale => sale.items.map(item => [sale.id, sale.confirmedAt, productScentName(item.productNameSnapshot), soldAs(item, inferredSets.has(sale.id)),
             item.quantity, item.unitPriceCentavos / 100, item.lineTotalCentavos / 100,
             item.unitCostCentavos === undefined ? '' : item.unitCostCentavos / 100,
-            item.unitCostCentavos === undefined ? '' : (item.lineTotalCentavos - item.quantity * item.unitCostCentavos) / 100, BUSINESS_PAYMENT_LABELS[sale.paymentMethod]])),
+            item.unitCostCentavos === undefined ? '' : (item.lineTotalCentavos - item.quantity * item.unitCostCentavos) / 100, BUSINESS_PAYMENT_LABELS[sale.paymentMethod], item.costCorrected ? 'Yes' : 'No'])),
         ])}>Export sales CSV</button>
       </>}
       {sales.length === 0 ? <p className="text-sm text-content-muted">{history.length ? 'No completed sales for this period.' : 'No completed sales yet. Review and confirm a sale to record it here.'}</p> : (

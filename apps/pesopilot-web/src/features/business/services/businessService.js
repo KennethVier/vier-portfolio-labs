@@ -70,6 +70,23 @@ export const businessService = {
     return businessRepository.addProduct(product)
   },
 
+  correctHistoricalCost({ saleItemId, expectedCostCentavos, correctedCost, reason }) {
+    if (!Number.isSafeInteger(saleItemId) || saleItemId <= 0) throw new Error('Select a recorded sale item.')
+    if (expectedCostCentavos !== null &&
+        (!Number.isSafeInteger(expectedCostCentavos) || expectedCostCentavos < 0)) {
+      throw new Error('Reload the historical cost before correcting it.')
+    }
+    const correctedCostCentavos = parseUnitCost(correctedCost)
+    if (correctedCostCentavos === undefined) throw new Error('Enter the corrected purchase cost.')
+    const cleanReason = typeof reason === 'string' ? reason.trim() : ''
+    if (cleanReason.length < 5 || cleanReason.length > 240) {
+      throw new Error('Enter a correction reason (5–240 characters).')
+    }
+    return businessRepository.correctHistoricalCost({
+      saleItemId, expectedCostCentavos, correctedCostCentavos, reason: cleanReason,
+    })
+  },
+
   setUnitCost(productId, value) {
     return businessRepository.setUnitCost(productId, parseUnitCost(value))
   },

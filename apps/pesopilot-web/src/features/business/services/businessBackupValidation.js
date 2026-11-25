@@ -36,10 +36,15 @@ const eventItem = z.object({ id: positive.optional(), ...itemFields,
 const eventMovement = z.object({ id: positive.optional(), ...movementFields,
   inventoryPoolId: text.optional(), poolNameSnapshot: name.optional(),
 }).strict()
+const correctionPayload = z.object({
+  saleItemId: positive, productId: text, productNameSnapshot: name, quantity: positive,
+  previousUnitCostCentavos: natural.nullable(), correctedUnitCostCentavos: natural,
+  reason: text,
+}).strict()
 const event = z.object({
   id: positive, saleId: text.nullish(),
-  type: z.enum(['opening_stock', 'stock_received', 'stock_adjustment', 'sale_completed']), occurredAt: time,
-  payload: z.union([eventMovement, z.object({ paymentMethod: payment, totalCentavos: positive,
+  type: z.enum(['opening_stock', 'stock_received', 'stock_adjustment', 'sale_completed', 'cost_correction']), occurredAt: time,
+  payload: z.union([eventMovement, correctionPayload, z.object({ paymentMethod: payment, totalCentavos: positive,
     items: z.array(eventItem).min(1), movements: z.array(eventMovement).min(1),
   }).strict()]),
 }).strict()
@@ -192,7 +197,10 @@ export function validateBusinessBackup(input) {
   for (const pool of inventoryPools) requireIntegrity((balances.get(pool.id) ?? 0) === pool.stockQuantity)
 
   const saleEvents = new Set()
-  for (const row of auditEvents) {
+  const correctedCosts = new Map()
+  const saleEventIds = new Map()
+  const lineById = new Map(saleItems.map(line => [line.id, line]))
+  for (const row of [...auditEvents].sort((a, b) => a.id - b.id)) {
     if (row.type === 'sale_completed') {
       const sale = saleMap.get(row.saleId)
       const payload = row.payload
@@ -209,6 +217,22 @@ export function validateBusinessBackup(input) {
           sameSnapshot(eventLines.get(line.productId), line) && sameSnapshot(eventMoves.get(line.productId), savedMovement))
       }
       saleEvents.add(sale.id)
+      saleEventIds.set(sale.id, row.id)
+    } else if (row.type === 'cost_correction') {
+      const payload = row.payload
+      const line = lineById.get(payload.saleItemId)
+      requireIntegrity(line && line.saleId === row.saleId && saleMap.has(row.saleId) &&
+        saleEventIds.has(row.saleId) && row.id > saleEventIds.get(row.saleId) &&
+        payload.productId === line.productId &&
+        payload.productNameSnapshot === line.productNameSnapshot &&
+        payload.quantity === line.quantity &&
+        Number.isSafeInteger(payload.correctedUnitCostCentavos * line.quantity))
+      const previousCost = correctedCosts.has(line.id)
+        ? correctedCosts.get(line.id)
+        : (line.unitCostCentavos ?? null)
+      requireIntegrity(payload.previousUnitCostCentavos === previousCost &&
+        payload.correctedUnitCostCentavos !== previousCost)
+      correctedCosts.set(line.id, payload.correctedUnitCostCentavos)
     } else {
       requireIntegrity(row.saleId == null && row.payload.type === row.type && row.payload.occurredAt === row.occurredAt)
       const match = [...nonSaleMovements.values()].find((saved) => sameSnapshot(row.payload, saved))

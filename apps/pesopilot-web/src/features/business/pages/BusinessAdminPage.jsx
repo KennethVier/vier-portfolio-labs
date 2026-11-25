@@ -37,7 +37,7 @@ export function BusinessAdminPage({ screen }) {
       </details>
     </> : null}
     {screen === 'pricing' ? <ProductPricing disabled={disabled} products={workspace.products} updatePricing={workspace.updatePricing} /> : null}
-    {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} /> : null}
+    {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} corrections={workspace.events} /> : null}
     {screen === 'settings' ? <>
       <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. There is no authentication or device sync.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>
       <BusinessBackupPanel refresh={workspace.refresh} disabled={workspace.isLoading} />

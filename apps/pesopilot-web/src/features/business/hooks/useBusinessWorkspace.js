@@ -70,6 +70,7 @@ export function useBusinessWorkspace() {
     addProduct: (value) => mutate(() => businessService.addProduct(value)),
     receiveStock: (entries) => mutate(() => receiveDailyStock(entries)),
     updatePricing: (id, expected, amounts) => mutate(() => businessService.updatePricing(id, expected, amounts)),
+    correctHistoricalCost: (value) => mutate(() => businessService.correctHistoricalCost(value)),
     adjustStock: (value) => mutate(() => businessService.adjustStock(value)),
     completeSale: (value) => mutate(() => businessService.completeSale(value)),
   }

@@ -16,12 +16,13 @@ export function createBusinessRepository(businessDb) {
 
   readDailyAuditSource() {
     return businessDb.transaction('r', [businessDb.products, businessDb.inventoryPools,
-      businessDb.sales, businessDb.saleItems, businessDb.inventoryMovements], async () => ({
+      businessDb.sales, businessDb.saleItems, businessDb.inventoryMovements, businessDb.auditEvents], async () => ({
       products: await businessDb.products.toArray(),
       pools: await businessDb.inventoryPools.toArray(),
       sales: await businessDb.sales.toArray(),
       items: await businessDb.saleItems.toArray(),
       movements: await businessDb.inventoryMovements.toArray(),
+      events: await businessDb.auditEvents.toArray(),
     }))
   },
 
@@ -111,6 +112,42 @@ export function createBusinessRepository(businessDb) {
         throw new Error('Pricing changed. Cancel and reopen to edit the latest amounts.')
       }
       await businessDb.products.update(productId, amounts)
+    })
+  },
+
+  correctHistoricalCost({ saleItemId, expectedCostCentavos, correctedCostCentavos, reason }) {
+    return businessDb.transaction('rw', businessDb.saleItems, businessDb.sales, businessDb.auditEvents, async () => {
+      const line = await businessDb.saleItems.get(saleItemId)
+      if (!line || !(await businessDb.sales.get(line.saleId))) {
+        throw new Error('Sale item not found. Reload the transaction list.')
+      }
+      const corrections = (await businessDb.auditEvents.where('saleId').equals(line.saleId).toArray())
+        .filter(event => event.type === 'cost_correction' && event.payload.saleItemId === saleItemId)
+        .sort((a, b) => a.id - b.id)
+      const current = corrections.length
+        ? corrections.at(-1).payload.correctedUnitCostCentavos
+        : (line.unitCostCentavos ?? null)
+      if (current !== expectedCostCentavos) {
+        throw new Error('This historical cost changed. Reopen and review the latest value.')
+      }
+      if (current === correctedCostCentavos) throw new Error('Choose a different corrected cost.')
+      if (!Number.isSafeInteger(line.quantity * correctedCostCentavos)) {
+        throw new Error('Corrected cost exceeds the supported limit.')
+      }
+      await businessDb.auditEvents.add({
+        saleId: line.saleId,
+        type: 'cost_correction',
+        occurredAt: new Date().toISOString(),
+        payload: {
+          saleItemId: line.id,
+          productId: line.productId,
+          productNameSnapshot: line.productNameSnapshot,
+          quantity: line.quantity,
+          previousUnitCostCentavos: current,
+          correctedUnitCostCentavos: correctedCostCentavos,
+          reason,
+        },
+      })
     })
   },
 
