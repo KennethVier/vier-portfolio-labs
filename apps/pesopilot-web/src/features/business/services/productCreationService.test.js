@@ -30,8 +30,11 @@ const cases = [
 ]
 
 it.each(cases)('derives exact details for %j and saves only on explicit request with zero opening stock', async (selection, name, price, catalog) => {
-  const preview = productCreationService.preview({ ...selection, name: 'ignored', price: '1', sampleKey: 'ignored' })
+  const preview = productCreationService.preview({ ...selection, name: 'ignored', sampleKey: 'ignored' })
   expect(preview).toEqual({ input: { name, pricePesos: price.toFixed(2), catalog }, unitPriceCentavos: price * 100 })
+  const override = productCreationService.preview({ ...selection, price: '123.45' })
+  expect(override).toEqual({ input: { name, pricePesos: '123.45', catalog }, unitPriceCentavos: 12345 })
+  expect(productCreationService.preview({ ...selection, price: '' }).error).toBeTruthy()
   expect(catalogMetadataSchema.safeParse(preview.input.catalog).success).toBe(true)
   expect(await businessDb.products.count()).toBe(0)
   const saved = await businessService.addProduct(preview.input)

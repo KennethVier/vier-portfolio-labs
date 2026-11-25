@@ -5,6 +5,7 @@ const admin = [
   ['/business/stock', 'Inventory Overview', 'inventory'],
   ['/business/audit', 'Daily Audits', 'audit'],
   ['/business/products', 'Products', 'inventory'],
+  ['/business/pricing', 'Pricing', 'inventory'],
   ['/business/branches', 'Branches and Users', 'settings'],
   ['/business/settings', 'Settings / Backup', 'settings'],
 ]

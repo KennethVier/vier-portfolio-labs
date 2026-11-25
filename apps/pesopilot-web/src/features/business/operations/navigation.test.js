@@ -14,6 +14,7 @@ it('gives Admin oversight without POS and Staff only branch operations', () => {
     const profile = { enabled: true, role }
     expect(permitsBusinessPath(profile, '/business')).toBe(true)
     expect(permitsBusinessPath(profile, '/business/pos')).toBe(false)
+    expect(permitsBusinessPath(profile, '/business/pricing')).toBe(role === 'admin')
     expect(permitsBusinessPath(profile, '/business/products')).toBe(
       role === 'admin',
     )

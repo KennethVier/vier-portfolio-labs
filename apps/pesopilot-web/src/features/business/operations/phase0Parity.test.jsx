@@ -360,34 +360,22 @@ it('exposes Admin photo and cost/price management without a POS interface', asyn
   expect(container.textContent).toContain('Product photos')
   expect(container.querySelector('.photo-editor img')).not.toBeNull()
   expect(container.textContent).not.toContain('Record Sales')
-  const editor = [
-    ...container.querySelectorAll('[aria-label="Saved products"] li'),
-  ].find((row) => row.textContent.includes('Hallelujah Rub · Lavender · Solo'))
+  expect(container.textContent).not.toContain('Edit pricing')
+  await render('pricing', 'admin')
+  const editor = [...container.querySelectorAll('article')].find((row) =>
+    row.textContent.includes('Hallelujah Rub · Lavender · Solo'),
+  )
+  await act(async () => editor.querySelector('button').click())
   await change('Purchase cost per piece', '85', editor)
-  const costForm = editor.querySelectorAll('form')[1]
-  await act(async () =>
-    costForm.dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    ),
-  )
-  await wait(() =>
-    expect(container.textContent).toContain('Purchase cost saved'),
-  )
-  expect((await db.branchCatalog.get('Lavender-Solo')).unitCostCentavos).toBe(
-    8500,
-  )
   await change('Selling price per piece', '205', editor)
-  await act(async () =>
-    editor
-      .querySelector('form')
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
-  )
-  await wait(() =>
-    expect(container.textContent).toContain('Catalog price saved'),
-  )
-  expect((await db.branchCatalog.get('Lavender-Solo')).unitPriceCentavos).toBe(
-    20500,
-  )
+  await act(async () => editor.querySelector('form').dispatchEvent(
+    new Event('submit', { bubbles: true, cancelable: true }),
+  ))
+  await wait(() => expect(container.textContent).toContain('Pricing saved on this device'))
+  expect(await db.branchCatalog.get('Lavender-Solo')).toMatchObject({
+    unitCostCentavos: 8500,
+    unitPriceCentavos: 20500,
+  })
   expect(await db.branchTransactions.count()).toBe(0)
 })
 it('lets Admin add an explicit Set price option without creating or receiving physical Set stock', async () => {
@@ -396,6 +384,7 @@ it('lets Admin add an explicit Set price option without creating or receiving ph
   await change('Product Category', 'Hallelujah Rub')
   await change('Scent', 'Lavender')
   await change('Solo / Set', 'Set')
+  await change('Unit price (PHP)', '123.45')
   await click('Save Product', true)
   await wait(() =>
     expect(container.textContent).toContain('Product saved on this device'),
@@ -405,7 +394,7 @@ it('lets Admin add an explicit Set price option without creating or receiving ph
   )
   expect(matches).toHaveLength(1)
   expect(matches[0]).toMatchObject({
-    unitPriceCentavos: 15000,
+    unitPriceCentavos: 12345,
     inventoryPoolId: 'Lavender-Solo',
     stockQuantity: 0,
   })

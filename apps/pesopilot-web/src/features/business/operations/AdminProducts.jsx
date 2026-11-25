@@ -1,11 +1,9 @@
-import { Input } from '@/components/ui/Input.jsx'
 import { standardCatalogDefinitions } from './standardCatalog.js'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
 import { peso } from '../components/businessPresentation.js'
-import { CatalogProductEditor } from './CatalogProductEditor.jsx'
 import { ProductPhotoManager } from '../components/ProductPhotoManager.jsx'
 import { businessRepository } from '../repositories/businessRepository.js'
 import { db } from '../cloud/client.ts'
@@ -20,7 +18,6 @@ export function AdminProducts({ work, busy, run, online }) {
   const [reviewing, setReviewing] = useState(false)
   const [failure, setFailure] = useState('')
   const [notice, setNotice] = useState('')
-  const [search, setSearch] = useState('')
   async function review(kind = 'device') {
     if (lock.current) return
     lock.current = true
@@ -332,45 +329,9 @@ export function AdminProducts({ work, busy, run, online }) {
         removePhoto={work.removePhoto}
         disabled={busy || reviewing}
       />
-      {work.catalog.length > 0 && (
-        <section aria-label="Saved products" className="space-y-3">
-          <h2 className="font-heading text-xl">
-            Product list · {work.catalog.length}
-          </h2>
-          <Input
-            label="Find saved products"
-            type="search"
-            placeholder="Product, scent, size, Solo or Set"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <ul className="space-y-2">
-            {work.catalog
-              .filter((product) =>
-                [
-                  product.name,
-                  product.catalog?.scent,
-                  product.catalog?.type,
-                  product.catalog?.size,
-                ]
-                  .filter(Boolean)
-                  .join(' ')
-                  .toLowerCase()
-                  .includes(search.trim().toLowerCase()),
-              )
-              .map((product) => (
-                <li key={product.id}>
-                  <CatalogProductEditor
-                    product={product}
-                    work={work}
-                    busy={busy}
-                    run={run}
-                  />
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
+      <Link className="font-semibold text-primary underline" to="/business/pricing">
+        Manage selling prices and purchase costs
+      </Link>
     </div>
   )
 }

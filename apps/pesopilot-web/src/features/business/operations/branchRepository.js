@@ -280,6 +280,32 @@ export function createBranchRepository(database, { userId, branchId }) {
     if (write && admin)
       throw new Error('Branch operations belong to assigned Staff.')
   }
+  function writePricing(productId, changes, expected) {
+    return database.transaction('rw', tables, async () => {
+      await requireAdmin()
+      const { unitPriceCentavos, unitCostCentavos } = changes
+      if ('unitPriceCentavos' in changes &&
+          (!integer(unitPriceCentavos) || unitPriceCentavos < 1))
+        throw new Error('Invalid price.')
+      if ('unitCostCentavos' in changes && unitCostCentavos !== undefined &&
+          (!integer(unitCostCentavos) || unitCostCentavos < 0))
+        throw new Error('Invalid purchase cost.')
+      const product = await database.branchCatalog.get(productId)
+      if (product?.realmId !== BUSINESS_REALM) throw new Error('Product not found.')
+      if (expected && (product.unitPriceCentavos !== expected.unitPriceCentavos ||
+          product.unitCostCentavos !== expected.unitCostCentavos))
+        throw new Error('Pricing changed since you started editing. Cancel and reopen to see the latest amounts.')
+      if (expected && product.catalog?.type === 'Set' &&
+          'unitCostCentavos' in changes && unitCostCentavos !== product.unitCostCentavos)
+        throw new Error('Set costs come from the physical pieces.')
+      const patch = {}
+      if ('unitPriceCentavos' in changes && unitPriceCentavos !== product.unitPriceCentavos)
+        patch.unitPriceCentavos = unitPriceCentavos
+      if ('unitCostCentavos' in changes && unitCostCentavos !== product.unitCostCentavos)
+        patch.unitCostCentavos = unitCostCentavos
+      if (Object.keys(patch).length) await database.branchCatalog.update(productId, patch)
+    })
+  }
   async function source() {
     await requireBranch()
     return projectBranch(
@@ -408,33 +434,12 @@ export function createBranchRepository(database, { userId, branchId }) {
         return product
       })
     },
-    async setPrice(productId, priceCentavos) {
-      return database.transaction('rw', tables, async () => {
-        await requireAdmin()
-        if (!integer(priceCentavos) || priceCentavos < 1)
-          throw new Error('Invalid price.')
-        const product = await database.branchCatalog.get(productId)
-        if (product?.realmId !== BUSINESS_REALM)
-          throw new Error('Product not found.')
-        await database.branchCatalog.update(productId, {
-          unitPriceCentavos: priceCentavos,
-        })
-      })
-    },
-    async setUnitCost(productId, unitCostCentavos) {
-      return database.transaction('rw', tables, async () => {
-        await requireAdmin()
-        if (
-          unitCostCentavos !== undefined &&
-          (!integer(unitCostCentavos) || unitCostCentavos < 0)
-        )
-          throw new Error('Invalid purchase cost.')
-        const product = await database.branchCatalog.get(productId)
-        if (product?.realmId !== BUSINESS_REALM)
-          throw new Error('Product not found.')
-        await database.branchCatalog.update(productId, { unitCostCentavos })
-      })
-    },
+    setPrice: (productId, unitPriceCentavos) =>
+      writePricing(productId, { unitPriceCentavos }),
+    setUnitCost: (productId, unitCostCentavos) =>
+      writePricing(productId, { unitCostCentavos }),
+    updatePricing: (productId, expected, changes) =>
+      writePricing(productId, changes, expected),
     receiveStock(entries, { reason, requestKey, occurredAt }) {
       if (
         !Array.isArray(entries) ||

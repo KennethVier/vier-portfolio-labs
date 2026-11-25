@@ -163,7 +163,7 @@ export const router = createBrowserRouter([
         ? [{ path: 'maintenance', element: wrapLazyRoute(<OwnerMaintenancePage />, 'Loading owner maintenance') }]
         : []),
       { path: 'legacy-audit', element: wrapLazyRoute(<LegacyBusinessAuditPage />, 'Loading legacy device audit') },
-      ...['stock', 'sales', 'analytics', 'audit', 'products', 'branches'].map(
+      ...['stock', 'sales', 'analytics', 'audit', 'products', 'pricing', 'branches'].map(
         (screen) => ({
           path: screen,
           element: wrapLazyRoute(

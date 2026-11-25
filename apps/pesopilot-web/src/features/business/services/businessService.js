@@ -31,6 +31,13 @@ export function parsePriceCentavos(input) {
   return centavos
 }
 
+export function parseCostCentavos(value) {
+  const cost = String(value).trim()
+  if (cost === '') return undefined
+  if (/^0(?:\.0{1,2})?$/.test(cost)) return 0
+  return parsePriceCentavos(cost)
+}
+
 export function createBusinessService(businessRepository) {
   return {
     listProducts: () => businessRepository.listProducts(),
@@ -91,14 +98,7 @@ export function createBusinessService(businessRepository) {
     },
 
     setUnitCost(productId, value) {
-      const cost = String(value).trim()
-      const unitCostCentavos =
-        cost === ''
-          ? undefined
-          : /^0(?:\.0{1,2})?$/.test(cost)
-            ? 0
-            : parsePriceCentavos(cost)
-      return businessRepository.setUnitCost(productId, unitCostCentavos)
+      return businessRepository.setUnitCost(productId, parseCostCentavos(value))
     },
 
     adjustStock({ productId, quantity, direction, reason, requestKey }) {

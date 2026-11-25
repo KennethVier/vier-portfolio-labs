@@ -254,3 +254,16 @@ it('prepares and explicitly publishes the original standard choices idempotently
   expect((await db.branchCatalog.get('lavender')).unitPriceCentavos).toBe(12000)
   expect(await db.branchTransactions.count()).toBe(0)
 })
+
+it('rejects stale and Staff pricing edits without changing stock or the saved amounts', async () => {
+  const expected = { unitPriceCentavos: 9900, unitCostCentavos: undefined }
+  const changes = { unitPriceCentavos: 12345, unitCostCentavos: 4500 }
+  const staffRepo = createBranchRepository(db, { userId: 'employee', branchId: 'A' })
+  await expect(staffRepo.updatePricing('lavender', expected, changes)).rejects.toThrow(/Admin/)
+  await admin.updatePricing('lavender', expected, changes)
+  await expect(admin.updatePricing('lavender', expected, {
+    unitPriceCentavos: 11100, unitCostCentavos: 3000,
+  })).rejects.toThrow(/Pricing changed/)
+  expect(await db.branchCatalog.get('lavender')).toMatchObject(changes)
+  expect(await db.branchTransactions.count()).toBe(0)
+})

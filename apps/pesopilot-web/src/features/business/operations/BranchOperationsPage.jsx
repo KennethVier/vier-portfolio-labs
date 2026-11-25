@@ -3,6 +3,7 @@ import { WorkspaceReadDiagnostics } from './WorkspaceReadDiagnostics.jsx'
 import { BusinessSetup } from './BusinessSetup.jsx'
 import { BusinessSyncStatus } from './BusinessSyncStatus.jsx'
 import { useBusinessOnline } from './useBusinessOnline.js'
+import { ProductPricing } from './ProductPricing.jsx'
 import { AdminProducts } from './AdminProducts.jsx'
 import { StaffInventory } from './StaffInventory.jsx'
 import { BranchBackupPanel } from './BranchBackupPanel.jsx'
@@ -128,6 +129,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
     analytics: admin ? 'Analytics' : 'Branch Analytics',
     audit: admin ? 'Daily Audits' : 'Daily Audit',
     products: 'Products',
+    pricing: 'Product Pricing',
     branches: 'Branches and Users',
   }
   return (
@@ -159,7 +161,7 @@ export function BranchOperationsPage({ screen = 'home' }) {
           after your access is confirmed.
         </p>
       ) : null}
-      {admin && !['home', 'products', 'branches', 'stock'].includes(screen) && (
+      {admin && !['home', 'products', 'pricing', 'branches', 'stock'].includes(screen) && (
         <label>
           Branch
           <select
@@ -329,6 +331,9 @@ export function BranchOperationsPage({ screen = 'home' }) {
             </>
           )}
         </>
+      )}
+      {screen === 'pricing' && admin && (
+        <ProductPricing work={work} busy={busy} run={run} online={online} />
       )}
       {screen === 'products' && admin && (
         <AdminProducts work={work} busy={busy} run={run} online={online} />

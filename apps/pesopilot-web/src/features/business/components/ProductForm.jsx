@@ -20,7 +20,7 @@ const emptySelection = {
   scent: '',
   size: '',
   name: '',
-  price: '',
+  price: undefined,
 }
 
 export function ProductForm({
@@ -36,12 +36,17 @@ export function ProductForm({
   const { category } = selection
   const hasScent =
     category && !['Shawls', 'Magic Pillows', 'Other product'].includes(category)
-  const preview = productCreationService.preview({
+  const productSelection = {
     ...selection,
     type:
       hasScent && category !== 'Hallelujah Inhaler'
         ? (selection.type ?? 'Solo')
         : undefined,
+  }
+  const suggestion = productCreationService.preview({ ...productSelection, price: undefined })
+  const preview = productCreationService.preview({
+    ...productSelection,
+    price: selection.price,
   })
   const duplicate = preview.input
     ? findDuplicateProduct(products, preview.input)
@@ -55,7 +60,7 @@ export function ProductForm({
   const staleSelection = Boolean(poolId && !sharedStock)
 
   function select(key, value) {
-    setSelection((current) => ({ ...current, [key]: value }))
+    setSelection((current) => ({ ...current, ...(key !== 'price' ? { price: undefined } : {}), [key]: value }))
   }
 
   async function submit(event) {
@@ -222,15 +227,17 @@ export function ProductForm({
                       required
                       inputMode="decimal"
                       placeholder="0.00"
-                      value={selection.price}
+                      value={selection.price ?? ''}
                       onChange={(event) => select('price', event.target.value)}
                     />
                   </>
                 ) : (
                   <Input
                     label="Unit price (PHP)"
-                    readOnly
-                    value={preview.input?.pricePesos ?? ''}
+                    required
+                    inputMode="decimal"
+                    value={selection.price ?? suggestion.input?.pricePesos ?? ''}
+                    onChange={(event) => select('price', event.target.value)}
                     placeholder="Select your item first"
                   />
                 )}

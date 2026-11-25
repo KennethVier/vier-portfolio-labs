@@ -75,7 +75,7 @@ it.each(cases)('guides %s with relevant fields, price, summary and zero-stock ex
   expect(container.querySelector('[aria-label="Product summary"]').textContent).toContain(price)
   if (category !== 'Other product') {
     expect(field('Unit price').value).toBe(price)
-    expect(field('Unit price').readOnly).toBe(true)
+    expect(field('Unit price').readOnly).toBe(false)
   }
   if (category === 'Shawls' || category === 'Magic Pillows' || category === 'Other product') {
     expect(() => field('Scent')).toThrow('Missing field')
