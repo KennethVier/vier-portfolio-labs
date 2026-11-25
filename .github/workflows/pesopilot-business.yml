@@ -1,9 +1,17 @@
 name: PesoPilot Business Prototype
 
 on:
+  push:
+    branches:
+      - test/pesopilot-ipad-preview
+      - feature/pesopilot-phase0-historical-cogs-corrections
+    paths:
+      - 'apps/pesopilot-web/**'
+      - '.github/workflows/pesopilot-business.yml'
   pull_request:
     branches:
       - pesopilot-dev
+      - test/pesopilot-ipad-preview
       - feature/pesopilot-business-foundation
       - feature/pesopilot-business-workflows
       - feature/pesopilot-business-daily-audit
