@@ -5,6 +5,7 @@ import { BusinessShell } from '../components/BusinessShell.jsx'
 import { WorkspaceStatus } from '../components/WorkspaceStatus.jsx'
 import { ProductForm } from '../components/ProductForm.jsx'
 import { ProductPricing } from '../components/ProductPricing.jsx'
+import { HistoricalCostCorrections } from '../components/HistoricalCostCorrections.jsx'
 import { InventoryPanel } from '../components/InventoryPanel.jsx'
 import { SalesHistory } from '../components/SalesHistory.jsx'
 import { BusinessBackupPanel } from '../components/BusinessBackupPanel.jsx'
@@ -36,14 +37,19 @@ export function BusinessAdminPage({ screen }) {
       <ProductPhotoManager products={workspace.products} photos={workspace.photos} uploadPhoto={workspace.uploadPhoto} removePhoto={workspace.removePhoto} disabled={disabled} />
       </details>
     </> : null}
-    {screen === 'pricing' ? <ProductPricing disabled={disabled} products={workspace.products} updatePricing={workspace.updatePricing} /> : null}
+    {screen === 'pricing' ? <>
+      <ProductPricing disabled={disabled} products={workspace.products} updatePricing={workspace.updatePricing} />
+      <HistoricalCostCorrections disabled={disabled} sales={workspace.sales}
+        events={workspace.events} correctHistoricalCost={workspace.correctHistoricalCost} />
+    </> : null}
     {screen === 'history' && !disabled ? <SalesHistory sales={workspace.sales} corrections={workspace.events} /> : null}
     {screen === 'settings' ? <>
       <Card className="space-y-3 p-5"><h2 className="font-heading text-xl font-semibold">Device & data</h2><p className="text-sm text-content-muted">Business data stays in this browser profile and can be erased. Local data and this URL alone do not provide secure account access. There is no authentication or device sync.</p><p className="text-sm text-content-muted">Cash, GCash and Coop Pay are manually recorded payment methods. No external payment settlement is verified.</p></Card>
       <BusinessBackupPanel refresh={workspace.refresh} disabled={workspace.isLoading} />
       <AutomaticBusinessBackup />
       <Card className="p-5"><h2 className="font-heading text-lg font-semibold">Internal Activity History</h2><p className="mb-3 text-sm text-content-muted">Recent 15 events; not a tamper-proof audit log.</p>
-        {!disabled ? workspace.events.length ? <ul className="divide-y divide-outline-variant">{workspace.events.slice(0, 15).map((event) => <li key={event.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span>{event.type.replaceAll('_', ' ')}{event.payload.poolNameSnapshot ? ` · ${event.payload.poolNameSnapshot}` : ''}{event.type === 'stock_adjustment' ? ` · ${event.payload.delta} · ${event.payload.reason}` : ''}</span><time dateTime={event.occurredAt}>{dateTime(event.occurredAt)}</time></li>)}</ul> : <p className="text-sm text-content-muted">No recorded activity.</p> : null}
+        {!disabled ? workspace.events.length ? <ul className="divide-y divide-outline-variant">{workspace.events.slice(0, 15).map((event) => <li key={event.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span>{event.type.replaceAll('_', ' ')}{event.payload.poolNameSnapshot ? ` · ${event.payload.poolNameSnapshot}` : ''}{event.type === 'stock_adjustment' ? ` · ${event.payload.delta} · ${event.payload.reason}` :
+          event.type === 'cost_correction' ? ` · ${event.payload.productNameSnapshot} · ${event.payload.reason}` : ''}</span><time dateTime={event.occurredAt}>{dateTime(event.occurredAt)}</time></li>)}</ul> : <p className="text-sm text-content-muted">No recorded activity.</p> : null}
       </Card>
     </> : null}
   </BusinessShell>

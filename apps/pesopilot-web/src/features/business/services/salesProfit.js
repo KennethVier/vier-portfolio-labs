@@ -1,7 +1,7 @@
 // Cost corrections are append-only events. Original sale item snapshots remain unchanged.
 export function applyHistoricalCostCorrections(items, events = []) {
   const corrected = new Map()
-  for (const event of events) {
+  for (const event of [...events].sort((a, b) => a.id - b.id)) {
     if (event.type === 'cost_correction') {
       corrected.set(event.payload.saleItemId, event.payload.correctedUnitCostCentavos)
     }
